@@ -19,7 +19,7 @@ Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示�
 | **数据库** | 无 | `.openai/hosting.json` 未启用 D1 / R2 |
 | **编程语言** | TypeScript / TSX / CSS | TypeScript 5.9.3，严格模式 |
 | **包管理器** | npm | 使用 `package-lock.json` 固定依赖 |
-| **部署环境** | OpenAI Sites / Cloudflare Workers | 通过 `@openai/sites-vite-plugin` 与 Cloudflare Vite 插件构建 |
+| **部署环境** | OpenAI Sites / Cloudflare Workers | 通过 `@openai/sites-vite-plugin` 与 Cloudflare Vite 插件构建，已配置生产站点基址 |
 | **其他关键库** | next/font | Geist 与 Geist Mono 字体 |
 
 ## 3. 目录结构
@@ -127,6 +127,7 @@ flowchart TD
 | 2026-08-25 | 开发资源展示 | 加入代码示例、网页测试台、Mapping、AI Skill 与工程验证工具入口 |
 | 2026-08-25 | 试用申请演示 | 加入姓名、手机号、邮箱、机构字段与前端提交反馈 |
 | 2026-08-25 | 站点分享元数据 | 配置中文标题、描述和 1200×630 品牌分享图 |
+| 2026-08-25 | 生产站点发布 | 配置规范链接、生产基址与可解析为绝对地址的分享卡片元数据 |
 
 ## 9. 更新日志
 
@@ -134,6 +135,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | 2026-08-25 | 初始化 | 创建项目架构文档 |
 | 2026-08-25 | 新增功能 | 完成 Shroom SDK 展示页首版结构与前端交互 |
+| 2026-08-25 | 配置变更 | 绑定 OpenAI Sites 项目并补充生产站点元数据基址 |
 
 ---
 
