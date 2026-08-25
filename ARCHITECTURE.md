@@ -1,0 +1,140 @@
+# 架构文档
+
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-08-25
+
+## 1. 项目概述
+
+Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示站。页面按照“选择产品 → 查看能力 → 选择平台 → 快速接入 → 使用工具 → 阅读文档 → 申请试用”的路径组织内容，集中展示规格书、跨平台 SDK、网页测试、Mapping 配置、示例工程与 7 天试用入口。
+
+当前版本为可交互的前端页面骨架：产品与平台切换、移动端导航、代码复制和试用表单状态均在浏览器本地完成；真实产品目录、下载文件、串口连接、文档地址和试用申请接口尚待业务系统接入。
+
+## 2. 技术栈
+
+| 分类 | 技术 | 版本/说明 |
+| :--- | :--- | :--- |
+| **前端框架** | React / Next.js App Router | React 19.2.6、Next.js 16.2.6 |
+| **构建与运行** | Vinext / Vite | Vinext 1.0.0-beta.3、Vite 8.0.13 |
+| **样式系统** | Tailwind CSS | Tailwind CSS 4.2.1，配合少量全局 CSS |
+| **后端框架** | 无 | 当前为纯前端展示站 |
+| **数据库** | 无 | `.openai/hosting.json` 未启用 D1 / R2 |
+| **编程语言** | TypeScript / TSX / CSS | TypeScript 5.9.3，严格模式 |
+| **包管理器** | npm | 使用 `package-lock.json` 固定依赖 |
+| **部署环境** | OpenAI Sites / Cloudflare Workers | 通过 `@openai/sites-vite-plugin` 与 Cloudflare Vite 插件构建 |
+| **其他关键库** | next/font | Geist 与 Geist Mono 字体 |
+
+## 3. 目录结构
+
+```text
+C:\sdk
+├─ .openai/
+│  └─ hosting.json          # Sites 项目及逻辑资源绑定
+├─ app/
+│  ├─ globals.css           # Tailwind 入口、全局基础样式与背景纹理
+│  ├─ layout.tsx            # 页面语言、字体与站点分享元数据
+│  └─ page.tsx              # 单页内容、数据模型与前端交互
+├─ public/
+│  ├─ favicon.svg           # 站点图标
+│  └─ og.png                # 1200×630 社交分享卡片
+├─ ARCHITECTURE.md          # 本架构说明
+├─ eslint.config.mjs        # ESLint 配置
+├─ next.config.ts           # Next.js 配置
+├─ package.json             # 脚本与依赖
+├─ package-lock.json        # npm 锁文件
+├─ tsconfig.json            # TypeScript 配置
+└─ vite.config.ts           # Vinext、Sites、Tailwind 与 Worker 构建配置
+```
+
+### 关键目录说明
+
+| 目录 | 主要功能 |
+| :--- | :--- |
+| `/app` | App Router 页面、根布局和站点级样式 |
+| `/public` | Favicon、Open Graph 分享图等静态资源 |
+| `/.openai` | OpenAI Sites 部署项目标识与逻辑资源声明 |
+
+## 4. 核心模块与数据流
+
+### 4.1 模块关系图
+
+```mermaid
+flowchart TD
+    L[app/layout.tsx\n语言·字体·元数据] --> P[app/page.tsx\nSDK 展示单页]
+    G[app/globals.css\nTailwind·全局视觉] --> P
+    O[public/og.png\n社交分享卡片] --> L
+    P --> D[静态内容模型\n产品·能力·平台·工具·文档]
+    P --> S[React 本地状态]
+    S --> PS[产品系列选择]
+    S --> OS[操作系统选择]
+    S --> UI[移动导航·代码复制·表单结果]
+    V[vite.config.ts] --> B[Vinext / Sites 构建]
+    H[.openai/hosting.json] --> B
+    B --> C[Cloudflare Workers 兼容产物]
+```
+
+### 4.2 主要数据流
+
+1. **产品资源定位**
+   - 用户选择产品系列。
+   - `activeProduct` 在本地更新，`useMemo` 得到当前产品信息。
+   - 页面展示对应的规格书、SDK、网页测试或 Mapping 资源入口。
+2. **跨平台 SDK 选择**
+   - 用户在 Windows、macOS、Linux 与浏览器标签间切换。
+   - `activePlatform` 驱动兼容环境、资源组成和安装包名称更新。
+3. **快速开始与代码复制**
+   - 示例代码以静态内容呈现。
+   - 复制按钮通过 Clipboard API 写入剪贴板并显示短暂反馈。
+4. **试用申请演示**
+   - 浏览器原生校验必填项和邮箱格式。
+   - 提交后仅切换本地成功状态；当前不会向外部服务发送数据。
+
+## 5. API 端点
+
+当前项目没有 API 路由。后续接入下载鉴权、产品目录或试用申请时，建议新增服务端端点并将前端演示状态替换为真实请求。
+
+## 6. 外部依赖与集成
+
+| 服务/库 | 用途 | 集成方式 |
+| :--- | :--- | :--- |
+| OpenAI Sites | 站点版本管理与托管 | `@openai/sites-vite-plugin` + `.openai/hosting.json` |
+| Cloudflare Workers | 托管运行时与本地模拟 | `@cloudflare/vite-plugin` |
+| Tailwind CSS | 响应式布局与组件样式 | PostCSS 插件 |
+| Clipboard API | 复制快速开始示例 | 浏览器端调用 |
+
+当前没有外部业务 API、数据库、用户认证或第三方连接器。
+
+## 7. 环境变量
+
+应用运行时不要求环境变量。`page.tsx` 中出现的 `SHROOM_KEY` 仅是页面展示的 SDK 示例代码，不会被站点读取。
+
+构建工具会使用以下非业务变量：
+
+| 变量名 | 描述 | 默认行为 |
+| :--- | :--- | :--- |
+| `CODEX_SANDBOX` | 在 Codex macOS 沙箱中切换轮询式 HMR | 非 `seatbelt` 时使用常规文件监听 |
+| `WRANGLER_WRITE_LOGS` | Wrangler 日志开关 | `false` |
+| `WRANGLER_LOG_PATH` | Wrangler 日志目录 | `.wrangler/logs` |
+| `MINIFLARE_REGISTRY_PATH` | Miniflare 注册表目录 | `.wrangler/registry` |
+
+## 8. 项目进度
+
+> 记录项目从开始到现在已经完成的所有工作，每次新增追加到末尾。
+
+| 完成日期 | 完成的功能/工作 | 说明 |
+| :--- | :--- | :--- |
+| 2026-08-25 | SDK 展示页信息架构 | 将原始思维导图重排为产品选择、能力、下载、流程、工具、文档和试用路径 |
+| 2026-08-25 | 响应式单页界面 | 完成桌面端与移动端布局、导航和视觉系统 |
+| 2026-08-25 | 产品与平台选择 | 支持产品系列和 Windows、macOS、Linux、浏览器 SDK 的本地切换 |
+| 2026-08-25 | 开发资源展示 | 加入代码示例、网页测试台、Mapping、AI Skill 与工程验证工具入口 |
+| 2026-08-25 | 试用申请演示 | 加入姓名、手机号、邮箱、机构字段与前端提交反馈 |
+| 2026-08-25 | 站点分享元数据 | 配置中文标题、描述和 1200×630 品牌分享图 |
+
+## 9. 更新日志
+
+| 日期 | 变更类型 | 描述 |
+| :--- | :--- | :--- |
+| 2026-08-25 | 初始化 | 创建项目架构文档 |
+| 2026-08-25 | 新增功能 | 完成 Shroom SDK 展示页首版结构与前端交互 |
+
+---
+
+*此文档旨在提供项目架构快照，具体实现细节请参考源代码。*
