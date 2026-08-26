@@ -1,6 +1,6 @@
 # 架构文档
 
-> 本文档由 Codex 自动生成和维护。最后更新于：2026-08-25
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-08-26
 
 ## 1. 项目概述
 
@@ -35,6 +35,8 @@ C:\sdk
 ├─ public/
 │  ├─ favicon.svg           # 站点图标
 │  └─ og.png                # 1200×630 社交分享卡片
+├─ todo/
+│  └─ SDK_SKILL_TODO.md     # SDK、手套接入、Skill 与展示站的分阶段待办
 ├─ ARCHITECTURE.md          # 本架构说明
 ├─ eslint.config.mjs        # ESLint 配置
 ├─ next.config.ts           # Next.js 配置
@@ -51,6 +53,7 @@ C:\sdk
 | `/app` | App Router 页面、根布局和站点级样式 |
 | `/public` | Favicon、Open Graph 分享图等静态资源 |
 | `/.openai` | OpenAI Sites 部署项目标识与逻辑资源声明 |
+| `/todo` | 记录 SDK 事实源、手套接入闭环、Shroom Skill 和展示站真实业务接入的待办与验收标准 |
 
 ## 4. 核心模块与数据流
 
@@ -132,6 +135,7 @@ flowchart TD
 | 2026-08-25 | 站点分享元数据 | 配置中文标题、描述和 1200×630 品牌分享图 |
 | 2026-08-25 | 生产站点发布 | 配置规范链接、生产基址与可解析为绝对地址的分享卡片元数据 |
 | 2026-08-25 | Skill 优先接入与资源重构 | 将 Shroom Skill 提升为推荐入口，并拆分统一 SDK 与分平台上位机下载 |
+| 2026-08-26 | SDK 与 Skill 实施清单 | 基于手套接入样例整理 SDK 契约、设备描述、Mapping、真实数据、Skill、展示站和发布工作的分阶段 TODO |
 
 ## 9. 更新日志
 
@@ -141,6 +145,7 @@ flowchart TD
 | 2026-08-25 | 新增功能 | 完成 Shroom SDK 展示页首版结构与前端交互 |
 | 2026-08-25 | 配置变更 | 绑定 OpenAI Sites 项目并补充生产站点元数据基址 |
 | 2026-08-25 | 优化重构 | 强化 Shroom Skill 快速接入说明，明确 SDK 不区分平台、上位机按系统提供 |
+| 2026-08-26 | 文档更新 | 新增 SDK、手套接入与 Shroom Skill 分阶段 TODO，并补充对应目录说明 |
 
 ---
 
