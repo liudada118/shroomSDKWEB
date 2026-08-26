@@ -143,6 +143,7 @@ references/
 
 ## P1：展示站真实业务接入
 
+- [ ] 修复 `app/page.tsx` Quick Start 代码块现有的 `react/jsx-no-comment-textnodes` 错误，并将 `npm run lint` 与 `npm run build` 都设为发布前必过检查。
 - [ ] 将产品、规格书、SDK、Skill、Mapping、网页测试和上位机按钮替换为真实链接。
 - [ ] 为 Skill 提供明确的安装入口、支持任务和首个手套示例。
 - [ ] 展示真实兼容矩阵；完成验证前使用“统一 API、目标跨平台”，不要承诺任意平台开箱即用。
