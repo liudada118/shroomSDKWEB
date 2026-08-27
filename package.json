@@ -7,8 +7,10 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "build": "vinext build",
+    "build": "npm run pack:sdk && vinext build",
     "start": "vinext start",
+    "pack:sdk": "npm run build:sdk-bundle && node scripts/pack-sdk.mjs",
+    "build:sdk-bundle": "node scripts/build-sdk-bundle.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
