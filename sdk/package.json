@@ -1,22 +1,52 @@
 {
   "name": "shroom-sdk",
-  "version": "0.1.0",
-  "description": "压力传感器最小 SDK：连接串口、拿到数据、画成热力图",
+  "version": "0.2.0-preview.1",
+  "description": "Shroom 传感器 SDK：Web/Node 数据接入、可视化与本地后端采集链路",
   "type": "module",
-  "types": "index.d.ts",
+  "types": "web/index.d.ts",
   "exports": {
-    ".": "./web/index.js",
-    "./web": "./web/index.js",
-    "./node": "./node/index.js",
-    "./core": "./core/frame.js"
+    ".": {
+      "types": "./web/index.d.ts",
+      "import": "./web/index.js",
+      "default": "./web/index.js"
+    },
+    "./web": {
+      "types": "./web/index.d.ts",
+      "import": "./web/index.js",
+      "default": "./web/index.js"
+    },
+    "./node": {
+      "types": "./node/index.d.ts",
+      "import": "./node/index.js",
+      "default": "./node/index.js"
+    },
+    "./core": {
+      "types": "./core/frame.d.ts",
+      "import": "./core/frame.js",
+      "default": "./core/frame.js"
+    },
+    "./backend": {
+      "types": "./backend/index.d.ts",
+      "require": "./backend/index.js",
+      "default": "./backend/index.js"
+    }
   },
   "scripts": {
     "start": "node start.mjs",
     "demo": "node node/demo.js",
-    "ports": "node node/demo.js --list"
+    "ports": "node node/demo.js --list",
+    "backend:demo": "node backend/examples/backend-sdk-demo.js",
+    "backend:serial-demo": "node backend/examples/serial-chain-demo.js",
+    "test:backend": "node --test backend/tests/backend-*.test.mjs"
+  },
+  "dependencies": {
+    "csv-writer": "^1.6.0"
   },
   "optionalDependencies": {
-    "serialport": "^12.0.0"
+    "@serialport/parser-delimiter": "^12.0.0",
+    "better-sqlite3": "^11.10.0",
+    "serialport": "^12.0.0",
+    "ws": "^8.14.2"
   },
   "engines": {
     "node": ">=18"

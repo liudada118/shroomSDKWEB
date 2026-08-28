@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 
 const SDK_DOWNLOAD = '/shroom-sdk.zip';
 const START_COMMAND = 'node start.mjs';
@@ -11,7 +12,7 @@ const navItems = [
   { label: '在线体验', href: '#web-lab' },
   { label: 'Frame', href: '#frame' },
   { label: '下载', href: '#downloads' },
-  { label: '文档', href: '#docs' },
+  { label: '文档', href: '/docs' },
 ];
 
 const heroCode = `import { Shroom } from './sdk/web/index.js'
@@ -108,6 +109,7 @@ const packageContents = [
   ['web/', 'Web Serial、Mock 与 Canvas 热力图'],
   ['node/', 'serialport 适配器与终端热力图'],
   ['core/', 'Frame 解码、切帧器与颜色映射'],
+  ['backend/', '增强串口、采集、存储、回放、CSV 与算法通道'],
   ['index.d.ts', '当前公共类型定义'],
   ['web/index.html', '可直接打开的 Mock 示例'],
   ['README.md', '运行说明、接口与故障排查'],
@@ -120,7 +122,7 @@ const roadmapGroups = [
   },
   {
     title: '产品工具链',
-    items: ['Mapping Schema 与生成器', '分平台 Shroom 上位机', '采集、回放与 CSV 工具'],
+    items: ['Mapping Schema 与生成器', '分平台 Shroom 上位机', '物理量标定与完整报告引擎'],
   },
 ];
 
@@ -189,9 +191,30 @@ function calculateStats(values: number[], size: number) {
   };
 }
 
+function hslToRgb(hue: number, saturation: number, lightness: number) {
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const segment = hue / 60;
+  const secondary = chroma * (1 - Math.abs((segment % 2) - 1));
+  const [red, green, blue] = segment < 1
+    ? [chroma, secondary, 0]
+    : segment < 2
+      ? [secondary, chroma, 0]
+      : segment < 3
+        ? [0, chroma, secondary]
+        : segment < 4
+          ? [0, secondary, chroma]
+          : segment < 5
+            ? [secondary, 0, chroma]
+            : [chroma, 0, secondary];
+  const offset = lightness - chroma / 2;
+  const channel = (value: number) => Math.round((value + offset) * 255);
+
+  return `rgb(${channel(red)}, ${channel(green)}, ${channel(blue)})`;
+}
+
 function pressureColor(value: number) {
-  if (value < 0.035) return '#102343';
-  return `hsl(${215 - value * 205} 82% ${35 + value * 24}%)`;
+  if (value < 0.035) return 'rgb(16, 35, 67)';
+  return hslToRgb(215 - value * 205, 0.82, 0.35 + value * 0.24);
 }
 
 function PressureGrid({ values, size, label, className = '' }: { values: number[]; size: number; label: string; className?: string }) {
@@ -206,7 +229,10 @@ function PressureGrid({ values, size, label, className = '' }: { values: number[
         <span
           key={index}
           className="rounded-[3px]"
-          style={{ backgroundColor: pressureColor(value), opacity: 0.55 + value * 0.45 }}
+          style={{
+            backgroundColor: pressureColor(value),
+            opacity: Math.round((0.55 + value * 0.45) * 10_000) / 10_000,
+          }}
         />
       ))}
     </div>
@@ -293,12 +319,12 @@ export default function SdkPage() {
       <a className="skip-link" href="#top">跳到主要内容</a>
       <header className="fixed inset-x-0 top-0 z-30 border-b border-[var(--line)] bg-[var(--header)] backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
-          <a href="#top" className="flex items-center gap-3" aria-label="Shroom Developer 首页">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--accent)] text-sm font-black text-white shadow-[0_8px_22px_rgba(37,99,235,0.2)]">S</span>
+          <Link href="/" className="flex items-center gap-3" aria-label="返回 Shroom Developer 展示首页">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[var(--accent-fill)] text-sm font-black text-[var(--on-accent)] shadow-[0_8px_22px_rgba(37,99,235,0.2)]">S</span>
             <span className="text-[15px] font-bold tracking-[-0.02em] text-[var(--text-strong)]">
               Shroom <span className="font-medium text-[var(--text-muted)]">Developer</span>
             </span>
-          </a>
+          </Link>
 
           <nav className="hidden items-center gap-6 text-sm font-medium text-[var(--text-muted)] lg:flex" aria-label="主导航">
             {navItems.map((item) => (
@@ -309,7 +335,7 @@ export default function SdkPage() {
           </nav>
 
           <div className="flex items-center gap-2.5">
-            <a href={SDK_DOWNLOAD} download className="hidden min-h-11 items-center rounded-xl bg-[var(--accent)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px sm:inline-flex">
+            <a href={SDK_DOWNLOAD} download className="hidden min-h-11 items-center rounded-xl bg-[var(--accent-fill)] px-4 text-sm font-semibold text-[var(--on-accent)] transition hover:bg-[var(--accent-fill-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px sm:inline-flex">
               下载 SDK
             </a>
             <button
@@ -355,7 +381,7 @@ export default function SdkPage() {
             </div>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <a href="#web-lab" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--accent)] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(37,99,235,0.2)] transition hover:bg-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px">体验 Mock 数据</a>
+              <a href="#web-lab" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-[var(--accent-fill)] px-5 py-3 text-sm font-semibold text-[var(--on-accent)] shadow-[0_10px_28px_rgba(37,99,235,0.2)] transition hover:bg-[var(--accent-fill-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px">体验 Mock 数据</a>
               <a href={SDK_DOWNLOAD} download className="inline-flex min-h-11 items-center justify-center rounded-xl border border-[var(--line)] bg-[var(--surface)] px-5 py-3 text-sm font-semibold text-[var(--text-strong)] transition hover:border-[var(--focus)] hover:text-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px">下载 SDK</a>
             </div>
           </div>
@@ -421,7 +447,7 @@ export default function SdkPage() {
 
       <section id="capabilities" className="scroll-mt-24 border-y border-[var(--line)] bg-[var(--surface)] py-24 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="max-w-2xl"><h2 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--text-strong)] sm:text-4xl">SDK 只负责一条清晰链路。</h2><p className="mt-5 max-w-xl leading-7 text-[var(--text-muted)]">连接数据源，获得 Device，订阅统一 Frame，再交给内置渲染器或你的业务代码。</p></div>
+          <div className="max-w-2xl"><h2 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--text-strong)] sm:text-4xl">Core 先统一数据，再按需进入后端链路。</h2><p className="mt-5 max-w-xl leading-7 text-[var(--text-muted)]">连接数据源，获得 Device，订阅统一 Frame；随后可以交给内置渲染器、你的业务代码，或本地 Node 采集与回放模块。</p></div>
           <ol className="mt-12 grid overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--page)] md:grid-cols-4">
             {[
               ['connect / mock', '选择真实串口或模拟数据源'],
@@ -432,7 +458,7 @@ export default function SdkPage() {
               <li key={title} className={`relative min-h-40 p-6 ${index ? 'border-t border-[var(--line)] md:border-l md:border-t-0' : ''}`}><h3 className="mt-2 font-mono text-lg font-semibold text-[var(--text-strong)]">{title}</h3><p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">{detail}</p></li>
             ))}
           </ol>
-          <div className="mt-10 grid gap-8 lg:grid-cols-2"><div className="border-t border-[var(--accent)] pt-6"><h3 className="text-xl font-semibold text-[var(--text-strong)]">当前已经提供</h3><p className="mt-3 leading-7 text-[var(--text-muted)]">Web Serial、Node serialport、Mock、Frame 解码、切帧器、Canvas 热力图和终端字符图。</p></div><div className="border-t border-[var(--line)] pt-6"><h3 className="text-xl font-semibold text-[var(--text-strong)]">当前不在 SDK 内</h3><p className="mt-3 leading-7 text-[var(--text-muted)]">设备握手、自动重连、多设备管理、标定、物理单位、Mapping、录制回放、CSV 与云端服务。</p></div></div>
+          <div className="mt-10 grid gap-8 lg:grid-cols-2"><div className="border-t border-[var(--accent)] pt-6"><h3 className="text-xl font-semibold text-[var(--text-strong)]">当前已经提供</h3><p className="mt-3 leading-7 text-[var(--text-muted)]">Web Serial、Node serialport、Mock、Frame 解码、Canvas 热力图，以及 Node 后端的增强串口、采集、SQLite / 内存存储、回放、CSV 和同步算法通道。</p></div><div className="border-t border-[var(--line)] pt-6"><h3 className="text-xl font-semibold text-[var(--text-strong)]">当前不在 SDK 内</h3><p className="mt-3 leading-7 text-[var(--text-muted)]">通用设备握手、后台自动重连、物理量标定、通用 Mapping 生成器、完整报告引擎与云端服务。</p></div></div>
         </div>
       </section>
 
@@ -513,10 +539,10 @@ export default function SdkPage() {
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="overflow-hidden rounded-2xl border border-[var(--accent-border)] bg-[var(--accent-soft)]">
             <div className="grid gap-10 p-7 sm:p-10 lg:grid-cols-[0.9fr_1.1fr]">
-              <div><p className="font-mono text-xs font-semibold text-[var(--accent-strong)]">Shroom Sensor SDK v0.1.0</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-strong)] sm:text-4xl">下载完整技术预览包。</h2><p className="mt-5 max-w-lg leading-7 text-[var(--text-muted)]">包含 Web、Node、Core、Mock、热力图、类型声明、可运行示例和故障排查文档。</p><a href={SDK_DOWNLOAD} download className="mt-8 inline-flex min-h-11 items-center rounded-xl bg-[var(--accent)] px-5 text-sm font-semibold text-white transition hover:bg-[var(--accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px">下载 ZIP</a></div>
+              <div><p className="font-mono text-xs font-semibold text-[var(--accent-strong)]">Shroom Sensor SDK v0.2.0-preview.1</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[var(--text-strong)] sm:text-4xl">下载完整技术预览包。</h2><p className="mt-5 max-w-lg leading-7 text-[var(--text-muted)]">包含 Web、Node、Core、Mock、热力图，以及本地 Node 后端的采集、存储、回放、CSV、算法、类型声明和示例。</p><a href={SDK_DOWNLOAD} download className="mt-8 inline-flex min-h-11 items-center rounded-xl bg-[var(--accent-fill)] px-5 text-sm font-semibold text-[var(--on-accent)] transition hover:bg-[var(--accent-fill-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px">下载 ZIP</a></div>
               <div className="grid overflow-hidden rounded-xl border border-[var(--accent-border)] bg-[var(--surface)] sm:grid-cols-2">{packageContents.map(([name, description], index) => (<div key={name} className={`p-5 ${index >= 2 ? 'border-t border-[var(--line)]' : ''} ${index % 2 ? 'sm:border-l sm:border-[var(--line)]' : ''}`}><p className="font-mono text-sm font-semibold text-[var(--text-strong)]">{name}</p><p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">{description}</p></div>))}</div>
             </div>
-            <div className="grid gap-4 border-t border-[var(--accent-border)] px-7 py-5 text-xs text-[var(--text-muted)] sm:grid-cols-4 sm:px-10"><span><b className="block text-[var(--text-strong)]">版本</b>0.1.0</span><span><b className="block text-[var(--text-strong)]">运行时</b>ESM / Node 18+</span><span><b className="block text-[var(--text-strong)]">发布状态</b>Technical Preview</span><span><b className="block text-[var(--text-strong)]">授权</b>公开条款待补充</span></div>
+            <div className="grid gap-4 border-t border-[var(--accent-border)] px-7 py-5 text-xs text-[var(--text-muted)] sm:grid-cols-4 sm:px-10"><span><b className="block text-[var(--text-strong)]">版本</b>0.2.0-preview.1</span><span><b className="block text-[var(--text-strong)]">运行时</b>ESM + CJS / Node 18+</span><span><b className="block text-[var(--text-strong)]">发布状态</b>Technical Preview</span><span><b className="block text-[var(--text-strong)]">授权</b>公开条款待补充</span></div>
           </div>
 
           <div className="mt-16">
@@ -555,15 +581,16 @@ export default function SdkPage() {
 
       <section id="docs" className="scroll-mt-24 py-24 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10"><div className="max-w-2xl"><h2 className="text-3xl font-semibold tracking-[-0.04em] text-[var(--text-strong)] sm:text-4xl">文档按开发任务组织。</h2><p className="mt-5 max-w-xl leading-7 text-[var(--text-muted)]">先完成第一次成功，再查 Frame、兼容性和故障边界。完整 README 随 SDK 下载。</p></div><div className="mt-12 grid gap-4 md:grid-cols-2">{[
-          ['30 秒快速开始', 'Mock、浏览器和 Node 三种可运行示例。', '#quick-start', '查看代码'],
-          ['Frame 参考', '字段、类型、统计值与物理单位边界。', '#frame', '查看合同'],
-          ['运行环境与兼容', 'Web Serial、Node、系统驱动和页面要求。', '#downloads', '查看兼容'],
+          ['30 秒快速开始', 'Mock、浏览器和 Node 三种可运行示例。', '/docs#quick-start', '查看代码'],
+          ['Frame 参考', '字段、类型、统计值与物理单位边界。', '/docs#frame', '查看合同'],
+          ['运行环境与兼容', 'Web Serial、Node、系统驱动和页面要求。', '/docs#downloads', '查看兼容'],
+          ['后端与串口', '增强串口、采集、存储、回放、CSV 和同步算法通道。', '/docs/backend#overview', '查看后端'],
           ['完整 README', '下载包内包含 API、参数和故障排查表。', SDK_DOWNLOAD, '下载文档'],
         ].map(([title, description, href, action]) => (<a key={title} href={href} download={href === SDK_DOWNLOAD} className="group rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-7 transition hover:border-[var(--focus)] hover:shadow-[0_16px_44px_rgba(16,24,40,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"><h3 className="text-xl font-semibold text-[var(--text-strong)]">{title}</h3><p className="mt-3 text-sm leading-6 text-[var(--text-muted)]">{description}</p><span className="mt-7 inline-flex text-sm font-semibold text-[var(--accent-strong)] group-hover:underline">{action} →</span></a>))}</div></div>
       </section>
 
       <footer className="border-t border-[var(--line)] bg-[var(--surface)]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-10 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10"><div className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent)] text-xs font-black text-white">S</span><div><p className="text-sm font-bold text-[var(--text-strong)]">Shroom Developer</p><p className="mt-1 text-xs text-[var(--text-muted)]">连接串口，获得 Frame，画出数据。</p></div></div><nav className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-[var(--text-muted)]" aria-label="页脚导航"><a href="#quick-start" className="hover:text-[var(--accent-strong)]">快速开始</a><a href="#downloads" className="hover:text-[var(--accent-strong)]">SDK 下载</a><a href="#skill" className="hover:text-[var(--accent-strong)]">AI 接入</a><a href="#docs" className="hover:text-[var(--accent-strong)]">文档</a></nav><p className="text-xs text-[var(--text-muted)]">© 2026 Shroom</p></div>
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-10 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10"><div className="flex items-center gap-3"><span className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--accent-fill)] text-xs font-black text-[var(--on-accent)]">S</span><div><p className="text-sm font-bold text-[var(--text-strong)]">Shroom Developer</p><p className="mt-1 text-xs text-[var(--text-muted)]">连接串口，获得 Frame，画出数据。</p></div></div><nav className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-[var(--text-muted)]" aria-label="页脚导航"><Link href="/" className="hover:text-[var(--accent-strong)]">展示首页</Link><a href="/docs#quick-start" className="hover:text-[var(--accent-strong)]">快速开始</a><a href="#downloads" className="hover:text-[var(--accent-strong)]">SDK 下载</a><a href="#skill" className="hover:text-[var(--accent-strong)]">AI 接入</a><a href="/docs" className="hover:text-[var(--accent-strong)]">文档</a></nav><p className="text-xs text-[var(--text-muted)]">© 2026 Shroom</p></div>
       </footer>
     </main>
   );

@@ -1,5 +1,5 @@
-import SdkPage from './sdk-page';
+import ShowcasePage from './showcase-page';
 
 export default function Home() {
-  return <SdkPage />;
+  return <ShowcasePage />;
 }

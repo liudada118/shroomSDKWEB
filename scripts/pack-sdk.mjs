@@ -17,7 +17,7 @@ const SRC = join(ROOT, 'sdk');
 const OUT = join(ROOT, 'public', 'shroom-sdk.zip');
 const PREFIX = 'shroom-sdk/';
 // index.template.html 是给构建脚本用的源文件，用户拿到的是渲染好的 index.html
-const SKIP = new Set(['node_modules', '.git', '.DS_Store', 'index.template.html']);
+const SKIP = new Set(['node_modules', 'docs', '.git', '.DS_Store', 'index.template.html']);
 
 // 固定为 2026-01-01 00:00:00 的 DOS 时间，保证产物可复现
 const DOS_TIME = 0;

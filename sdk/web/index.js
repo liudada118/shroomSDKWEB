@@ -31,7 +31,7 @@ export const Shroom = {
   createHeatmap,
   /** 当前浏览器是否支持串口 */
   isSupported: isSerialSupported,
-  version: '0.1.0',
+  version: '0.2.0-preview.1',
 };
 
 export default Shroom;

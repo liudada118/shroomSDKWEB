@@ -14,14 +14,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://shroom-developer-center.stelmachtemme1632.chatgpt.site'),
-  title: 'Shroom Sensor SDK｜从串口到统一压力帧',
-  description: '用 Web Serial、Node serialport 或 Mock 获得统一 Frame，并将压力数据渲染为 Canvas 热力图。',
+  title: 'Shroom Developer｜SDK 开发中心',
+  description: '通过 Shroom Skill 规划快速接入统一 SDK，并获取本地 Node 后端、上位机、驱动、网页调试和 Mapping 工具。',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'Shroom Sensor SDK｜从串口到统一压力帧',
-    description: '连接数据源，订阅统一 Frame，渲染压力热力图。',
+    title: 'Shroom Developer｜SDK 开发中心',
+    description: '以统一 SDK、本地 Node 后端、Skill 规划和开发工具组织硬件接入资源。',
     type: 'website',
     url: '/',
     images: [
@@ -29,14 +29,14 @@ export const metadata: Metadata = {
         url: '/og.png',
         width: 1200,
         height: 630,
-        alt: 'Shroom Developer - 从串口到统一压力帧。',
+        alt: 'Shroom Developer：让硬件数据，更快抵达应用。',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Shroom Sensor SDK｜从串口到统一压力帧',
-    description: '连接数据源，订阅统一 Frame，渲染压力热力图。',
+    title: 'Shroom Developer｜SDK 开发中心',
+    description: '以统一 SDK、本地 Node 后端、Skill 规划和开发工具组织硬件接入资源。',
     images: ['/og.png'],
   },
 };

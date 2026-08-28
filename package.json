@@ -11,6 +11,7 @@
     "start": "vinext start",
     "pack:sdk": "npm run build:sdk-bundle && node scripts/pack-sdk.mjs",
     "build:sdk-bundle": "node scripts/build-sdk-bundle.mjs",
+    "test:sdk": "npm --prefix sdk run test:backend && npx tsc --noEmit --incremental false",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {

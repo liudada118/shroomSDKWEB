@@ -13,6 +13,9 @@
   --line: #d8e0eb;
   --accent: #2563eb;
   --accent-strong: #175cd3;
+  --accent-fill: #2563eb;
+  --accent-fill-hover: #175cd3;
+  --on-accent: #ffffff;
   --accent-soft: #edf4ff;
   --accent-border: #b9ceff;
   --focus: #84adff;
@@ -36,6 +39,9 @@
     --line: #2a3a54;
     --accent: #60a5fa;
     --accent-strong: #93c5fd;
+    --accent-fill: #2563eb;
+    --accent-fill-hover: #1d4ed8;
+    --on-accent: #ffffff;
     --accent-soft: #12213a;
     --accent-border: #274b7a;
     --focus: #60a5fa;
@@ -59,6 +65,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -95,8 +102,8 @@ button {
   left: 1rem;
   z-index: 60;
   border-radius: 0.75rem;
-  background: var(--accent);
-  color: #ffffff;
+  background: var(--accent-fill);
+  color: var(--on-accent);
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 700;
@@ -113,11 +120,37 @@ button {
 
 .hero-grid {
   background-image:
-    linear-gradient(to right, rgb(37 99 235 / 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(37 99 235 / 0.055) 1px, transparent 1px);
+    linear-gradient(to right, rgb(37 99 235 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(37 99 235 / 0.045) 1px, transparent 1px);
   background-size: 56px 56px;
-  mask-image: linear-gradient(to bottom, black 0%, transparent 88%);
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 88%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 82%);
+}
+
+.download-grid {
+  background-image:
+    linear-gradient(to right, rgb(37 99 235 / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(37 99 235 / 0.08) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to left, black, transparent);
+}
+
+.lab-grid {
+  background-image:
+    radial-gradient(circle at 75% 30%, rgb(255 255 255 / 0.38), transparent 30%),
+    linear-gradient(to right, rgb(255 255 255 / 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.14) 1px, transparent 1px);
+  background-size: auto, 44px 44px, 44px 44px;
+  mask-image: linear-gradient(to left, black, transparent 80%);
+}
+
+.skill-grid {
+  background-image:
+    radial-gradient(circle at 18% 18%, rgb(37 99 235 / 0.32), transparent 30%),
+    radial-gradient(circle at 82% 72%, rgb(29 78 216 / 0.2), transparent 34%),
+    linear-gradient(to right, rgb(148 163 184 / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(148 163 184 / 0.07) 1px, transparent 1px);
+  background-size: auto, auto, 42px 42px, 42px 42px;
+  mask-image: linear-gradient(to bottom, black, rgb(0 0 0 / 0.45));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -126,11 +159,6 @@ button {
     color: #eff6ff;
   }
 
-  .hero-grid {
-    background-image:
-      linear-gradient(to right, rgb(96 165 250 / 0.09) 1px, transparent 1px),
-      linear-gradient(to bottom, rgb(96 165 250 / 0.09) 1px, transparent 1px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

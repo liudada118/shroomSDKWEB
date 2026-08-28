@@ -1,14 +1,24 @@
 # Shroom SDK、手套接入与 Skill 待办
 
-> 更新日期：2026-08-26
+> 更新日期：2026-08-28
 > 目标：让用户只需说明产品型号、连接方式和开发目标，Shroom Skill 就能基于 SDK 生成、验证并排查可运行的接入代码，而不需要猜测 Profile、Frame 字段或 Mapping 规则。
 
 ## 范围与原则
 
-- `E:\ShroomSDK` 是 SDK 实现、类型、Schema、设备描述和示例的事实源。
-- `C:\sdk` 是 SDK 展示站，负责呈现真实能力、兼容性、下载和文档入口，不自行定义 SDK 接口。
+- `E:\ShroomSDK` 是后端能力的上游工作区；`C:\sdk\sdk` 保存经测试的 `0.2.0-preview.1` 快照，并作为当前下载 ZIP、类型与网站文档的发布事实源。
+- `C:\sdk` 的页面只呈现 `C:\sdk\sdk` 已实现并验证的能力；新的接口先进入 SDK 与测试，再进入展示文案。
 - Shroom Skill 只描述接入决策与工作流，并按需读取 SDK 事实源；不要复制一份容易过期的 API 手册。
 - 首个闭环以一款真实手套产品为样板，验证通过后再推广到床垫、鞋垫和其他传感器。
+
+## 已完成：本地 Node 后端技术预览迁入（2026-08-28）
+
+- [x] 将增强串口、协议与手套解析、采集、SQLite / 内存存储、回放、CSV 和同步算法通道迁入 `sdk/backend/`。
+- [x] 使用独立 CommonJS 子入口 `shroom-sdk/backend` 隔离 Node-only 依赖，Web / Node / Core 轻量入口保持 ESM。
+- [x] 增加 Core Device / Backend Frame 双向桥接、归一化数值尺度标记和回放恢复。
+- [x] 为 Web、Node、Core、Backend 配置独立类型入口，并覆盖 Backend 84 个根导出。
+- [x] 在 `/docs/backend` 增加能力总览、串口、采集、存储、回放、CSV、简单算法通道七个章节。
+- [x] 生成含后端源码、示例、类型和测试的 ZIP；124 项后端测试、TypeScript、ESLint 与生产构建通过。
+- [ ] 正式发布前提交可复现的上游 Git 快照，并补齐 LICENSE / EULA、干净解压安装烟测和发布门禁。
 
 ## P0：先完成一款手套的可验证闭环
 
@@ -78,10 +88,10 @@ fixtures/gloves/<model>/
 
 ### 7. 修正展示站当前的概念性接口与能力承诺
 
-- [ ] 核对页面中的 `Shroom.create()`、`sdk.devices.connectFirst()`、`device.loadMapping()`、`device.onFrame()` 是否真实存在。
-- [ ] 尚未实现的接口要么替换为当前 SDK 可运行写法，要么明确标注为“规划 API”，不能作为 Quick Start 展示。
-- [ ] 在 Skill 尚未正式创建前，将“Skill 已包含设备协议、Mapping 规则与示例”改为与实际交付状态一致的描述。
-- [ ] 在跨平台安装和原生依赖尚未经过兼容矩阵验证前，将“SDK 不区分操作系统”调整为“统一 API、目标跨平台”。
+- [x] 核对页面中的 `Shroom.create()`、`sdk.devices.connectFirst()`、`device.loadMapping()`、`device.onFrame()` 是否真实存在。
+- [x] 尚未实现的接口已替换为当前 SDK 可运行写法，或明确标注为规划能力。
+- [x] Skill 尚未正式创建，页面已将安装式 Skill 明确标记为 Roadmap。
+- [x] 跨平台文案已区分平台无关 Core / Frame、运行时 Adapter 和分平台上位机。
 - [ ] 页面代码片段应来自 SDK 中可执行的 example，并在发布检查中实际运行。
 
 验收标准：展示站中的每一段接口代码都能在对应 SDK 版本运行；每一项能力承诺都能链接到实现、文档或测试证据。

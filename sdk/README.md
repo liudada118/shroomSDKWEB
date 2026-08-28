@@ -1,8 +1,11 @@
 # Shroom SDK
 
-压力传感器最小 SDK。**只做三件事**：连接串口 → 拿到数据 → 画成图。
+Shroom SDK `0.2.0-preview.1` 同时提供两层能力：
 
-曲线、回放、报表、算法这些都不在里面，那是你（或者 AI）在这个基础上写的部分。
+- **轻量层（Web / Node / Mock）**：连接数据源 → 获得统一 Core Frame → 画成热力图。
+- **Node 后端层（`backend/`）**：增强串口 → 采集 → SQLite / 内存存储 → 回放 / CSV，并提供同步算法通道。
+
+Web 与 Mock 入口仍然不加载任何 Node 原生模块。后端能力只用于本地 Node / Electron / 上位机进程，不能在浏览器或 Cloudflare Worker 中运行。
 
 ---
 
@@ -33,6 +36,87 @@ node node/demo.js COM3       # 连真实设备
 ```
 
 macOS / Linux 可以用 `sh start.sh`。
+
+---
+
+## Node 后端能力
+
+后端入口来自 `E:\ShroomSDK` 的工作快照，当前状态为技术预览。先在解压后的 `shroom-sdk` 目录安装依赖：
+
+```bash
+npm install
+```
+
+在 `backend-demo.cjs` 中使用 CommonJS：
+
+```js
+const {
+  ShroomSensorSDK,
+  MemoryCaptureStore,
+  createPressureStatsAlgorithm,
+} = require('./backend')
+
+async function main() {
+  const sdk = new ShroomSensorSDK({
+    store: new MemoryCaptureStore(),
+  })
+
+  sdk.registerAlgorithm(
+    'pressureStats',
+    createPressureStatsAlgorithm({ threshold: 10 }),
+  )
+
+  const result = await sdk.connectSerial({
+    mode: 'manual',
+    sensorType: 'hand0205',
+    channels: { left: 'COM3' },
+  })
+
+  const session = result.session ?? result.sessions[0]
+  sdk.startCapture(session, {
+    name: 'glove-test',
+    frequencyMode: 'custom',
+    frequencyHz: 60,
+  })
+}
+
+main().catch((error) => {
+  console.error(error)
+  process.exitCode = 1
+})
+```
+
+已有轻量 `Device`（包括 `Shroom.mock()`）也可以接入同一套采集链：
+
+```js
+const { attachCoreDevice, MemoryCaptureStore } = require('./backend')
+
+const session = attachCoreDevice(device, {
+  store: new MemoryCaptureStore(),
+  sensorType: 'matrix',
+  channel: 'sit',
+})
+
+session.startCapture({ name: 'mock-test', frequencyMode: 'serial' })
+session.on('frame', (frame) => console.log(frame.stats))
+```
+
+`attachCoreDevice()` 会把 `Uint8Array / Float32Array` 转成可存储的 Backend Frame；`backendFrameToCoreFrame()` 可以把回放帧恢复为现有 Heatmap 可直接渲染的 Core Frame。
+
+后端模块包括：
+
+| 能力 | 入口 |
+| --- | --- |
+| 串口 | `SerialManager` / `ShroomSensorSDK.connectSerial()` |
+| 采集 | `CaptureController` / `startCapture()` |
+| 存储 | `CaptureStore`（SQLite）/ `MemoryCaptureStore` |
+| 回放 | `ReplayService` / `ReplayPlayer` |
+| CSV | `CsvExporter` / `exportCsv()` |
+| 简单算法通道 | `AlgorithmChannel` / `registerAlgorithm()` |
+
+> `better-sqlite3` 是可选原生依赖。无需落盘时优先使用 `MemoryCaptureStore`。算法通道只允许同步、短耗时函数；Python、GPU 或大模型推理应放在独立进程。
+
+后端完整说明见开发者中心的 `/docs/backend`，也可以运行 `npm run backend:serial-demo -- --mock` 验证无硬件链路。
 
 ---
 
@@ -254,6 +338,7 @@ sdk/
 │  ├─ index.html        示例页面，代码已内联，单独拷到哪都能双击打开
 │  └─ shroom.bundle.js  单文件版（自动生成），给不想用模块的人直接 script 引
 ├─ node/          Node：serialport + 终端热力图 + 示例脚本
+├─ backend/       Node 本地后端：增强串口、采集、存储、回放、CSV、算法通道
 ├─ start.mjs      打开浏览器示例用的小服务器
 └─ index.d.ts     TypeScript 类型
 ```
