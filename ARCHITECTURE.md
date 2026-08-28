@@ -1,12 +1,12 @@
 # 架构文档
 
-> 本文档由 Codex 自动生成和维护。最后更新于：2026-08-26
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-08-28
 
 ## 1. 项目概述
 
-Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示站。页面按照“选择产品 → 使用 Shroom Skill 快速接入 → 获取统一 SDK → 下载分平台上位机与驱动 → 使用工具 → 阅读文档 → 申请试用”的路径组织内容，集中展示规格书、AI Skill、统一 SDK、网页测试、Mapping 配置、示例工程与 7 天试用入口。
+Shroom Developer 是一个面向传感器与硬件开发者的 SDK 产品页。页面围绕当前可下载的 `shroom-sdk@0.1.0` 组织内容，核心链路为“选择数据源 → 获得 Device → 订阅统一 Frame → 渲染热力图或进入业务逻辑”。首屏直接展示最短 Mock 代码和压力帧结果，随后提供 Mock、浏览器 Web Serial、Node / Electron 三条接入路径。
 
-当前版本为可交互的前端页面骨架：SDK 被定义为不按操作系统分包的统一开发能力，Windows、macOS、Linux 选择仅作用于 Shroom 上位机与驱动。产品与上位机平台切换、移动端导航、代码复制和试用表单状态均在浏览器本地完成；真实产品目录、下载文件、串口连接、文档地址和试用申请接口尚待业务系统接入。
+当前版本已经提供可交互的 Mock Grid、显示增益、运行环境代码切换、代码复制、SDK ZIP 下载、Frame 合同、兼容性与能力边界说明。环境无关的是 Core 与 Frame 数据合同；浏览器和 Node 分别使用 Web Serial 与 serialport 适配器。Mapping、安装式 Shroom Skill、AI 文档问答、产品 Profile、分平台上位机、采集回放和 CSV 被明确列为规划能力，不再作为已交付功能展示。
 
 ## 2. 技术栈
 
@@ -29,12 +29,23 @@ C:\sdk
 ├─ .openai/
 │  └─ hosting.json          # Sites 项目及逻辑资源绑定
 ├─ app/
-│  ├─ globals.css           # Tailwind 入口、全局基础样式与背景纹理
-│  ├─ layout.tsx            # 页面语言、字体与站点分享元数据
-│  └─ page.tsx              # 单页内容、数据模型与前端交互
+│  ├─ globals.css           # Tailwind 入口、语义视觉令牌、明暗模式与全局基础样式
+│  ├─ layout.tsx            # 页面语言、字体与 SDK 产品分享元数据
+│  ├─ page.tsx              # App Router 服务端页面入口
+│  └─ sdk-page.tsx          # SDK 产品内容与 Mock、代码切换、复制等客户端交互
+├─ sdk/
+│  ├─ core/                 # Frame 解码、切帧、Mock 与颜色映射
+│  ├─ web/                  # Web Serial、Canvas 热力图与浏览器示例
+│  ├─ node/                 # serialport 适配器、端口枚举与终端渲染
+│  ├─ index.d.ts            # 当前公共类型声明
+│  └─ README.md             # SDK 使用说明与排障
+├─ scripts/
+│  ├─ build-sdk-bundle.mjs  # 生成浏览器经典脚本 bundle
+│  └─ pack-sdk.mjs          # 将 sdk/ 打包为公开下载 ZIP
 ├─ public/
 │  ├─ favicon.svg           # 站点图标
-│  └─ og.png                # 1200×630 社交分享卡片
+│  ├─ og.png                # 1200×630 社交分享卡片
+│  └─ shroom-sdk.zip        # 构建时从 sdk/ 自动生成的下载包
 ├─ todo/
 │  └─ SDK_SKILL_TODO.md     # SDK、手套接入、Skill 与展示站的分阶段待办
 ├─ ARCHITECTURE.md          # 本架构说明
@@ -50,8 +61,10 @@ C:\sdk
 
 | 目录 | 主要功能 |
 | :--- | :--- |
-| `/app` | App Router 页面、根布局和站点级样式 |
-| `/public` | Favicon、Open Graph 分享图等静态资源 |
+| `/app` | App Router 页面、SDK 客户端交互、根布局和站点级样式 |
+| `/sdk` | 当前展示页与下载物的 SDK 事实源 |
+| `/scripts` | 构建浏览器 bundle 并生成下载 ZIP |
+| `/public` | Favicon、Open Graph 分享图和可下载 SDK 包 |
 | `/.openai` | OpenAI Sites 部署项目标识与逻辑资源声明 |
 | `/todo` | 记录 SDK 事实源、手套接入闭环、Shroom Skill 和展示站真实业务接入的待办与验收标准 |
 
@@ -61,14 +74,18 @@ C:\sdk
 
 ```mermaid
 flowchart TD
-    L[app/layout.tsx\n语言·字体·元数据] --> P[app/page.tsx\nSDK 展示单页]
-    G[app/globals.css\nTailwind·全局视觉] --> P
+    L[app/layout.tsx\n语言·字体·元数据] --> P[app/page.tsx\n服务端页面入口]
+    P --> C[app/sdk-page.tsx\nSDK 产品页客户端交互]
+    G[app/globals.css\nTailwind·语义令牌·明暗模式] --> C
     O[public/og.png\n社交分享卡片] --> L
-    P --> D[静态内容模型\n产品·Skill·统一 SDK·上位机·工具·文档]
-    P --> S[React 本地状态]
-    S --> PS[产品系列选择]
-    S --> OS[上位机操作系统选择]
-    S --> UI[移动导航·代码复制·表单结果]
+    C --> D[静态事实模型\n运行时·Frame·兼容·边界·Roadmap]
+    C --> S[React 本地状态]
+    S --> UI[移动导航·代码切换·复制反馈]
+    S --> M[Mock 帧序列·显示增益·统计值]
+    SDK[sdk/\nSDK 事实源] --> BB[scripts/build-sdk-bundle.mjs]
+    BB --> PK[scripts/pack-sdk.mjs]
+    PK --> ZIP[public/shroom-sdk.zip]
+    ZIP --> C
     V[vite.config.ts] --> B[Vinext / Sites 构建]
     H[.openai/hosting.json] --> B
     B --> C[Cloudflare Workers 兼容产物]
@@ -76,22 +93,25 @@ flowchart TD
 
 ### 4.2 主要数据流
 
-1. **产品资源定位**
-   - 用户选择产品系列。
-   - `activeProduct` 在本地更新，`useMemo` 得到当前产品信息。
-   - 页面展示对应的规格书、SDK、网页测试或 Mapping 资源入口。
-2. **Shroom Skill 推荐接入**
-   - 页面突出展示 Skill 所包含的设备协议、统一 SDK 接口、Mapping 规则和示例上下文。
-   - 用户按“安装 Skill → 描述设备与目标 → 生成并验证接入”的三步路径开始开发。
-3. **统一 SDK 与上位机资源**
-   - 统一 SDK 作为单一资源呈现，不再按 Windows、macOS、Linux 分包。
-   - `activePlatform` 仅驱动 Shroom 上位机的兼容环境、驱动资源和安装包名称更新。
-4. **手动接入与代码复制**
-   - 示例代码以静态内容呈现。
-   - 复制按钮通过 Clipboard API 写入剪贴板并显示短暂反馈。
-5. **试用申请演示**
-   - 浏览器原生校验必填项和邮箱格式。
-   - 提交后仅切换本地成功状态；当前不会向外部服务发送数据。
+1. **SDK 首次成功路径**
+   - 用户下载并解压 ZIP，运行 `node start.mjs`。
+   - 没有硬件时使用 `Shroom.mock()`，真实浏览器设备使用 Web Serial，Node / Electron 使用 serialport。
+   - 所有数据源最终进入 `Device.onFrame()` 并返回统一 Frame。
+2. **交互式 Mock 体验**
+   - `createPressureFrame()` 生成确定性的二维模拟压力值。
+   - 本地状态控制开始、暂停、逐帧和显示增益。
+   - `calculateStats()` 从当前帧计算 max、area 与 center，页面明确标识为 Mock Grid，不冒充真实设备遥测。
+3. **运行环境代码切换**
+   - `activeSample` 在 Mock、浏览器与 Node 示例之间切换。
+   - 浏览器示例保证 `connect()` 位于用户点击回调内，Node 示例包含串口依赖与资源关闭。
+   - Clipboard API 复制启动命令或当前代码，并提供短暂反馈。
+4. **SDK 下载与发布**
+   - `sdk/` 是页面能力说明和 ZIP 内容的事实源。
+   - `npm run build` 先生成经典浏览器 bundle，再由打包脚本刷新 `public/shroom-sdk.zip`。
+   - 页面公开版本、运行时、技术预览状态和授权条款待补充提示。
+5. **规划能力分流**
+   - Skill、AI 问答、Mapping、产品 Profile、上位机与采集工具统一进入 Roadmap。
+   - 尚未交付的入口不再使用可下载或已完成状态。
 
 ## 5. API 端点
 
@@ -104,13 +124,14 @@ flowchart TD
 | OpenAI Sites | 站点版本管理与托管 | `@openai/sites-vite-plugin` + `.openai/hosting.json` |
 | Cloudflare Workers | 托管运行时与本地模拟 | `@cloudflare/vite-plugin` |
 | Tailwind CSS | 响应式布局与组件样式 | PostCSS 插件 |
-| Clipboard API | 复制快速开始示例 | 浏览器端调用 |
+| Clipboard API | 复制启动命令与接入示例 | 浏览器端调用 |
+| MatchMedia API | 遵循系统减少动态效果偏好 | 浏览器端调用 |
 
-当前没有外部业务 API、数据库、用户认证或第三方连接器。
+当前没有外部业务 API、数据库、用户认证或第三方连接器。展示站不会直接连接真实串口；真实 Web Serial 通过下载包中的本地 Demo 运行。
 
 ## 7. 环境变量
 
-应用运行时不要求环境变量。`page.tsx` 中出现的 `SHROOM_KEY` 仅是页面展示的 SDK 示例代码，不会被站点读取。
+应用运行时不要求业务环境变量。页面中的串口路径、波特率和示例数据只用于说明 SDK 接入方式，不会被站点读取或上传。
 
 构建工具会使用以下非业务变量：
 
@@ -136,6 +157,12 @@ flowchart TD
 | 2026-08-25 | 生产站点发布 | 配置规范链接、生产基址与可解析为绝对地址的分享卡片元数据 |
 | 2026-08-25 | Skill 优先接入与资源重构 | 将 Shroom Skill 提升为推荐入口，并拆分统一 SDK 与分平台上位机下载 |
 | 2026-08-26 | SDK 与 Skill 实施清单 | 基于手套接入样例整理 SDK 契约、设备描述、Mapping、真实数据、Skill、展示站和发布工作的分阶段 TODO |
+| 2026-08-28 | SDK 事实源审计 | 以 `sdk/` 运行时代码、README、类型声明和可执行 Mock 为准核对已交付能力与边界 |
+| 2026-08-28 | SDK 产品页重构 | 将首页从综合说明文档改为代码优先、结果优先的 SDK 产品页，并保留既有深链锚点 |
+| 2026-08-28 | 交互式 Mock Grid | 加入开始、暂停、逐帧、显示增益和 Frame 统计，明确区分模拟值与真实遥测 |
+| 2026-08-28 | 多运行时快速开始 | 提供 Mock、Web Serial、Node / Electron 三套准确示例与复制反馈 |
+| 2026-08-28 | 兼容性与边界公开 | 明确 Browser / Node adapter 差异、版本、授权状态、物理单位限制与规划能力 |
+| 2026-08-28 | 语义视觉令牌 | 将核心蓝色品牌与中性色集中为语义 CSS 变量，并支持系统明暗模式与减少动态效果偏好 |
 
 ## 9. 更新日志
 
@@ -146,6 +173,8 @@ flowchart TD
 | 2026-08-25 | 配置变更 | 绑定 OpenAI Sites 项目并补充生产站点元数据基址 |
 | 2026-08-25 | 优化重构 | 强化 Shroom Skill 快速接入说明，明确 SDK 不区分平台、上位机按系统提供 |
 | 2026-08-26 | 文档更新 | 新增 SDK、手套接入与 Shroom Skill 分阶段 TODO，并补充对应目录说明 |
+| 2026-08-28 | 优化重构 | 重构 SDK 产品页信息架构、交互体验、元数据与视觉令牌，删除假实时和无效入口 |
+| 2026-08-28 | 文档更新 | 同步当前 SDK 事实源、模块关系、Mock 数据流、构建下载链路与 Roadmap 状态 |
 
 ---
 

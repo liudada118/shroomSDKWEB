@@ -1,8 +1,48 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #101828;
+  color-scheme: light dark;
+  --page: #f7f9fc;
+  --surface: #ffffff;
+  --surface-muted: #f0f4f9;
+  --header: rgb(255 255 255 / 0.9);
+  --text: #24324a;
+  --text-strong: #101828;
+  --text-muted: #52627a;
+  --text-subtle: #667085;
+  --line: #d8e0eb;
+  --accent: #2563eb;
+  --accent-strong: #175cd3;
+  --accent-soft: #edf4ff;
+  --accent-border: #b9ceff;
+  --focus: #84adff;
+  --warning-soft: #fff7e8;
+  --warning-border: #fed7aa;
+  --warning-text: #854d0e;
+  --background: var(--page);
+  --foreground: var(--text);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0b1120;
+    --surface: #111a2b;
+    --surface-muted: #172237;
+    --header: rgb(11 17 32 / 0.9);
+    --text: #dbe5f3;
+    --text-strong: #f8fafc;
+    --text-muted: #b2bfd0;
+    --text-subtle: #93a4ba;
+    --line: #2a3a54;
+    --accent: #60a5fa;
+    --accent-strong: #93c5fd;
+    --accent-soft: #12213a;
+    --accent-border: #274b7a;
+    --focus: #60a5fa;
+    --warning-soft: #2b2116;
+    --warning-border: #6b4a22;
+    --warning-text: #f5c98a;
+  }
 }
 
 @theme inline {
@@ -18,12 +58,13 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 80px;
 }
 
 body {
   margin: 0;
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--page);
+  color: var(--text);
   font-family: var(--font-geist-sans), "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
   text-rendering: optimizeLegibility;
 }
@@ -39,6 +80,32 @@ a {
   touch-action: manipulation;
 }
 
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.skip-link {
+  position: fixed;
+  top: -5rem;
+  left: 1rem;
+  z-index: 60;
+  border-radius: 0.75rem;
+  background: var(--accent);
+  color: #ffffff;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
 ::selection {
   background: #bfdbfe;
   color: #102a56;
@@ -46,37 +113,24 @@ a {
 
 .hero-grid {
   background-image:
-    linear-gradient(to right, rgba(37, 99, 235, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(37, 99, 235, 0.045) 1px, transparent 1px);
+    linear-gradient(to right, rgb(37 99 235 / 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(37 99 235 / 0.055) 1px, transparent 1px);
   background-size: 56px 56px;
-  mask-image: linear-gradient(to bottom, black 0%, transparent 82%);
+  mask-image: linear-gradient(to bottom, black 0%, transparent 88%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 88%);
 }
 
-.download-grid {
-  background-image:
-    linear-gradient(to right, rgba(37, 99, 235, 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(37, 99, 235, 0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: linear-gradient(to left, black, transparent);
-}
+@media (prefers-color-scheme: dark) {
+  ::selection {
+    background: #1d4ed8;
+    color: #eff6ff;
+  }
 
-.lab-grid {
-  background-image:
-    radial-gradient(circle at 75% 30%, rgba(255, 255, 255, 0.38), transparent 30%),
-    linear-gradient(to right, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.14) 1px, transparent 1px);
-  background-size: auto, 44px 44px, 44px 44px;
-  mask-image: linear-gradient(to left, black, transparent 80%);
-}
-
-.skill-grid {
-  background-image:
-    radial-gradient(circle at 18% 18%, rgba(37, 99, 235, 0.32), transparent 30%),
-    radial-gradient(circle at 82% 72%, rgba(29, 78, 216, 0.2), transparent 34%),
-    linear-gradient(to right, rgba(148, 163, 184, 0.07) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
-  background-size: auto, auto, 42px 42px, 42px 42px;
-  mask-image: linear-gradient(to bottom, black, rgba(0, 0, 0, 0.45));
+  .hero-grid {
+    background-image:
+      linear-gradient(to right, rgb(96 165 250 / 0.09) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(96 165 250 / 0.09) 1px, transparent 1px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
