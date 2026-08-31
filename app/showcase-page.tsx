@@ -14,6 +14,7 @@ const navItems = [
   { label: '快速开始', href: '#quick-start' },
   { label: '开发工具', href: '#tools' },
   { label: '文档中心', href: '/docs' },
+  { label: 'AI 问答', href: '/knowledge' },
 ];
 
 const productFamilies = [
@@ -152,6 +153,14 @@ const workflow = [
 ];
 
 const tools = [
+  {
+    label: 'AI Q&A',
+    title: 'SDK 知识库问答',
+    description: '由智谱检索当前 SDK 与 Backend 文档，流式回答开发问题，并展示命中文档来源。',
+    action: '开始提问',
+    accent: 'bg-[#eef4ff] text-[#175cd3]',
+    href: '/knowledge',
+  },
   {
     label: 'NODE BACKEND',
     title: '后端与串口',
@@ -830,7 +839,7 @@ export default function Home() {
           <div className="max-w-2xl">
             <p className="text-sm font-semibold text-[#2563eb]">开发者工具箱</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">先体验当前能力，再查看工具路线图。</h2>
-            <p className="mt-5 leading-7 text-[#667085]">Mock 数据体验现在可用；Mapping、Skill 与工程验证工具会在事实源、测试和下载入口就绪后开放。</p>
+            <p className="mt-5 leading-7 text-[#667085]">Mock 数据体验与 SDK 知识库问答现在可用；Mapping、Skill 与工程验证工具会在事实源、测试和下载入口就绪后开放。</p>
           </div>
           <div className="mt-12 grid gap-5 md:grid-cols-2">
             {tools.map((tool) => (
@@ -945,6 +954,7 @@ export default function Home() {
             <a href="#capabilities" className="hover:text-[#175cd3]">产品能力</a>
             <a href="#downloads" className="hover:text-[#175cd3]">SDK 与上位机</a>
             <Link href="/docs" className="hover:text-[#175cd3]">文档中心</Link>
+            <Link href="/knowledge" className="hover:text-[#175cd3]">AI 问答</Link>
             <Link href="/docs#tools" className="hover:text-[#175cd3]">技术支持</Link>
           </div>
           <p className="text-[11px] text-[#667085]">© 2026 Shroom. All rights reserved.</p>

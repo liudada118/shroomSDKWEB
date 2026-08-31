@@ -1,54 +1,30 @@
 @import 'tailwindcss';
 
 :root {
-  color-scheme: light dark;
-  --page: #f7f9fc;
+  color-scheme: light;
+  --page: #ffffff;
   --surface: #ffffff;
-  --surface-muted: #f0f4f9;
+  --surface-muted: #f8fafc;
   --header: rgb(255 255 255 / 0.9);
-  --text: #24324a;
+  --text: #344054;
   --text-strong: #101828;
-  --text-muted: #52627a;
+  --text-muted: #667085;
   --text-subtle: #667085;
-  --line: #d8e0eb;
+  --line: #eaecf0;
   --accent: #2563eb;
   --accent-strong: #175cd3;
   --accent-fill: #2563eb;
   --accent-fill-hover: #175cd3;
   --on-accent: #ffffff;
   --accent-soft: #edf4ff;
-  --accent-border: #b9ceff;
+  --accent-border: #b2ccff;
   --focus: #84adff;
   --warning-soft: #fff7e8;
   --warning-border: #fed7aa;
   --warning-text: #854d0e;
+  --success-text: #067647;
   --background: var(--page);
   --foreground: var(--text);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --page: #0b1120;
-    --surface: #111a2b;
-    --surface-muted: #172237;
-    --header: rgb(11 17 32 / 0.9);
-    --text: #dbe5f3;
-    --text-strong: #f8fafc;
-    --text-muted: #b2bfd0;
-    --text-subtle: #93a4ba;
-    --line: #2a3a54;
-    --accent: #60a5fa;
-    --accent-strong: #93c5fd;
-    --accent-fill: #2563eb;
-    --accent-fill-hover: #1d4ed8;
-    --on-accent: #ffffff;
-    --accent-soft: #12213a;
-    --accent-border: #274b7a;
-    --focus: #60a5fa;
-    --warning-soft: #2b2116;
-    --warning-border: #6b4a22;
-    --warning-text: #f5c98a;
-  }
 }
 
 @theme inline {
@@ -94,6 +70,11 @@ button {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+/* 文档锚点接收程序化焦点以便读屏定位，但不应给整段内容画出巨大的交互控件边框。 */
+[tabindex="-1"]:focus-visible {
+  outline: none;
 }
 
 .skip-link {
@@ -151,14 +132,6 @@ button {
     linear-gradient(to bottom, rgb(148 163 184 / 0.07) 1px, transparent 1px);
   background-size: auto, auto, 42px 42px, 42px 42px;
   mask-image: linear-gradient(to bottom, black, rgb(0 0 0 / 0.45));
-}
-
-@media (prefers-color-scheme: dark) {
-  ::selection {
-    background: #1d4ed8;
-    color: #eff6ff;
-  }
-
 }
 
 @media (prefers-reduced-motion: reduce) {

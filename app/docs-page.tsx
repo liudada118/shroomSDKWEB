@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
 import Link from 'next/link';
 import CodeSamples from './components/code-samples';
-import DocsHeader from './components/docs-header';
-import DocsNavigation from './components/docs-navigation';
+import DocCodeBlock from './components/doc-code-block';
+import { DocsInlineCode as InlineCode, DocsPageIntro, DocsSectionHeading as SectionHeading } from './components/docs-content';
+import DocsPageShell from './components/docs-page-shell';
 import MockDemo from './components/mock-demo';
 import { SDK_DOWNLOAD, SDK_VERSION } from './docs-data';
 
@@ -110,30 +110,6 @@ const troubleshooting = [
   ['系统看不到 USB 串口', '部分 Windows 设备需 CH341SER 驱动，Linux 还需正确的串口组权限。'],
 ] as const;
 
-function InlineCode({ children }: { children: ReactNode }) {
-  return <code className="rounded bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[0.86em] text-[var(--accent-strong)]">{children}</code>;
-}
-
-function SectionHeading({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="max-w-3xl">
-      <h2 className="text-2xl font-semibold tracking-[-0.035em] text-[var(--text-strong)] sm:text-[2rem]">{title}</h2>
-      <div className="mt-4 text-[15px] leading-7 text-[var(--text-muted)]">{children}</div>
-    </div>
-  );
-}
-
-function CodeBlock({ label, children }: { label: string; children: string }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-[#24344e] bg-[#09111f]">
-      <div className="border-b border-white/10 px-5 py-3 font-mono text-[11px] text-[#8fa2bb]">{label}</div>
-      <div className="overflow-x-auto p-5 sm:p-6">
-        <pre className="min-w-[560px] font-mono text-[13px] leading-7 text-[#d7e2f0]"><code>{children}</code></pre>
-      </div>
-    </div>
-  );
-}
-
 function MethodTable({ title, methods }: {
   title: string;
   methods: ReadonlyArray<readonly [string, string, string]>;
@@ -156,33 +132,21 @@ function MethodTable({ title, methods }: {
   );
 }
 
-function DocsSidebar() {
-  return (
-    <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] overflow-y-auto border-r border-[var(--line)] bg-[var(--surface)] px-4 py-8 lg:block">
-      <DocsNavigation />
-    </aside>
-  );
-}
-
 export default function DocsPage() {
   return (
-    <main className="min-h-[100dvh] bg-[var(--page)] text-[var(--text)]">
-      <a className="skip-link" href="#top">跳到主要内容</a>
-      <DocsHeader />
-
-      <div className="mx-auto grid max-w-[1500px] pt-16 lg:grid-cols-[248px_minmax(0,1fr)] 2xl:grid-cols-[248px_minmax(0,1fr)_220px]">
-        <DocsSidebar />
-
-        <article className="min-w-0 px-5 py-10 sm:px-8 sm:py-14 lg:px-10 xl:px-14">
-          <div className="mx-auto max-w-4xl">
-            <section id="top" tabIndex={-1} className="scroll-mt-24">
-              <p className="text-sm text-[var(--text-muted)]">SDK 文档 / 概览</p>
-              <h1 className="mt-4 max-w-3xl text-[clamp(2.35rem,5vw,3.75rem)] font-semibold leading-[1.06] tracking-[-0.055em] text-[var(--text-strong)]">
-                Shroom Sensor SDK
-              </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-[var(--text-muted)]">
-                从串口字节流获得统一 Core Frame，再按需进入本地采集、存储、回放和导出链路。浏览器、Node/Electron 和 Mock 的连接适配器按运行环境选择。
-              </p>
+    <DocsPageShell
+      page="sdk"
+      skipTarget="#top"
+      footerTitle="Shroom SDK 文档"
+      footerDescription="当前事实源为本仓库 sdk/，页面内容以可执行代码与类型声明为准。"
+      tocStatus="技术预览"
+    >
+      <section id="top" tabIndex={-1} className="scroll-mt-24">
+        <DocsPageIntro
+          breadcrumb={[{ label: 'SDK 文档' }, { label: '概览' }]}
+          title="Shroom Sensor SDK"
+          description="从串口字节流获得统一 Core Frame，再按需进入本地采集、存储、回放和导出链路。浏览器、Node/Electron 和 Mock 的连接适配器按运行环境选择。"
+        >
 
               <dl className="mt-8 grid gap-x-8 gap-y-5 border-y border-[var(--line)] py-6 sm:grid-cols-2 lg:grid-cols-4">
                 <div><dt className="text-xs text-[var(--text-subtle)]">当前版本</dt><dd className="mt-1 font-mono text-sm font-semibold text-[var(--text-strong)]">{SDK_VERSION}</dd></div>
@@ -195,15 +159,16 @@ export default function DocsPage() {
                 <strong>数据边界：</strong>默认 <InlineCode>fullScale=255</InlineCode> 时，<InlineCode>values</InlineCode> 通常是 0 到 1 的相对 ADC 值，不代表 kPa、N 等物理单位。自定义满量程时当前实现不会截断，物理量仍需设备标定与换算。
               </div>
 
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a href="#quick-start" className="inline-flex min-h-11 items-center rounded-lg bg-[var(--accent-fill)] px-4 text-sm font-semibold text-[var(--on-accent)] transition hover:bg-[var(--accent-fill-hover)]">开始接入</a>
-                <a href={SDK_DOWNLOAD} download className="inline-flex min-h-11 items-center rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--text-strong)] transition hover:border-[var(--focus)] hover:text-[var(--accent-strong)]">下载 ZIP</a>
-                <a href="#frame" className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-[var(--accent-strong)] hover:underline">查看 Frame 合同</a>
-              </div>
-            </section>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <a href="#quick-start" className="inline-flex min-h-11 items-center rounded-lg bg-[var(--accent-fill)] px-4 text-sm font-semibold text-[var(--on-accent)] transition hover:bg-[var(--accent-fill-hover)]">开始接入</a>
+            <a href={SDK_DOWNLOAD} download className="inline-flex min-h-11 items-center rounded-lg border border-[var(--line)] bg-[var(--surface)] px-4 text-sm font-semibold text-[var(--text-strong)] transition hover:border-[var(--focus)] hover:text-[var(--accent-strong)]">下载 ZIP</a>
+            <a href="#frame" className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-[var(--accent-strong)] hover:underline">查看 Frame 合同</a>
+          </div>
+        </DocsPageIntro>
+      </section>
 
             <section id="products" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="先选择接入方式">
+              <SectionHeading eyebrow="01 · Entry" title="先选择接入方式">
                 同一套业务代码从 <InlineCode>device.onFrame()</InlineCode> 获取数据。不同入口只负责如何产生 Device。
               </SectionHeading>
 
@@ -228,7 +193,7 @@ export default function DocsPage() {
             </section>
 
             <section id="quick-start" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="快速开始">
+              <SectionHeading eyebrow="02 · Quick start" title="快速开始">
                 下载包不是已发布的 npm 包。解压后先启动本地示例，再按运行环境选择代码。
               </SectionHeading>
 
@@ -246,7 +211,7 @@ export default function DocsPage() {
             </section>
 
             <section id="capabilities" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="当前 SDK 已提供">
+              <SectionHeading eyebrow="03 · Capabilities" title="当前 SDK 已提供">
                 以下能力都存在于当前下载 ZIP。路线图能力不会混在本节中。
               </SectionHeading>
 
@@ -265,19 +230,19 @@ export default function DocsPage() {
             </section>
 
             <section id="web-lab" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="先用 Mock 验证数据流">
+              <SectionHeading eyebrow="04 · Mock lab" title="先用 Mock 验证数据流">
                 下方只演示 Frame 的矩阵、统计值与显示增益。它不会请求串口，也不会把静态数字标成真实遥测。
               </SectionHeading>
               <MockDemo />
             </section>
 
             <section id="frame" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="一个 Frame 贯穿所有接入方式">
+              <SectionHeading eyebrow="05 · Frame" title="一个 Frame 贯穿所有接入方式">
                 无论数据来自 Web Serial、Node 串口还是 Mock，业务层都围绕下面的数据结构工作。
               </SectionHeading>
 
               <div className="mt-8 grid gap-7 xl:grid-cols-[0.92fr_1.08fr]">
-                <CodeBlock label="Frame">{frameCode}</CodeBlock>
+                <DocCodeBlock label="Frame interface" code={frameCode} />
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[520px] text-left text-sm">
                     <thead><tr className="text-xs text-[var(--text-subtle)]"><th className="pb-3 pr-4 font-semibold">字段</th><th className="pb-3 pr-4 font-semibold">类型</th><th className="pb-3 font-semibold">含义</th></tr></thead>
@@ -300,7 +265,7 @@ export default function DocsPage() {
             </section>
 
             <section id="downloads" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="运行环境、兼容性与下载">
+              <SectionHeading eyebrow="06 · Compatibility" title="运行环境、兼容性与下载">
                 Core、Frame 和 Mock 不绑定操作系统；真正访问串口时，仍需满足对应运行环境的能力、驱动和权限要求。
               </SectionHeading>
 
@@ -352,7 +317,7 @@ export default function DocsPage() {
             </section>
 
             <section id="docs" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="API 参考">
+              <SectionHeading eyebrow="07 · API" title="API 参考">
                 当前统一的是 Frame 与 Device 订阅模型。Web 和 Node facade 的连接参数、工具方法与诊断字段并不完全相同。
               </SectionHeading>
 
@@ -398,7 +363,7 @@ export default function DocsPage() {
             </section>
 
             <section id="tools" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="已知限制与故障排查">
+              <SectionHeading eyebrow="08 · Troubleshooting" title="已知限制与故障排查">
                 文档先说明当前做不到什么，再给出第一次接入最常见的检查路径。
               </SectionHeading>
 
@@ -428,7 +393,7 @@ export default function DocsPage() {
             </section>
 
             <section id="skill" tabIndex={-1} className="mt-16 scroll-mt-24 border-t border-[var(--line)] pt-14 sm:mt-20">
-              <SectionHeading title="AI 辅助接入与 Shroom Skill">
+              <SectionHeading eyebrow="09 · AI & Skill" title="AI 辅助接入与 Shroom Skill">
                 现在可以把真实 SDK 资料交给 Codex。安装式 Skill 与版本化 AI 问答仍在规划中。
               </SectionHeading>
 
@@ -463,24 +428,6 @@ export default function DocsPage() {
               </div>
             </section>
 
-            <footer className="mt-20 border-t border-[var(--line)] py-10 text-sm text-[var(--text-muted)]">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <p>Shroom SDK 文档 · 当前事实源为本仓库 <InlineCode>sdk/</InlineCode></p>
-                <div className="flex flex-wrap gap-5"><Link href="/" className="hover:text-[var(--accent-strong)]">返回展示首页</Link><a href="#top" className="hover:text-[var(--accent-strong)]">返回顶部</a><a href={SDK_DOWNLOAD} download className="font-semibold text-[var(--accent-strong)]">下载 SDK</a></div>
-              </div>
-            </footer>
-          </div>
-        </article>
-
-        <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] overflow-y-auto border-l border-[var(--line)] px-6 py-9 2xl:block">
-          <p className="text-xs font-semibold text-[var(--text-strong)]">本页内容</p>
-          <div className="mt-4"><DocsNavigation compact /></div>
-          <div className="mt-8 border-t border-[var(--line)] pt-5 text-xs leading-5 text-[var(--text-subtle)]">
-            <p>版本 {SDK_VERSION}</p>
-            <p className="mt-1">技术预览</p>
-          </div>
-        </aside>
-      </div>
-    </main>
+    </DocsPageShell>
   );
 }
