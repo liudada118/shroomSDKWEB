@@ -11,7 +11,7 @@ const navItems = [
   { label: '产品能力', href: '#capabilities' },
   { label: 'SDK Skill', href: '#skill' },
   { label: '资源下载', href: '#downloads' },
-  { label: '快速开始', href: '#quick-start' },
+  { label: 'Skill 快速开始', href: '#quick-start' },
   { label: '开发工具', href: '#tools' },
   { label: '文档中心', href: '/docs' },
   { label: 'AI 问答', href: '/knowledge' },
@@ -114,42 +114,53 @@ const upperComputerPlatforms = [
 const skillSteps = [
   {
     number: '01',
-    title: '安装 Shroom Skill（规划）',
-    description: '把设备协议、SDK API、Mapping 规则与示例工程交给你的 AI 编程助手。',
+    title: '准备 Skill 事实源',
+    description: '维护设备描述、Profile、协议、Mapping、真实 Fixture 与 SDK 示例，避免 AI 猜参数。',
   },
   {
     number: '02',
-    title: '描述设备与目标',
-    description: '说明产品型号、数据用途和技术栈，不需要从零翻阅全部接口文档。',
+    title: '用户只说四项信息',
+    description: '提供产品型号、运行环境、连接入口和目标功能，其余参数由 Skill 从事实源匹配。',
   },
   {
     number: '03',
-    title: '生成并验证接入',
-    description: '由 AI 生成连接、读取和展示代码，再配合网页测试台完成验证。',
+    title: '先验证，再连接真机',
+    description: '先用 Mock 或真实 Fixture 验证解析与 Mapping，再生成连接、展示、采集和排错步骤。',
   },
 ];
 
-const workflow = [
+const gloveSkillInputs = [
   {
     number: '01',
-    title: '下载并解压 SDK',
-    description: '一个压缩包，包含浏览器和 Node 两套入口、示例页面与类型定义，无需选择操作系统版本。',
+    title: '产品型号',
+    description: '说明手套型号；已知时补充硬件与固件版本。Profile、协议和波特率应由 Skill 匹配。',
+    example: 'hand0205',
   },
   {
     number: '02',
-    title: '先用模拟数据跑通',
-    description: '没有硬件也能开始：Mock 与真实设备共享 info、onFrame 和 close 等核心 Device 模型。',
+    title: '运行环境',
+    description: '告诉 Skill 操作系统、运行时与技术栈，以便选择本地串口或上位机后端路径。',
+    example: 'Windows 11 · Node.js',
   },
   {
     number: '03',
-    title: '连接设备',
-    description: '浏览器选择 Web Serial 入口，Node 选择 serialport 入口，并分别填写连接参数。',
+    title: '连接入口',
+    description: '提供左右手串口，或正在运行的上位机地址；端口未知时可以要求 Skill 先扫描。',
+    example: '左手 COM3',
   },
   {
     number: '04',
-    title: '订阅数据并渲染',
-    description: 'onFrame 拿到统一的数据帧，交给内置热力图，或接入你自己的可视化与业务逻辑。',
+    title: '目标功能',
+    description: '描述最终要看到或交付的结果，例如实时压力、姿态、手套热力图、采集或 CSV。',
+    example: '热力图 · CSV',
   },
+];
+
+const gloveSkillFacts = [
+  ['设备描述与 Profile', '型号、固件、点数、左右手模式与默认连接参数'],
+  ['协议与 Frame 契约', '包长、组帧、压力数据、姿态四元数与错误码'],
+  ['左右手 Mapping', '通道到手掌、手指和显示坐标的经过验证映射'],
+  ['Fixture、示例与排障', '真实脱敏帧、Mock、公开 SDK 示例和有限重试规则'],
 ];
 
 const tools = [
@@ -204,7 +215,7 @@ const tools = [
 ];
 
 const resources = [
-  { type: 'GUIDE', title: '5 分钟快速开始', description: '完成安装、连接设备并读取第一帧数据。', href: '/docs#quick-start' },
+  { type: 'SKILL GUIDE', title: '手套 Skill 快速开始', description: '准备型号、环境、连接入口与目标，让 AI 按事实源生成接入。', href: '#quick-start' },
   { type: 'REFERENCE', title: 'SDK API 参考', description: '按环境查阅 Device、Frame 与热力图接口。', href: '/docs#docs' },
   { type: 'EXAMPLE', title: '示例项目', description: '从最小 Demo 到完整可视化应用的参考实现。', href: '/docs#quick-start' },
 ];
@@ -219,31 +230,24 @@ document.querySelector('#connect')?.addEventListener('click', async () => {
   device.onFrame((frame) => heatmap.render(frame))
 })`;
 
-const skillCode = `const heatmap = Shroom.createHeatmap('#view')
-
-document.querySelector('#connect')?.addEventListener('click', async () => {
-  const device = await Shroom.connect({ baudRate: 1_000_000 })
-  device.onFrame((frame) => heatmap.render(frame))
+const skillCode = `const session = await sdk.connectGlove({
+  profileId: 'hand0205',
+  leftPort: 'COM3',
+  onFrame: (frame) => render(frame.matrixData),
 })`;
 
-const quickStartCode = `import { Shroom } from './web/index.js'
+const gloveSkillPrompt = `请按 Shroom Skill 工作流接入一只触觉手套。
 
-const heatmap = Shroom.createHeatmap('#view')
-let device
+产品型号：hand0205
+运行环境：Windows 11 + Node.js
+连接入口：左手 COM3
+目标功能：读取压力与姿态、渲染手套热力图，并支持 CSV 导出
 
-// 1. 浏览器要求由用户点击请求串口
-document.querySelector('#connect')?.addEventListener('click', async () => {
-  // 2. 连接设备
-  device = await Shroom.connect({ baudRate: 1_000_000 })
-
-  // 3. 持续订阅 Frame
-  device.onFrame((frame) => heatmap.render(frame))
-})
-
-// 4. 仅在用户主动断开时关闭
-document.querySelector('#disconnect')?.addEventListener('click', async () => {
-  await device?.close()
-})`;
+执行要求：
+1. 从设备描述匹配 Profile、波特率和协议
+2. 加载左手 Mapping，先用 Fixture / Mock 验证
+3. 只使用当前 SDK 的公开 API
+4. 给出运行命令、成功结果和排错步骤`;
 
 // 页面上所有代码块都由这里染色，示例只写一份，不会出现几处 API 对不上的情况
 const CODE_TOKEN = /(\/\/[^\n]*)|('[^']*')|\b(import|from|const)\b|\b(await)\b|\b([A-Za-z_$][\w$]*)(?=\()/g;
@@ -274,6 +278,7 @@ export default function Home() {
   const [productQuery, setProductQuery] = useState('');
   const [activePlatform, setActivePlatform] = useState('windows');
   const [copied, setCopied] = useState(false);
+  const [skillPromptCopied, setSkillPromptCopied] = useState(false);
   // 试用密钥表单暂时下线，SDK 点击即可下载
   // const [submitted, setSubmitted] = useState(false);
 
@@ -306,6 +311,12 @@ export default function Home() {
     await navigator.clipboard?.writeText(heroCode);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  async function copySkillPrompt() {
+    await navigator.clipboard?.writeText(gloveSkillPrompt);
+    setSkillPromptCopied(true);
+    window.setTimeout(() => setSkillPromptCopied(false), 1600);
   }
 
   // function submitTrial(event: FormEvent<HTMLFormElement>) {
@@ -404,7 +415,7 @@ export default function Home() {
                 href="#quick-start"
                 className="inline-flex items-center justify-center rounded-xl bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(37,99,235,0.25)] transition hover:-translate-y-0.5 hover:bg-[#175cd3]"
               >
-                查看快速开始 <span aria-hidden="true" className="ml-2">→</span>
+                查看 Skill 快速开始 <span aria-hidden="true" className="ml-2">→</span>
               </a>
               <a
                 href={SDK_DOWNLOAD}
@@ -621,14 +632,14 @@ export default function Home() {
                 </div>
                 <div className="space-y-4 p-5 sm:p-6">
                   <div className="ml-8 rounded-xl rounded-tr-sm bg-[#172033] p-4 text-xs leading-6 text-[#cbd5e1]">
-                    我在做矩阵压力传感器展示页，请帮我连接设备、加载 Mapping，并实时读取压力数据。
+                    我在接入 hand0205 触觉手套，Windows + Node.js，左手连接 COM3。请读取压力与姿态并渲染手套热力图。
                   </div>
                   <div className="mr-4 rounded-xl rounded-tl-sm border border-[#1d4ed8]/30 bg-[#0d1e3d] p-4">
-                    <p className="text-xs font-semibold text-[#bfdbfe]">目标体验：加载 Shroom SDK 上下文</p>
+                    <p className="text-xs font-semibold text-[#bfdbfe]">目标体验：加载手套接入事实源</p>
                     <div className="mt-3 grid gap-2.5 text-[11px] text-[#a7b4c8]">
-                      <span>匹配矩阵产品协议与数据字段</span>
-                      <span>选择统一 SDK 连接与订阅接口</span>
-                      <span>生成设备接入与热图示例</span>
+                      <span>匹配 hand0205 Profile、921600 波特率与组帧协议</span>
+                      <span>加载左手 Mapping、压力字段与姿态四元数语义</span>
+                      <span>生成连接、Fixture 验证、热力图与 CSV 路径</span>
                     </div>
                     <pre className="mt-4 overflow-x-auto rounded-lg border border-white/5 bg-[#050912] p-3 font-mono text-[10px] leading-5 text-[#94a3b8]">
                       <code>{highlight(skillCode)}</code>
@@ -757,21 +768,28 @@ export default function Home() {
 
       <section id="quick-start" className="scroll-mt-24 bg-[#0b1220] py-24 text-white sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold text-[#84adff]">手动接入路径</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">需要完全控制？也可以按文档四步接入。</h2>
-            <p className="mt-5 leading-7 text-[#a7b4c8]">当前可用的主接入路径是下载 SDK，再按运行环境选择 Web 或 Node 示例；Core 与 Frame 数据合同保持一致。</p>
-            <Link href="/docs#quick-start" className="mt-5 inline-flex text-sm font-semibold text-[#84adff] hover:underline">打开完整快速开始 →</Link>
+          <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div className="max-w-3xl">
+              <p className="text-sm font-semibold text-[#84adff]">Skill 优先 · 触觉手套示例</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">给出 4 项信息，让 Skill 完成手套接入。</h2>
+              <p className="mt-5 max-w-2xl leading-7 text-[#a7b4c8]">用户只需说明产品型号、运行环境、连接入口和目标功能。Skill 负责从受控事实源匹配 Profile、协议、Mapping 与 SDK 示例，并先验证再连接真机。</p>
+            </div>
+            <div className="rounded-xl border border-[#2e90fa]/35 bg-[#102a56] px-4 py-3 text-xs leading-5 text-[#bfdbfe] lg:max-w-[310px]">
+              <span className="font-semibold text-white">当前状态：</span>安装式 Shroom Skill 尚在规划；现在可以复制同一模板连同 SDK 文档交给 Codex。
+            </div>
           </div>
 
           <div className="mt-12 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <ol className="grid gap-3">
-              {workflow.map((step, index) => (
+              {gloveSkillInputs.map((step, index) => (
                 <li key={step.number} className={`rounded-xl border p-5 ${index === 0 ? 'border-[#2e90fa] bg-[#102a56]' : 'border-white/10 bg-white/[0.03]'}`}>
                   <div className="flex gap-4">
                     <span className={`font-mono text-xs font-bold ${index === 0 ? 'text-[#84adff]' : 'text-[#94a3b8]'}`}>{step.number}</span>
-                    <div>
-                      <h3 className="text-sm font-semibold">{step.title}</h3>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-sm font-semibold">{step.title}</h3>
+                        <span className="rounded-md border border-white/10 bg-white/[0.05] px-2 py-1 font-mono text-[10px] text-[#bfdbfe]">{step.example}</span>
+                      </div>
                       <p className="mt-1.5 text-xs leading-6 text-[#a7b4c8]">{step.description}</p>
                     </div>
                   </div>
@@ -781,15 +799,44 @@ export default function Home() {
 
             <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#070c14] shadow-2xl">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <div className="flex items-center gap-2 text-xs font-medium text-[#a7b4c8]"><span className="h-2 w-2 rounded-full bg-[#12b76a]" /> browser-demo.js</div>
-                <span className="font-mono text-[10px] text-[#94a3b8]">JavaScript</span>
+                <div className="flex items-center gap-2 text-xs font-medium text-[#a7b4c8]"><span className="h-2 w-2 rounded-full bg-[#12b76a]" /> glove-skill-request.md</div>
+                <button
+                  type="button"
+                  onClick={copySkillPrompt}
+                  aria-live="polite"
+                  className="min-h-11 rounded-lg border border-white/10 px-3 font-mono text-[10px] text-[#cbd5e1] transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#84adff]"
+                >
+                  {skillPromptCopied ? '已复制' : '复制模板'}
+                </button>
               </div>
               <pre className="overflow-x-auto p-6 font-mono text-[12px] leading-7 text-[#cbd5e1] sm:p-8 sm:text-[13px]">
-                <code>{highlight(quickStartCode)}</code>
+                <code>{gloveSkillPrompt}</code>
               </pre>
               <div className="border-t border-white/10 bg-[#0d1524] px-6 py-4 font-mono text-[11px] text-[#86efac] sm:px-8">
-                预期结果 · 连接后持续收到统一 Frame
+                预期结果 · 可运行代码 + Fixture 验证 + 真机检查清单
               </div>
+            </div>
+          </div>
+
+          <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="font-mono text-[10px] font-semibold tracking-[0.15em] text-[#84adff]">SKILL FACT SOURCES</p>
+                <h3 className="mt-2 text-xl font-semibold">一个可靠的手套 Skill，内部需要这些资料。</h3>
+              </div>
+              <Link href="/docs#skill" className="text-sm font-semibold text-[#84adff] hover:underline">查看 Skill 规划 →</Link>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {gloveSkillFacts.map(([title, description]) => (
+                <article key={title} className="rounded-xl border border-white/10 bg-[#070c14] p-4">
+                  <h4 className="text-sm font-semibold text-white">{title}</h4>
+                  <p className="mt-2 text-xs leading-6 text-[#8fa0b8]">{description}</p>
+                </article>
+              ))}
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <a href={SDK_DOWNLOAD} download className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[#2563eb] px-5 text-sm font-semibold text-white transition hover:bg-[#175cd3] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#84adff]">下载当前 SDK</a>
+              <Link href="/docs#quick-start" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/15 px-5 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#84adff]">查看手动接入备用路径</Link>
             </div>
           </div>
         </div>
