@@ -1,9 +1,16 @@
 'use client';
 
-import { ReactNode, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 
 // SDK 压缩包由 scripts/pack-sdk.mjs 从 sdk/ 目录打包生成，构建时自动更新
 const SDK_DOWNLOAD = '/shroom-sdk.zip';
+
+// 下载前留个联系方式，POST 到密钥系统的「SDK 获取」模块。
+// 抽成环境变量是为了本地联调时能指到本地那套（NEXT_PUBLIC_SDK_REGISTRY_URL=http://localhost:3000/sdk-requests）
+const SDK_REGISTRY_URL =
+  process.env.NEXT_PUBLIC_SDK_REGISTRY_URL ?? 'https://shroom.jq-industries.com/sdk-requests';
+// 留过一次就别再拦人家了，之后点按钮直接下载
+const REGISTERED_KEY = 'shroom-sdk-registered';
 
 const navItems = [
   { label: '选择产品', href: '#products' },
@@ -247,6 +254,9 @@ export default function Home() {
   const [activeProduct, setActiveProduct] = useState('matrix');
   const [activePlatform, setActivePlatform] = useState('windows');
   const [copied, setCopied] = useState(false);
+  // 「获取 SDK」前的登记弹窗。注意这不是审批：填完当场就下载
+  const [gateOpen, setGateOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   // 试用密钥表单暂时下线，SDK 点击即可下载
   // const [submitted, setSubmitted] = useState(false);
 
@@ -263,6 +273,72 @@ export default function Home() {
     await navigator.clipboard?.writeText(heroCode);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  // 弹窗开着时按 Esc 关掉。提交中不给关，免得请求发出去一半界面就没了
+  useEffect(() => {
+    if (!gateOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape' && !submitting) setGateOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [gateOpen, submitting]);
+
+  // 程序化触发下载：造一个隐藏的 <a download> 点一下。
+  // 不用 location.href，那样在部分浏览器里会先跳走再回来，页面闪一下
+  function startDownload() {
+    const a = document.createElement('a');
+    a.href = SDK_DOWNLOAD;
+    a.download = '';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  function openSdkGate() {
+    // 填过一次的老用户直接放行，别每次下载都问一遍
+    try {
+      if (window.localStorage.getItem(REGISTERED_KEY)) {
+        startDownload();
+        return;
+      }
+    } catch {
+      // 隐私模式下 localStorage 会抛错，那就当没填过，弹一次也无妨
+    }
+    setGateOpen(true);
+  }
+
+  async function submitGate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const fd = new FormData(event.currentTarget);
+    setSubmitting(true);
+    try {
+      await fetch(SDK_REGISTRY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // 登记接口要是卡住（网络不通、服务没起来），按钮会一直停在「下载中…」，
+        // 用户以为在排队审批。给 8 秒上限，超时就当登记失败，直接放行下载
+        signal: AbortSignal.timeout(8000),
+        body: JSON.stringify({
+          name: String(fd.get('name') ?? '').trim(),
+          phone: String(fd.get('phone') ?? '').trim(),
+          email: String(fd.get('email') ?? '').trim(),
+          organization: String(fd.get('organization') ?? '').trim(),
+          source: 'sdk-web',
+        }),
+      });
+    } catch {
+      // 登记失败不挡下载——这本来就不是审批，密钥系统挂了也不能让人拿不到 SDK
+    }
+    try {
+      window.localStorage.setItem(REGISTERED_KEY, '1');
+    } catch {
+      // 同上，存不下就下次再填一遍
+    }
+    setSubmitting(false);
+    setGateOpen(false);
+    startDownload();
   }
 
   // function submitTrial(event: FormEvent<HTMLFormElement>) {
@@ -298,13 +374,13 @@ export default function Home() {
             >
               查看文档
             </a>
-            <a
-              href={SDK_DOWNLOAD}
-              download
+            <button
+              type="button"
+              onClick={openSdkGate}
               className="hidden rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3] sm:inline-flex"
             >
               获取 SDK
-            </a>
+            </button>
             <button
               type="button"
               aria-label="打开导航"
@@ -362,13 +438,13 @@ export default function Home() {
               >
                 用 Skill 快速接入 <span aria-hidden="true" className="ml-2">→</span>
               </a>
-              <a
-                href={SDK_DOWNLOAD}
-                download
+              <button
+                type="button"
+                onClick={openSdkGate}
                 className="inline-flex items-center justify-center rounded-xl border border-[#d0d5dd] bg-white px-5 py-3 text-sm font-semibold text-[#344054] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f9fafb]"
               >
                 获取通用 SDK
-              </a>
+              </button>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium text-[#667085]">
               <span className="flex items-center gap-2"><span className="text-[#12b76a]">●</span> SDK 不区分操作系统</span>
@@ -635,7 +711,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-                <a href={SDK_DOWNLOAD} download className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3]">获取统一 SDK</a>
+                <button type="button" onClick={openSdkGate} className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3]">获取统一 SDK</button>
                 <a href="#quick-start" className="rounded-lg border border-[#d0d5dd] bg-white px-5 py-3 text-center text-sm font-semibold text-[#344054] transition hover:bg-[#f9fafb]">查看接入示例</a>
               </div>
             </div>
@@ -886,6 +962,71 @@ export default function Home() {
         </div>
       </section>
       */}
+
+      {/* 获取 SDK 前的登记弹窗。不是审批：提交完当场就开始下载，登记失败也照下不误 */}
+      {gateOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#101828]/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="sdk-gate-title"
+          onClick={(e) => {
+            // 只有点在遮罩本身（不是卡片）上才关
+            if (e.target === e.currentTarget && !submitting) setGateOpen(false);
+          }}
+        >
+          <form
+            onSubmit={submitGate}
+            className="relative w-full max-w-lg rounded-2xl bg-white p-6 text-[#101828] shadow-2xl sm:p-8"
+          >
+            <button
+              type="button"
+              aria-label="关闭"
+              disabled={submitting}
+              onClick={() => setGateOpen(false)}
+              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg text-lg text-[#98a2b3] transition hover:bg-[#f2f4f7] hover:text-[#344054] disabled:opacity-40"
+            >
+              ×
+            </button>
+
+            <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">SDK DOWNLOAD</p>
+            <h3 id="sdk-gate-title" className="mt-2 text-xl font-semibold">获取 Shroom SDK</h3>
+            <p className="mt-2 text-sm leading-6 text-[#667085]">
+              留个联系方式，方便后续给你技术支持。<span className="font-semibold text-[#101828]">提交后立即开始下载</span>，不需要等待审核。
+            </p>
+
+            <div className="mt-6 grid gap-5 sm:grid-cols-2">
+              <label className="grid gap-2 text-xs font-semibold text-[#344054]">
+                姓名
+                <input required name="name" autoComplete="name" placeholder="怎么称呼你" className="h-11 rounded-lg border border-[#d0d5dd] px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]" />
+              </label>
+              <label className="grid gap-2 text-xs font-semibold text-[#344054]">
+                手机号
+                <input required name="phone" autoComplete="tel" placeholder="用于接入沟通" className="h-11 rounded-lg border border-[#d0d5dd] px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]" />
+              </label>
+              <label className="grid gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
+                邮箱 <span className="font-normal text-[#98a2b3]">（选填）</span>
+                <input type="email" name="email" autoComplete="email" placeholder="用于接收更新通知" className="h-11 rounded-lg border border-[#d0d5dd] px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]" />
+              </label>
+              <label className="grid gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
+                所在公司 / 学校 / 机构 <span className="font-normal text-[#98a2b3]">（选填）</span>
+                <input name="organization" autoComplete="organization" placeholder="请输入机构名称" className="h-11 rounded-lg border border-[#d0d5dd] px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]" />
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="mt-6 w-full rounded-lg bg-[#2563eb] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3] disabled:opacity-60"
+            >
+              {submitting ? '下载中…' : '提交并下载'}
+            </button>
+            <p className="mt-3 text-center text-[11px] leading-5 text-[#98a2b3]">
+              提交即表示你同意我们仅将信息用于 SDK 相关的技术支持联系。
+            </p>
+          </form>
+        </div>
+      )}
 
       <footer className="border-t border-[#e4e7ec] bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-10 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">

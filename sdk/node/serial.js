@@ -47,13 +47,19 @@ export async function connectSerial(options = {}) {
   const baudRate = options.baudRate ?? 1000000;
   const hub = createFrameHub();
   const framer = createFramer(options);
+  // 这两个计数是排查「连上了但没数据」的关键，和浏览器端保持一致：
+  // 字节一直涨、帧数不涨 = 波特率或分隔符不对；字节都不涨 = 设备根本没在发
+  let bytesReceived = 0;
+  let frameCount = 0;
 
   const port = await new Promise((resolve, reject) => {
     const p = new SerialPort({ path, baudRate }, (err) => (err ? reject(err) : resolve(p)));
   });
 
   port.on('data', (chunk) => {
+    bytesReceived += chunk.length;
     for (const payload of framer.push(new Uint8Array(chunk))) {
+      frameCount += 1;
       hub.emit(decodeFrame(payload, options));
     }
   });
@@ -65,6 +71,18 @@ export async function connectSerial(options = {}) {
     /** 丢掉的脏帧数：一直在涨说明波特率或分隔符配错了 */
     get droppedCount() {
       return framer.droppedCount;
+    },
+    /** 串口收到的原始字节总数。为 0 说明设备没在发，跟解析无关 */
+    get bytesReceived() {
+      return bytesReceived;
+    },
+    /** 成功切出的帧数。字节在涨而它不涨，就是波特率或分隔符不对 */
+    get frameCount() {
+      return frameCount;
+    },
+    /** 锁定下来的帧长（字节）。不是完全平方数就得显式指定 rows / cols */
+    get frameLength() {
+      return framer.frameLength;
     },
     close() {
       hub.clear();

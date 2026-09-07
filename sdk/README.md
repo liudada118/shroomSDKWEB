@@ -4,6 +4,9 @@
 
 曲线、回放、报表、算法这些都不在里面，那是你（或者 AI）在这个基础上写的部分。
 
+> **不想自己写代码？** 看 [怎么用AI开发.md](怎么用AI开发.md)——把 [AI-CONTEXT.md](AI-CONTEXT.md)
+> 丢给 AI，然后说人话描述你要什么就行。
+
 ---
 
 ## 30 秒跑起来
@@ -250,13 +253,26 @@ sdk/
 │  ├─ device.js     帧订阅
 │  └─ mock.js       模拟数据源
 ├─ web/           浏览器：Web Serial + canvas 热力图 + 示例页面
+│  ├─ serial.js         ★ 串口连接就在这里（Web Serial API）
+│  ├─ heatmap.js        canvas 渲染，三种画法
 │  ├─ index.js          模块版入口，正经项目 import 这个
 │  ├─ index.html        示例页面，代码已内联，单独拷到哪都能双击打开
 │  └─ shroom.bundle.js  单文件版（自动生成），给不想用模块的人直接 script 引
-├─ node/          Node：serialport + 终端热力图 + 示例脚本
+├─ node/          Node / Electron
+│  ├─ serial.js     ★ 串口连接就在这里（serialport）
+│  ├─ ascii.js      终端里的彩色方块图
+│  ├─ demo.js       命令行示例
+│  └─ index.js      Node 入口
 ├─ start.mjs      打开浏览器示例用的小服务器
+├─ AI-CONTEXT.md  给 AI 看的说明，直接把这个文件丢给它
+├─ 怎么用AI开发.md  给人看的：怎么把这个 SDK 交给 AI
 └─ index.d.ts     TypeScript 类型
 ```
+
+**串口连接在哪？** 就两个文件，上面打 ★ 的那两个：浏览器是 `web/serial.js`，
+Node 是 `node/serial.js`。两者都是「读到字节 → `core/framer.js` 切帧 →
+`core/frame.js` 解码 → 通过 `core/device.js` 发给你的 `onFrame`」，
+所以两端拿到的 Frame 完全一样，业务代码可以直接搬。
 
 `core/` 不依赖任何环境 API，想接别的数据源（WebSocket、蓝牙、文件回放）
 自己调 `createFramer()` + `decodeFrame()` 就行，拿到的还是同一个 Frame。
@@ -265,10 +281,15 @@ sdk/
 
 ## 拿去问 AI
 
-把这个 README 和 `index.d.ts` 一起丢给 AI，然后描述你想做的东西，比如：
+SDK 里有一份专门写给 AI 读的说明：**[AI-CONTEXT.md](AI-CONTEXT.md)**。
+把它整个丢给 AI（拖进对话框，或者复制粘贴），然后描述你想做的东西：
 
-> 我有一个 shroom-sdk，`device.onFrame(frame => ...)` 会给我 `frame.values`（0~1 的 Float32Array）、
-> `frame.rows`、`frame.cols`、`frame.center`。帮我写一个页面：用重心控制一个小球移动，
-> 压力超过 0.5 就变色。
+> 帮我做一个页面：用重心控制一个小球移动，压力超过 0.5 就变色。
+
+它里面写全了 API、Frame 结构、几条硬性约束（用户手势、安全上下文、
+数据是 0~1 相对值而不是 kPa）和可以直接抄的例子，AI 照着就能写出跑得起来的代码。
+
+完整流程见 **[怎么用AI开发.md](怎么用AI开发.md)** ——包括怎么描述需求、
+AI 写出来的东西怎么跑起来、报错了怎么跟它说。
 
 SDK 负责把数据稳定地给到你手上，剩下的想怎么玩都行。
