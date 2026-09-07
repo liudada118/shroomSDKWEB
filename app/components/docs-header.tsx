@@ -2,22 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { allDocsItems, docsNavigation, SDK_DOWNLOAD, SDK_VERSION, type DocsPageId } from '../docs-data';
+import { matchDocSections, SDK_DOWNLOAD, SDK_VERSION, type DocsPageId } from '../docs-data';
 import DocsNavigation from './docs-navigation';
-
-function groupContainsHref(items: (typeof docsNavigation)[number]['items'], href: string): boolean {
-  return items.some((item) => item.href === href || groupContainsHref(item.children || [], href));
-}
-
-const searchableItems = allDocsItems.map((item) => {
-  const group = docsNavigation.find((entry) => groupContainsHref(entry.items, item.href));
-  const parent = item.parentAnchor
-    ? allDocsItems.find((entry) => entry.anchor === item.parentAnchor)
-    : undefined;
-  const context = [group?.label || group?.title, parent?.label].filter(Boolean).join(' · ');
-
-  return { ...item, context };
-});
 
 export default function DocsHeader({ page = 'sdk' }: { page?: DocsPageId }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -27,13 +13,7 @@ export default function DocsHeader({ page = 'sdk' }: { page?: DocsPageId }) {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const mobilePanelRef = useRef<HTMLDivElement>(null);
 
-  const results = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return [];
-    return searchableItems.filter((item) =>
-      `${item.label} ${item.description} ${item.keywords || ''} ${item.context}`.toLowerCase().includes(normalized),
-    );
-  }, [query]);
+  const results = useMemo(() => matchDocSections(query), [query]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

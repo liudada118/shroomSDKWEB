@@ -1,105 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, KeyboardEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, KeyboardEvent, useEffect, useRef } from 'react';
 import { SDK_VERSION } from './docs-data';
-
-type Source = {
-  id: number;
-  docId?: string;
-  title: string;
-  url?: string;
-  score?: number;
-  excerpt: string;
-};
-
-type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  sources?: Source[];
-  status?: 'streaming' | 'complete' | 'error';
-};
-
-type StreamEventErrorOptions = {
-  reset?: boolean;
-  retryable?: boolean;
-};
-
-class StreamEventError extends Error {
-  readonly reset: boolean;
-  readonly retryable: boolean;
-
-  constructor(message: string, options: StreamEventErrorOptions = {}) {
-    super(message);
-    this.name = 'StreamEventError';
-    this.reset = Boolean(options.reset);
-    this.retryable = Boolean(options.retryable);
-  }
-}
-
-const suggestedQuestions = [
-  '没有硬件时，怎样先跑通 Mock 示例？',
-  '浏览器连接设备时需要哪些参数？',
-  'Backend SDK 如何采集并导出 CSV？',
-  'Core Frame 包含哪些字段？',
-];
-
-function createMessageId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function renderAnswerWithCitations(message: ChatMessage): ReactNode[] {
-  const sources = new Map((message.sources || []).map((source) => [source.id, source]));
-  return message.content.split(/(\[\d+\])/g).map((part, index) => {
-    const match = /^\[(\d+)\]$/.exec(part);
-    if (!match) return part;
-    const sourceId = Number(match[1]);
-    if (!sources.has(sourceId)) return part;
-
-    return (
-      <a
-        key={`${part}-${index}`}
-        href={`#source-${message.id}-${sourceId}`}
-        aria-label={`查看来源 ${sourceId}`}
-        className="mx-0.5 inline-flex rounded bg-[var(--accent-soft)] px-1 font-mono text-[0.78em] font-semibold text-[var(--accent-strong)] underline-offset-2 hover:underline"
-      >
-        {part}
-      </a>
-    );
-  });
-}
-
-function parseEventBlock(block: string): { event: string; data: unknown } | null {
-  let event = 'message';
-  const dataLines: string[] = [];
-
-  for (const line of block.split('\n')) {
-    if (line.startsWith('event:')) event = line.slice(6).trim();
-    if (line.startsWith('data:')) dataLines.push(line.slice(5).trimStart());
-  }
-
-  if (!dataLines.length) return null;
-  return { event, data: JSON.parse(dataLines.join('\n')) as unknown };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
+import { suggestedQuestions, useKnowledgeChat } from './components/knowledge-chat';
+import KnowledgeMessage from './components/knowledge-message';
 
 export default function KnowledgePage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [announcement, setAnnouncement] = useState('');
-  const abortRef = useRef<AbortController | null>(null);
-  const busyRef = useRef(false);
+  const { messages, input, setInput, busy, announcement, ask, stop, clear } = useKnowledgeChat();
   const conversationRef = useRef<HTMLDivElement>(null);
-
-  const completedHistory = useMemo(() => messages
-    .filter((message) => message.status !== 'streaming' && message.content.trim())
-    .slice(-8)
-    .map(({ role, content }) => ({ role, content })), [messages]);
 
   useEffect(() => {
     conversationRef.current?.scrollTo({
@@ -107,147 +16,6 @@ export default function KnowledgePage() {
       behavior: messages.some((message) => message.status === 'streaming') ? 'auto' : 'smooth',
     });
   }, [messages]);
-
-  useEffect(() => () => abortRef.current?.abort(), []);
-
-  function updateAssistant(id: string, updater: (message: ChatMessage) => ChatMessage) {
-    setMessages((current) => current.map((message) => message.id === id ? updater(message) : message));
-  }
-
-  async function ask(questionValue: string) {
-    const question = questionValue.trim();
-    if (!question || busyRef.current) return;
-
-    const userMessage: ChatMessage = {
-      id: createMessageId('user'),
-      role: 'user',
-      content: question,
-      status: 'complete',
-    };
-    const assistantId = createMessageId('assistant');
-    const assistantMessage: ChatMessage = {
-      id: assistantId,
-      role: 'assistant',
-      content: '',
-      sources: [],
-      status: 'streaming',
-    };
-
-    busyRef.current = true;
-    setBusy(true);
-    setInput('');
-    setAnnouncement('正在检索知识库并生成回答');
-    setMessages((current) => [...current, userMessage, assistantMessage]);
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      const response = await fetch('/api/knowledge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, history: completedHistory }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null) as unknown;
-        const message = isRecord(payload) && isRecord(payload.error) && typeof payload.error.message === 'string'
-          ? payload.error.message
-          : '知识库问答暂时不可用，请稍后重试。';
-        const retryable = isRecord(payload) && isRecord(payload.error) && payload.error.retryable === true;
-        throw new StreamEventError(message, { retryable });
-      }
-      if (!response.body) throw new StreamEventError('没有收到回答内容，请重试。', { retryable: true });
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let completed = false;
-
-      while (!completed) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        buffer = buffer.replace(/\r\n/g, '\n');
-
-        let boundary = buffer.indexOf('\n\n');
-        while (boundary >= 0) {
-          const block = buffer.slice(0, boundary);
-          buffer = buffer.slice(boundary + 2);
-          boundary = buffer.indexOf('\n\n');
-
-          const parsed = parseEventBlock(block);
-          if (!parsed || !isRecord(parsed.data)) continue;
-
-          if (parsed.event === 'sources') {
-            const sources = Array.isArray(parsed.data.sources) ? parsed.data.sources as Source[] : [];
-            updateAssistant(assistantId, (message) => ({ ...message, sources }));
-          }
-
-          if (parsed.event === 'delta' && typeof parsed.data.text === 'string') {
-            const deltaText = parsed.data.text;
-            updateAssistant(assistantId, (message) => ({
-              ...message,
-              content: `${message.content}${deltaText}`,
-            }));
-          }
-
-          if (parsed.event === 'done') {
-            const truncated = parsed.data.truncated === true;
-            updateAssistant(assistantId, (message) => ({
-              ...message,
-              content: truncated
-                ? `${message.content}\n\n回答已达到长度上限，可缩小问题范围后继续提问。`
-                : message.content,
-              status: 'complete',
-            }));
-            completed = true;
-            setAnnouncement('回答已完成');
-            break;
-          }
-
-          if (parsed.event === 'error') {
-            throw new StreamEventError(
-              typeof parsed.data.message === 'string' ? parsed.data.message : '回答生成中断，请重试。',
-              {
-                reset: parsed.data.reset === true,
-                retryable: parsed.data.retryable === true,
-              },
-            );
-          }
-        }
-      }
-
-      if (!completed) throw new StreamEventError('回答连接意外中断，请重试。', { retryable: true });
-    } catch (error) {
-      if (controller.signal.aborted) {
-        updateAssistant(assistantId, (message) => ({
-          ...message,
-          content: message.content || '已停止生成。',
-          status: 'complete',
-        }));
-        setAnnouncement('已停止生成');
-      } else {
-        const known = error instanceof StreamEventError
-          ? error
-          : new StreamEventError('知识库问答暂时不可用，请稍后重试。', { retryable: true });
-        updateAssistant(assistantId, (message) => ({
-          ...message,
-          content: known.reset || !message.content
-            ? known.message
-            : `${message.content}\n\n${known.message}`,
-          status: 'error',
-        }));
-        if (known.retryable) setInput(question);
-        setAnnouncement(known.message);
-      }
-    } finally {
-      if (abortRef.current === controller) abortRef.current = null;
-      busyRef.current = false;
-      setBusy(false);
-    }
-  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -259,13 +27,6 @@ export default function KnowledgePage() {
       event.preventDefault();
       void ask(input);
     }
-  }
-
-  function clearConversation() {
-    if (busy) return;
-    setMessages([]);
-    setInput('');
-    setAnnouncement('对话已清空');
   }
 
   return (
@@ -339,7 +100,7 @@ export default function KnowledgePage() {
             {messages.length > 0 && (
               <button
                 type="button"
-                onClick={clearConversation}
+                onClick={clear}
                 disabled={busy}
                 className="min-h-10 rounded-lg px-3 text-xs font-semibold text-[var(--text-muted)] transition hover:bg-[var(--surface-muted)] hover:text-[var(--text-strong)] disabled:cursor-not-allowed disabled:opacity-40"
               >
@@ -359,7 +120,7 @@ export default function KnowledgePage() {
               <div className="mx-auto flex min-h-full max-w-2xl flex-col justify-center py-8">
                 <div className="grid h-12 w-12 place-items-center rounded-2xl bg-[var(--accent-fill)] text-sm font-bold text-white shadow-[0_10px_26px_rgba(37,99,235,0.24)]">AI</div>
                 <h3 className="mt-5 text-2xl font-semibold tracking-[-0.035em] text-[var(--text-strong)]">今天想查哪项 SDK 能力？</h3>
-                <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-muted)]">可以直接描述目标、报错或接口名称。回答会标注 [1] [2]，点击编号即可定位到检索依据。</p>
+                <p className="mt-3 max-w-xl text-sm leading-7 text-[var(--text-muted)]">可以直接描述目标、报错或接口名称。回答会标注 [1] [2]，点击编号即可定位到检索依据，下方还会给出可跳转的文档章节。</p>
                 <div className="mt-7 grid gap-3 sm:grid-cols-2">
                   {suggestedQuestions.map((question) => (
                     <button
@@ -376,61 +137,7 @@ export default function KnowledgePage() {
             ) : (
               <div className="mx-auto space-y-7 max-w-3xl">
                 {messages.map((message) => (
-                  <article key={message.id} className={`flex gap-3 sm:gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {message.role === 'assistant' && (
-                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[var(--accent-fill)] text-[10px] font-bold text-white">AI</span>
-                    )}
-                    <div className={message.role === 'user' ? 'max-w-[86%] sm:max-w-[74%]' : 'min-w-0 max-w-[calc(100%-44px)] flex-1'}>
-                      <div className={message.role === 'user'
-                        ? 'rounded-2xl rounded-br-md bg-[#101828] px-4 py-3 text-sm leading-7 text-white'
-                        : `rounded-2xl rounded-tl-md border px-4 py-4 text-sm leading-7 sm:px-5 ${message.status === 'error' ? 'border-[#fecdca] bg-[#fffbfa] text-[#912018]' : 'border-[var(--line)] bg-[var(--surface-muted)] text-[var(--text-strong)]'}`}
-                      >
-                        {message.role === 'assistant' && message.status === 'streaming' && !message.content ? (
-                          <span className="inline-flex items-center gap-1.5 text-[var(--text-muted)]">
-                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
-                            正在检索并整理答案…
-                          </span>
-                        ) : (
-                          <p className="whitespace-pre-wrap break-words">{message.role === 'assistant' ? renderAnswerWithCitations(message) : message.content}</p>
-                        )}
-                      </div>
-
-                      {message.role === 'assistant' && message.sources && message.sources.length > 0 && (
-                        <div className="mt-3">
-                          <p className="mb-2 text-[11px] font-semibold text-[var(--text-subtle)]">检索依据</p>
-                          <ol className="grid gap-2 sm:grid-cols-2">
-                            {message.sources.map((source) => (
-                              <li key={`${message.id}-${source.id}`} id={`source-${message.id}-${source.id}`} className="scroll-mt-24">
-                                {source.url ? (
-                                  <a
-                                    href={source.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="group block h-full rounded-xl border border-[var(--line)] bg-white p-3 transition hover:border-[var(--accent-border)] hover:shadow-sm"
-                                  >
-                                    <span className="flex items-center gap-2 text-xs font-semibold text-[var(--text-strong)]">
-                                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-[var(--accent-soft)] font-mono text-[9px] text-[var(--accent-strong)]">{source.id}</span>
-                                      <span className="truncate">{source.title}</span>
-                                      <span className="ml-auto text-[var(--accent-strong)]" aria-hidden="true">↗</span>
-                                    </span>
-                                    <span className="mt-2 line-clamp-2 block text-[11px] leading-5 text-[var(--text-muted)]">{source.excerpt}</span>
-                                  </a>
-                                ) : (
-                                  <div className="h-full rounded-xl border border-[var(--line)] bg-white p-3">
-                                    <span className="flex items-center gap-2 text-xs font-semibold text-[var(--text-strong)]">
-                                      <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-[var(--accent-soft)] font-mono text-[9px] text-[var(--accent-strong)]">{source.id}</span>
-                                      <span className="truncate">{source.title}</span>
-                                    </span>
-                                    <span className="mt-2 line-clamp-2 block text-[11px] leading-5 text-[var(--text-muted)]">{source.excerpt}</span>
-                                  </div>
-                                )}
-                              </li>
-                            ))}
-                          </ol>
-                        </div>
-                      )}
-                    </div>
-                  </article>
+                  <KnowledgeMessage key={message.id} message={message} />
                 ))}
               </div>
             )}
@@ -454,7 +161,7 @@ export default function KnowledgePage() {
                 {busy ? (
                   <button
                     type="button"
-                    onClick={() => abortRef.current?.abort()}
+                    onClick={stop}
                     className="min-h-11 shrink-0 rounded-lg border border-[var(--line)] px-4 text-sm font-semibold text-[var(--text-strong)] transition hover:bg-[var(--surface-muted)]"
                   >
                     停止

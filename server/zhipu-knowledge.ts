@@ -1,3 +1,6 @@
+// Relative + explicit extension so `node --test server/zhipu-knowledge.test.ts` can resolve it.
+import { findSection, sectionCatalog, type DocSectionRef, type DocsPageId } from '../app/docs-data.ts';
+
 const RETRIEVAL_URL = 'https://open.bigmodel.cn/api/llm-application/open/knowledge/retrieve';
 const CHAT_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 
@@ -7,6 +10,8 @@ const MAX_HISTORY_CHARS = 12_000;
 const MAX_CONTEXT_CHARS = 12_000;
 const MAX_CONTEXT_CHUNK_CHARS = 2_400;
 const MAX_SOURCES = 6;
+const MAX_SECTIONS = 3;
+const SECTION_MARKER = '@@SECTIONS:';
 
 export type KnowledgeHistoryMessage = {
   role: 'user' | 'assistant';
@@ -16,6 +21,8 @@ export type KnowledgeHistoryMessage = {
 export type KnowledgeRequestInput = {
   question: string;
   history: KnowledgeHistoryMessage[];
+  /** Documentation page the user is currently reading, when they are on one. */
+  page?: DocsPageId;
 };
 
 export type KnowledgeSource = {
@@ -129,7 +136,9 @@ export function parseKnowledgeRequest(value: unknown): KnowledgeRequestInput {
     historyCharacters += characterCount(normalized);
   }
 
-  return { question, history };
+  const page = value.page === 'sdk' || value.page === 'backend' ? value.page : undefined;
+
+  return { question, history, ...(page ? { page } : {}) };
 }
 
 export function normalizeRetrievalPayload(value: unknown): NormalizedRetrieval {
@@ -318,6 +327,91 @@ function buildContext(chunks: RetrievedChunk[]): string {
   return sections.join('\n\n');
 }
 
+function buildSectionCatalogPrompt(page?: DocsPageId): string {
+  const lines = sectionCatalog.map((entry) => {
+    const keywords = entry.keywords ? ` | ${truncateCharacters(entry.keywords, 60)}` : '';
+    return `${entry.anchor} | ${entry.label} | ${entry.description}${keywords}`;
+  });
+
+  const location = page === 'backend'
+    ? '用户当前正在阅读「后端能力」文档页。'
+    : page === 'sdk'
+      ? '用户当前正在阅读「SDK 文档」页。'
+      : '用户当前不在文档页上。';
+
+  return [
+    `文档章节目录（anchor | 标题 | 说明 | 关键词）：\n${lines.join('\n')}`,
+    location,
+  ].join('\n\n');
+}
+
+/**
+ * Holds back the trailing `@@SECTIONS: ...` line so it never reaches the client,
+ * including the case where the marker itself arrives split across deltas.
+ */
+function createSectionMarkerFilter() {
+  let pending = '';
+  let markerTail = '';
+  let found = false;
+
+  function partialSuffixLength(text: string): number {
+    const max = Math.min(SECTION_MARKER.length - 1, text.length);
+    for (let length = max; length > 0; length -= 1) {
+      if (SECTION_MARKER.startsWith(text.slice(text.length - length))) return length;
+    }
+    return 0;
+  }
+
+  return {
+    /** Returns the portion of `text` that is safe to forward downstream. */
+    push(text: string): string {
+      if (found) {
+        markerTail += text;
+        return '';
+      }
+
+      pending += text;
+      const index = pending.indexOf(SECTION_MARKER);
+      if (index >= 0) {
+        found = true;
+        markerTail = pending.slice(index + SECTION_MARKER.length);
+        const emit = pending.slice(0, index).replace(/\s+$/, '');
+        pending = '';
+        return emit;
+      }
+
+      // Hold back a possible partial marker plus the blank line in front of it,
+      // so the separator never leaks when the marker turns out to be real.
+      let holdStart = pending.length - partialSuffixLength(pending);
+      while (holdStart > 0 && /\s/.test(pending[holdStart - 1])) holdStart -= 1;
+
+      const emit = pending.slice(0, holdStart);
+      pending = pending.slice(holdStart);
+      return emit;
+    },
+    /** Emits whatever was held back but turned out not to be a marker. */
+    flush(): string {
+      const emit = pending;
+      pending = '';
+      return emit;
+    },
+    sections(): DocSectionRef[] {
+      if (!found) return [];
+
+      const resolved: DocSectionRef[] = [];
+      const seen = new Set<string>();
+      for (const token of markerTail.split('\n')[0].split(/[,，\s]+/)) {
+        const entry = findSection(token);
+        if (!entry || seen.has(entry.anchor)) continue;
+        seen.add(entry.anchor);
+        resolved.push({ anchor: entry.anchor, label: entry.label, href: entry.href, page: entry.page });
+        if (resolved.length >= MAX_SECTIONS) break;
+      }
+      return resolved;
+    },
+  };
+}
+
 async function startChatCompletion(
   input: KnowledgeRequestInput,
   context: string,
@@ -344,6 +438,12 @@ async function startChatCompletion(
             '每个事实结论后标注对应来源编号，如 [1]；不要引用不存在的编号。',
             '资料不足时明确回答“当前知识库没有足够信息”，不要使用外部知识补全。',
             '优先使用简洁中文；涉及代码时保留准确的 API 名称和参数。',
+            '',
+            buildSectionCatalogPrompt(input.page),
+            '',
+            `如果答案对应文档站上的具体章节，就在回答的最后一行单独输出 ${SECTION_MARKER} anchor1, anchor2。`,
+            `最多 ${MAX_SECTIONS} 个，按相关度排序，只能使用上面目录中出现过的 anchor，不要编造。`,
+            '不确定对应哪个章节时，不要输出这一行。这一行之后不要再有任何内容。',
           ].join('\n'),
         },
         ...input.history,
@@ -420,6 +520,7 @@ function createProxiedAnswerStream(
         let buffer = '';
         let sawDone = false;
         let finishReason: string | null = null;
+        const sectionFilter = createSectionMarkerFilter();
 
         try {
           while (!cancelled && !sawDone) {
@@ -470,12 +571,19 @@ function createProxiedAnswerStream(
               const choice = isRecord(choices[0]) ? choices[0] : undefined;
               const delta = choice && isRecord(choice.delta) ? choice.delta : undefined;
               const text = delta && typeof delta.content === 'string' ? delta.content : '';
-              if (text) controller.enqueue(encodeEvent(encoder, 'delta', { text }));
+              if (text) {
+                const forwarded = sectionFilter.push(text);
+                if (forwarded) controller.enqueue(encodeEvent(encoder, 'delta', { text: forwarded }));
+              }
               if (choice && typeof choice.finish_reason === 'string') finishReason = choice.finish_reason;
             }
           }
 
           if (cancelled) return;
+
+          const tail = sectionFilter.flush();
+          if (tail) controller.enqueue(encodeEvent(encoder, 'delta', { text: tail }));
+
           if (finishReason === 'sensitive') {
             controller.enqueue(encodeEvent(encoder, 'error', {
               code: 'CONTENT_REJECTED',
@@ -491,6 +599,8 @@ function createProxiedAnswerStream(
               reset: false,
             }));
           } else if (sawDone || finishReason === 'stop' || finishReason === 'length') {
+            const sections = sectionFilter.sections();
+            if (sections.length) controller.enqueue(encodeEvent(encoder, 'sections', { sections }));
             controller.enqueue(encodeEvent(encoder, 'done', {
               requestId,
               truncated: finishReason === 'length',

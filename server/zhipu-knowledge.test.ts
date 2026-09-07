@@ -147,6 +147,119 @@ test('createKnowledgeAnswerResponse preserves split UTF-8 chunks and emits stabl
   assert.match(modelRequest.messages.at(-1)?.content || '', /\[1\] 来源：SDK README/);
 });
 
+function streamFromDeltas(deltas: readonly string[]): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  const text = [
+    ...deltas.map((content) => `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: null }] })}\n\n`),
+    `data: ${JSON.stringify({ choices: [{ delta: { content: '' }, finish_reason: 'stop' }] })}\n\n`,
+    'data: [DONE]\n\n',
+  ].join('');
+
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(text));
+      controller.close();
+    },
+  });
+}
+
+function answerFetcher(deltas: readonly string[]): typeof fetch {
+  let call = 0;
+  return (async () => {
+    call += 1;
+    if (call === 1) {
+      return Response.json({
+        code: 200,
+        data: [{ text: '串口会话可以调用 session.close() 主动断开。', score: 0.9, metadata: { doc_id: 'backend', doc_name: 'BACKEND' } }],
+      });
+    }
+    return new Response(streamFromDeltas(deltas), {
+      status: 200,
+      headers: { 'Content-Type': 'text/event-stream' },
+    });
+  }) as typeof fetch;
+}
+
+function readStream(body: string): { text: string; sections: unknown } {
+  let text = '';
+  let sections: unknown = null;
+
+  for (const block of body.split('\n\n')) {
+    if (!block.trim()) continue;
+    const event = /^event: (.+)$/m.exec(block)?.[1];
+    const dataLine = /^data: (.*)$/m.exec(block)?.[1];
+    if (!event || dataLine === undefined) continue;
+    const data = JSON.parse(dataLine) as Record<string, unknown>;
+    if (event === 'delta' && typeof data.text === 'string') text += data.text;
+    if (event === 'sections') sections = data.sections;
+  }
+
+  return { text, sections };
+}
+
+test('parseKnowledgeRequest keeps a valid docs page and drops anything else', () => {
+  assert.equal(parseKnowledgeRequest({ question: '在哪断开串口', page: 'backend' }).page, 'backend');
+  assert.equal(parseKnowledgeRequest({ question: '在哪断开串口', page: 'marketing' }).page, undefined);
+  assert.equal(parseKnowledgeRequest({ question: '在哪断开串口' }).page, undefined);
+});
+
+test('section marker never reaches the client and resolves to validated anchors', async () => {
+  const response = await createKnowledgeAnswerResponse(
+    { question: '怎么主动断开串口？', history: [], page: 'backend' },
+    config,
+    new AbortController().signal,
+    // The marker is deliberately split across two deltas.
+    answerFetcher(['调用 session.close() 即可。', '\n\n@@SEC', 'TIONS: serial-disconnect, not-a-section, csv, serial-disconnect, capture, storage']),
+  );
+  const { text, sections } = readStream(await response.text());
+
+  assert.equal(text, '调用 session.close() 即可。');
+  assert.doesNotMatch(text, /@@|SECTIONS/);
+  assert.deepEqual(
+    (sections as Array<{ anchor: string }>).map((section) => section.anchor),
+    ['serial-disconnect', 'csv', 'capture'],
+  );
+  assert.deepEqual(
+    (sections as Array<{ href: string; page: string }>)[0],
+    { anchor: 'serial-disconnect', label: '断开与释放', href: '/docs/backend#serial-disconnect', page: 'backend' },
+  );
+});
+
+test('answers without a section marker emit no sections event', async () => {
+  const response = await createKnowledgeAnswerResponse(
+    { question: '怎么主动断开串口？', history: [] },
+    config,
+    new AbortController().signal,
+    answerFetcher(['调用 session.close() 即可。']),
+  );
+  const body = await response.text();
+
+  assert.equal(readStream(body).text, '调用 session.close() 即可。');
+  assert.doesNotMatch(body, /event: sections/);
+});
+
+test('the model is given the section catalog and the current page', async () => {
+  const calls: RequestInit[] = [];
+  const inner = answerFetcher(['好的。']);
+  const fetcher = (async (input: string | URL | Request, init?: RequestInit) => {
+    if (init) calls.push(init);
+    return inner(input as string, init);
+  }) as typeof fetch;
+
+  await createKnowledgeAnswerResponse(
+    { question: '导出 CSV', history: [], page: 'backend' },
+    config,
+    new AbortController().signal,
+    fetcher,
+  );
+
+  const modelRequest = JSON.parse(String(calls[1]?.body)) as { messages: Array<{ content: string }> };
+  const systemPrompt = modelRequest.messages[0]?.content || '';
+  assert.match(systemPrompt, /serial-disconnect \| 断开与释放/);
+  assert.match(systemPrompt, /用户当前正在阅读「后端能力」文档页/);
+  assert.match(systemPrompt, /@@SECTIONS:/);
+});
+
 test('provider rate limits map to a stable public error', async () => {
   const fetcher = (async () => Response.json(
     { code: 1302, message: 'provider details' },

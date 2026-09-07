@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SDK_DOWNLOAD, SDK_VERSION, type DocsPageId } from '../docs-data';
 import DocsHeader from './docs-header';
 import DocsNavigation from './docs-navigation';
+import SectionLocateFlash from './section-locate-flash';
 
 export default function DocsPageShell({
   page,
@@ -26,6 +27,7 @@ export default function DocsPageShell({
   return (
     <>
       <a className="skip-link" href={skipTarget}>跳到主要内容</a>
+      <SectionLocateFlash />
       <DocsHeader page={page} />
 
       <main className="min-h-[100dvh] bg-[var(--page)] text-[var(--text)]">

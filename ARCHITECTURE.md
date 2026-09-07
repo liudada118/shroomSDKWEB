@@ -1,12 +1,12 @@
 # 架构文档
 
-> 本文档由 Codex 自动生成和维护。最后更新于：2026-08-31
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-09-04
 
 ## 1. 项目概述
 
 Shroom Developer 是一个面向传感器与硬件开发者的分层开发中心。根路由 `/` 保留最初的完整展示首页，统一呈现产品选择、SDK Skill 规划、SDK 与分平台上位机、快速开始、Mock 演示、开发工具和文档入口；SDK 产品功能页挂载在 `/sdk-overview`；基础文档挂载在 `/docs`；本地 Node 后端能力作为文档分类挂载在 `/docs/backend`；智谱知识库问答挂载在 `/knowledge`。根目录 `sdk/` 在本地 Vite 开发时会占用 `/sdk` 模块路径，因此产品页面使用 `/sdk-overview`；公开下载仍为 `/shroom-sdk.zip`。轻量链路为“选择数据源 → 获得 Device → 订阅统一 Core Frame → 渲染或进入业务逻辑”，需要长期数据时再经显式适配进入“算法 → 采集 → SQLite / 内存存储 → 回放 / CSV”。知识问答使用“智谱托管知识库混合检索 → 编号化上下文 → GLM 流式生成 → 来源卡片”的两段式 RAG，不在浏览器暴露 API Key。
 
-完整展示首页保留最初的深蓝品牌、产品与平台切换、Skill 主视觉和全部历史锚点，并通过资源卡进入 `/sdk-overview`、`/docs` 与 `/docs/backend`。Skill 展示保留原来的优先级，但明确标记为 Roadmap，避免把尚未创建的安装式 Skill 写成已交付。`/sdk-overview` 提供代码优先的 SDK 产品能力、Mock、Frame 和下载说明；`/docs` 提供基础 API、兼容矩阵和排障；`/docs/backend` 说明串口、采集、存储、回放、CSV 与同步算法通道。环境无关的是 Core 与 Frame 数据合同；浏览器和 Node 分别使用 Web Serial 与 serialport 适配器；`sdk/backend/` 是隔离的 CommonJS、本地 Node-only 边界，不会进入浏览器 bundle 或 Cloudflare Worker。
+完整展示首页保留最初的深蓝品牌、产品与平台切换、Skill 主视觉和全部历史锚点，并通过资源卡进入 `/sdk-overview`、`/docs` 与 `/docs/backend`。首页 `#quick-start` 以 `hand0205` 触觉手套为示例，将 Skill 工作流拆成用户提供的产品型号、运行环境、连接入口、目标功能四项信息，以及 Skill 内部读取的设备 Profile、协议与 Frame 契约、左右手 Mapping、Fixture / 示例 / 排障四类事实源；安装式 Skill 继续明确标记为 Roadmap，避免写成已交付。`/sdk-overview` 提供代码优先的 SDK 产品能力、Mock、Frame 和下载说明；`/docs` 提供基础 API、兼容矩阵和排障；`/docs/backend` 说明串口、采集、存储、回放、CSV 与同步算法通道。环境无关的是 Core 与 Frame 数据合同；浏览器和 Node 分别使用 Web Serial 与 serialport 适配器；`sdk/backend/` 是隔离的 CommonJS、本地 Node-only 边界，不会进入浏览器 bundle 或 Cloudflare Worker。
 
 ## 2. 技术栈
 
@@ -32,8 +32,8 @@ C:\sdk
 ├─ .openai/
 │  └─ hosting.json          # Sites 项目及逻辑资源绑定
 ├─ app/
-│  ├─ globals.css           # Tailwind 入口、统一浅色品牌令牌与全局基础样式
-│  ├─ layout.tsx            # 页面语言、字体与展示首页分享元数据
+│  ├─ globals.css           # Tailwind 入口、统一浅色品牌令牌、章节定位高亮与全局基础样式
+│  ├─ layout.tsx            # 页面语言、字体、展示首页分享元数据与全站 AI 问答挂件
 │  ├─ page.tsx              # 根路由入口，渲染完整开发者中心首页
 │  ├─ showcase-page.tsx     # 最初完整展示首页及产品、平台、Skill 交互
 │  ├─ knowledge-page.tsx    # 智谱知识库问答、流式消息、停止与引用展示
@@ -55,7 +55,7 @@ C:\sdk
 │  │     └─ page.tsx       # 本地 Node 后端文档路由
 │  ├─ docs-page.tsx         # 基础 SDK 文档静态正文
 │  ├─ backend-docs-page.tsx # H2/H3 分层文档与完整串口操作生命周期参考
-│  ├─ docs-data.ts          # 递归文档导航、后端能力三级分类、搜索词与示例数据
+│  ├─ docs-data.ts          # 递归文档导航、后端能力三级分类、章节目录与匹配/排序函数
 │  └─ components/
 │     ├─ docs-page-shell.tsx # 两类文档共用的三栏页面壳、目录与页脚
 │     ├─ docs-content.tsx   # 共用面包屑、页面导语、章节标题与行内代码
@@ -63,7 +63,12 @@ C:\sdk
 │     ├─ docs-navigation.tsx # 分层分类、滚动高亮与可访问折叠目录
 │     ├─ doc-code-block.tsx # 文档代码复制与状态反馈
 │     ├─ code-samples.tsx   # 运行环境标签、复制与键盘交互
-│     └─ mock-demo.tsx      # Mock Grid、显示增益与帧统计
+│     ├─ mock-demo.tsx      # Mock Grid、显示增益与帧统计
+│     ├─ knowledge-chat.ts  # 问答状态机：SSE 解析、来源/章节事件与关键词兜底
+│     ├─ knowledge-message.tsx # 共用消息气泡、引用编号、章节跳转按钮与来源卡片
+│     ├─ knowledge-widget.tsx # 全站悬浮问答挂件、会话持久化与移动端全屏面板
+│     ├─ knowledge-jump.ts  # 同页滚动高亮、跨页锚点暂存与路由跳转
+│     └─ section-locate-flash.tsx # 文档页消费跨页跳转锚点并高亮目标章节
 ├─ sdk/
 │  ├─ core/                 # Frame 解码、切帧、Mock 与颜色映射
 │  ├─ web/                  # Web Serial、Canvas 热力图与浏览器示例
@@ -124,8 +129,15 @@ flowchart TD
     HOME -->|后端能力入口| BDR[app/docs/backend/page.tsx\n/docs/backend 路由]
     BDR --> BC[app/backend-docs-page.tsx\n串口·采集·存储·回放·CSV·算法]
     HOME -->|AI 问答入口| KR[app/knowledge/page.tsx\n/knowledge 路由]
-    KR --> KP[app/knowledge-page.tsx\n问答 UI·SSE·引用]
-    KP --> KA[app/api/knowledge/route.ts\nPOST /api/knowledge]
+    KR --> KP[app/knowledge-page.tsx\n问答整页 UI]
+    L --> KW[knowledge-widget.tsx\n全站悬浮挂件·会话持久化]
+    KP --> KH[knowledge-chat.ts\n问答状态机·SSE 解析·章节兜底]
+    KW --> KH
+    KH --> KM[knowledge-message.tsx\n引用·章节跳转·来源卡片]
+    KM --> KJ[knowledge-jump.ts\n同页滚动高亮·跨页锚点]
+    KJ --> SLF[section-locate-flash.tsx\n文档页消费跨页锚点]
+    SLF --> SHELL
+    KH --> KA[app/api/knowledge/route.ts\nPOST /api/knowledge]
     KA --> ZK[server/zhipu-knowledge.ts\n检索·生成·来源·错误映射]
     ZK --> ZR[智谱知识库检索 API]
     ZK --> ZC[智谱 Chat Completions SSE]
@@ -136,8 +148,10 @@ flowchart TD
     SP -->|返回展示首页| HOME
     C -->|返回展示首页| HOME
     BC -->|返回展示首页| HOME
-    DATA[app/docs-data.ts\n跨页导航·锚点·代码示例] --> C
+    DATA[app/docs-data.ts\n跨页导航·锚点·章节目录·匹配排序] --> C
     DATA --> BC
+    DATA --> ZK
+    DATA --> KH
     C --> H[docs-header.tsx\n搜索·移动目录·下载]
     C --> N[docs-navigation.tsx\n活动章节·页内目录]
     C --> CS[code-samples.tsx\n运行时切换·复制]
@@ -166,7 +180,7 @@ flowchart TD
 
 1. **开发中心与分类页面**
    - `app/page.tsx` 渲染 `showcase-page.tsx`，根路由承担产品、平台、Skill、资源和工具的整体展示。
-   - 首页通过 SDK 下载卡、网页测试台和示例入口进入 `/sdk-overview`，通过资源和工具卡进入 `/docs` 与 `/docs/backend`。
+   - 首页通过 SDK 下载卡、网页测试台和示例入口进入 `/sdk-overview`，通过资源和工具卡进入 `/docs` 与 `/docs/backend`；`#quick-start` 优先展示可复制的手套 Skill 任务模板，并保留手动接入文档作为备用路径。
    - `/sdk-overview`、`/docs` 与 `/docs/backend` 分别使用独立路由和元数据，并都提供返回 `/` 的路径。
    - 根目录 `sdk/` 在本地 Vite 开发时会被解析为 `/sdk` 模块路径，因此不使用该路径作为页面；构建产物只承诺 `/shroom-sdk.zip`，不承诺部署后的 `/sdk/*` 静态模块 URL。
    - 最初首页的 `#products`、`#capabilities`、`#skill`、`#downloads`、`#quick-start`、`#web-lab`、`#tools` 和 `#docs` 锚点继续保留。
@@ -208,8 +222,16 @@ flowchart TD
    - `server/zhipu-knowledge.ts` 先调用智谱知识库混合检索，使用 `doc_id`、`doc_name`、`doc_url` 和片段文本生成稳定来源编号；无召回时直接返回“知识库没有相关内容”，不调用模型。
    - 命中内容以不可信参考资料方式传给 GLM，系统提示要求仅依据片段回答并标注 `[n]`；服务端把智谱 OpenAI 风格 SSE 转换为 `sources`、`delta`、`done`、`error` 四类内部事件。
    - 客户端支持逐段显示、停止生成、可访问状态播报、可点击引用与安全外链；模型输出按纯文本渲染，文档标题和摘要由 React 转义。
-   - `npm run test:knowledge` 覆盖请求边界、来源去重与 URL 安全、零召回、UTF-8 拆包流和限流错误映射；公开接口当前仍无账号体系与分布式限流。
-8. **事实边界与规划能力分流**
+   - `npm run test:knowledge` 覆盖请求边界、来源去重与 URL 安全、零召回、UTF-8 拆包流、章节标记剥离与限流错误映射；公开接口当前仍无账号体系与分布式限流。
+8. **全站问答挂件与章节定位**
+   - `knowledge-chat.ts` 是问答状态机的单一实现，`/knowledge` 整页与全站悬浮挂件共用同一份 SSE 解析、停止、清空与错误恢复逻辑；`knowledge-message.tsx` 共用引用编号、章节按钮与来源卡片渲染。
+   - `knowledge-widget.tsx` 由根 layout 挂载，`/knowledge` 页面自身不再重复渲染；面板开合与最近 20 条消息写入 `sessionStorage`，路由切换后对话保留，初始状态通过 `useSyncExternalStore` 读取以避免 hydration 不一致。
+   - 服务端把 `docs-data.ts` 的 39 条章节目录（anchor、标题、说明、关键词）与用户当前所在文档页写入系统提示，要求模型在回答末行单独输出 `@@SECTIONS: anchor…`。
+   - SSE 转换层用尾部缓冲拦截该标记及其前置空行，标记本身永不下发给浏览器；结束时校验锚点是否存在于目录、去重并截断为最多 3 条，作为 `sections` 事件在 `done` 之前发出。
+   - 模型未给出标记时，客户端用问题文本与命中来源标题走 `rankDocSections` 关键词兜底；最差退化为只有回答、没有跳转按钮。
+   - 同页跳转由 `knowledge-jump.ts` 平滑滚动、程序化聚焦并添加 `.doc-locate-flash` 高亮 1.6 秒，随后以 `replaceState` + `hashchange` 同步侧边栏高亮与折叠分组，不触发第二次滚动；跨页跳转把锚点暂存到 `sessionStorage`，由文档壳内的 `section-locate-flash.tsx` 在目标页挂载后消费并高亮。
+   - 顶栏搜索与问答兜底共用 `docs-data.ts` 的 `matchDocSections`（子串）与 `rankDocSections`（加权评分），搜索框既有行为保持不变。
+9. **事实边界与规划能力分流**
    - 文档公开 Web 与 Node facade、Device 共同方法、Frame 字段、连接参数、接入代码兼容范围、授权和 TypeScript 类型现状；未把未完成的真机矩阵写成已验证兼容性。
    - SDK 知识库问答已经进入可配置交付状态；Shroom Skill、通用 Mapping 生成器、物理量标定、上位机安装包、曲线组件与完整报告引擎仍进入 Roadmap；采集、回放、CSV 和同步算法已属于 Node 后端预览。
    - 尚未交付的入口不再使用可下载或已完成状态。
@@ -218,7 +240,7 @@ flowchart TD
 
 | 方法 | 路径 | 请求 | 响应 | 边界 |
 | :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/api/knowledge` | `{ question, history? }` | SSE：`sources`、`delta`、`done`、`error` | 同源检查、64KB 请求上限、问题 1000 字、服务端密钥、无持久化 |
+| `POST` | `/api/knowledge` | `{ question, history?, page? }` | SSE：`sources`、`delta`、`sections`、`done`、`error` | 同源检查、64KB 请求上限、问题 1000 字、`page` 仅接受 `sdk`/`backend`、服务端密钥、无持久化 |
 
 `sdk/backend/src/backend/BackendSdkClient.js` 仍只用于连接另一个已经运行的 localhost HTTP / WebSocket 服务，当前仓库不实现该服务端。知识问答 API 不读取本地 SDK 的串口、SQLite 或采集数据。
 
@@ -299,6 +321,9 @@ flowchart TD
 | 2026-08-28 | 双文档视觉统一 | 基础与后端文档共用三栏页面壳、面包屑、章节标题、代码块、右侧目录和页脚，并修正文档活动项顺序 |
 | 2026-08-31 | Developer 与文档视觉统一 | 将基础/后端文档对齐 Developer 首页的白蓝品牌色、72px 顶栏、Logo、光晕内容区和页脚，同时保留文档侧栏与长文阅读结构 |
 | 2026-08-31 | 智谱 SDK 知识库问答 | 新增 `/knowledge`、两段式 RAG、GLM 流式回答、来源引用、安全校验、配置模板与 5 项适配器测试 |
+| 2026-09-01 | 全站 AI 问答挂件 | 抽出共用问答状态机与消息组件，在根 layout 挂载悬浮面板，会话按 sessionStorage 跨路由保留 |
+| 2026-09-01 | AI 回答章节定位 | 服务端向模型下发章节目录并校验回传锚点，新增 `sections` 事件、关键词兜底与同页/跨页滚动高亮跳转 |
+| 2026-09-04 | 手套 Skill 快速开始 | 首页以 `hand0205` 为例，区分用户提供的四项任务信息与 Skill 所需的四类事实源，并提供可复制任务模板 |
 
 ## 9. 更新日志
 
@@ -329,6 +354,8 @@ flowchart TD
 | 2026-08-28 | 优化重构 | 抽取共享文档页面壳与内容原语，统一 `/docs`、`/docs/backend` 的视觉和交互，并补全成功状态明暗主题令牌 |
 | 2026-08-31 | 优化重构 | 统一 Developer 与文档页的浅色品牌令牌、顶栏、内容背景和页脚，修复深链目标整块焦点边框及导航 ID hydration 不一致 |
 | 2026-08-31 | 新增功能 | 接入智谱托管知识库与 `glm-4.7-flash`，新增可停止的流式 SDK 问答、稳定引用、服务端密钥边界和自动化测试 |
+| 2026-09-01 | 新增功能 | 问答改为全站悬浮挂件并共用状态机，回答附带经服务端校验的文档章节跳转与滚动高亮定位，新增 4 项测试 |
+| 2026-09-04 | 优化重构 | 将首页快速开始改为 Skill 优先的触觉手套接入流程，补充任务输入、事实源清单、复制模板与手动备用路径 |
 
 ---
 

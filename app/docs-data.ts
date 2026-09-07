@@ -119,6 +119,92 @@ export const pageTableOfContents: Readonly<Record<DocsPageId, readonly DocNavIte
   backend: allDocsItems.filter((item) => item.page === 'backend'),
 };
 
+/** Minimal reference to a documentation section, safe to send over the wire. */
+export type DocSectionRef = {
+  /** DOM id of the section, without the leading `#`. */
+  anchor: string;
+  label: string;
+  href: string;
+  page: DocsPageId;
+};
+
+export type DocSectionEntry = DocSectionRef & {
+  description: string;
+  keywords?: string;
+  /** Breadcrumb-ish label, e.g. `后端能力 · 串口`. */
+  context: string;
+};
+
+function groupContainingHref(href: string): string | undefined {
+  const contains = (items: readonly DocNavItem[]): boolean =>
+    items.some((item) => item.href === href || contains(item.children || []));
+  const group = docsNavigation.find((entry) => contains(entry.items));
+  return group?.label || group?.title;
+}
+
+export const sectionCatalog: readonly DocSectionEntry[] = allDocsItems.map((item) => {
+  const parent = item.parentAnchor
+    ? allDocsItems.find((entry) => entry.anchor === item.parentAnchor)
+    : undefined;
+
+  return {
+    anchor: item.anchor.slice(1),
+    label: item.label,
+    href: item.href,
+    page: item.page,
+    description: item.description,
+    ...(item.keywords ? { keywords: item.keywords } : {}),
+    context: [groupContainingHref(item.href), parent?.label].filter(Boolean).join(' · '),
+  };
+});
+
+export function findSection(anchor: string): DocSectionEntry | undefined {
+  const normalized = anchor.trim().replace(/^#/, '').toLowerCase();
+  if (!normalized) return undefined;
+  return sectionCatalog.find((entry) => entry.anchor.toLowerCase() === normalized);
+}
+
+/** Substring search used by the docs header search box. */
+export function matchDocSections(query: string): DocSectionEntry[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return [];
+  return sectionCatalog.filter((entry) =>
+    `${entry.label} ${entry.description} ${entry.keywords || ''} ${entry.context}`.toLowerCase().includes(normalized),
+  );
+}
+
+/**
+ * Loose relevance ranking used when the model does not name a section itself:
+ * scores each catalog entry by how many of its own terms show up in the text.
+ */
+export function rankDocSections(text: string, limit = 3): DocSectionEntry[] {
+  const haystack = text.toLowerCase();
+  if (!haystack.trim()) return [];
+
+  const scored = sectionCatalog.map((entry, order) => {
+    let score = 0;
+    const label = entry.label.toLowerCase();
+    if (label.length >= 2 && haystack.includes(label)) score += 3;
+    else {
+      for (const part of label.split(/\s+/)) {
+        if (part.length >= 2 && haystack.includes(part)) score += 2;
+      }
+    }
+
+    for (const keyword of (entry.keywords || '').toLowerCase().split(/\s+/)) {
+      if (keyword.length >= 2 && haystack.includes(keyword)) score += 2;
+    }
+
+    return { entry, score, order };
+  });
+
+  return scored
+    .filter((candidate) => candidate.score > 0)
+    .sort((first, second) => second.score - first.score || first.order - second.order)
+    .slice(0, limit)
+    .map((candidate) => candidate.entry);
+}
+
 export const codeSamples = {
   mock: {
     label: 'Mock',

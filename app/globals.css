@@ -99,6 +99,27 @@ button {
   color: #102a56;
 }
 
+/* AI 问答定位到章节后的短暂高亮。 */
+.doc-locate-flash {
+  animation: doc-locate-flash 1.6s ease-out;
+  border-radius: 0.75rem;
+}
+
+@keyframes doc-locate-flash {
+  0% {
+    box-shadow: 0 0 0 3px var(--accent);
+    background-color: var(--accent-soft);
+  }
+  60% {
+    box-shadow: 0 0 0 3px var(--accent-border);
+    background-color: var(--accent-soft);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+    background-color: transparent;
+  }
+}
+
 .hero-grid {
   background-image:
     linear-gradient(to right, rgb(37 99 235 / 0.045) 1px, transparent 1px),
@@ -146,5 +167,10 @@ button {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* 不做淡出动画，改为在同样的时长内保持静态描边。 */
+  .doc-locate-flash {
+    box-shadow: 0 0 0 3px var(--accent);
   }
 }
