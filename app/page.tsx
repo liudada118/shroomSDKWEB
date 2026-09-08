@@ -992,7 +992,7 @@ export default function Home() {
             <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">SDK DOWNLOAD</p>
             <h3 id="sdk-gate-title" className="mt-2 text-xl font-semibold">获取 Shroom SDK</h3>
             <p className="mt-2 text-sm leading-6 text-[#667085]">
-              留个联系方式，方便后续给你技术支持。<span className="font-semibold text-[#101828]">提交后立即开始下载</span>，不需要等待审核。
+              留个联系方式，方便后续给你技术支持。
             </p>
 
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
