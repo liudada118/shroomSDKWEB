@@ -20,6 +20,26 @@ Shroom SDK 把一块压力传感器阵列接进 JS：**连上串口 → 每秒�
 
 ---
 
+## 0.5 先确定 import 路径（第一行代码就会错）
+
+本文所有示例都写成 `'./sdk/web/index.js'`，那是**你的文件在 `sdk/` 外面**时的写法。
+**先搞清楚你要把文件放在哪**，照下表选：
+
+| 你的文件放在 | import 写法 |
+| --- | --- |
+| `sdk/web/` 里面（**最常见**，因为要用自带服务器打开） | `'./index.js'` |
+| `sdk/` 的同级目录 | `'./sdk/web/index.js'` |
+| 项目里任意位置 | 按相对层级算，目标永远是 `sdk/web/index.js` |
+
+**为什么最常见的是第一种**：浏览器串口不能用 `file://`（见 §5.2），
+用户一般用 SDK 自带的 `start-demo.bat` / `start.mjs` 起服务，那个服务器的根目录就是 `sdk/`，
+所以把页面放进 `sdk/web/` 是最省事的做法，访问 `http://localhost:5178/你的文件.html` 即可。
+
+> 路径写错的症状：**页面全白，Console 里一条 404**。这是最高频的低级错误，
+> 写第一行之前先确认好。
+
+---
+
 ## 1. 能力边界（先读这段，能省掉一半错误）
 
 | 你想要的 | SDK 里有吗 | 怎么办 |
@@ -63,6 +83,24 @@ device.onFrame((frame) => console.log(Shroom.renderAscii(frame)));
 没有硬件时把 `Shroom.connect(...)` 换成 `Shroom.mock({ rows: 32, cols: 32, fps: 30 })`，
 **其余代码一个字都不用改**。写新功能时建议一律先用 mock 调通。
 
+> **`mock()` 是同步的**（`connect()` 是 async）。写成 `await Shroom.mock()` 也不会出错——
+> `await` 一个非 Promise 值就是它本身——所以两种写法都能跑。
+
+### mock 产生的是什么数据
+
+**两个高斯亮斑绕着中心转**（一大一小，反向旋转），外加一点底噪：
+
+- 峰值 `max` 稳定在 **0.9 以上**，底噪约 0.01
+- 亮斑**持续移动**，`center` 一直在变，绕中心画圈
+- 默认 32×32、30fps
+
+**它能验证什么**：渲染、`center` 跟随、`max`/`area` 读数、曲线、录制回放——链路整体是通的。
+
+**它不能验证什么**：
+- **真实的按压节奏**。mock 的 `max` 一直很高、从不「松手」，所以**「按下→抬起」这类状态机在 mock 下不会触发**。
+  测这类逻辑要么手动造数据，要么就得插真设备。
+- 你的传感器实际的数值范围和噪声水平。
+
 ---
 
 ## 3. Frame：唯一的数据结构
@@ -88,6 +126,74 @@ interface Frame {
 
 ```js
 const v = frame.values[y * frame.cols + x];   // 0~1
+```
+
+### 坐标系（做位置相关功能前必读）
+
+数据的排布方式是确定的，**不受任何显示选项影响**：
+
+```
+values 索引 = y * cols + x      x 是列（0 ~ cols-1），y 是行（0 ~ rows-1）
+
+center.x = 列方向，0 = 第 0 列，1 = 最后一列
+center.y = 行方向，0 = 第 0 行，1 = 最后一行
+```
+
+把 `center` 映射成 N×N 的格子（记得钳制，浮点可能取到边界）：
+
+```js
+const col = Math.min(N - 1, Math.floor(frame.center.x * N));
+const row = Math.min(N - 1, Math.floor(frame.center.y * N));
+```
+
+> **`flipY` 不影响 `center`。** `flipY` 只是 `'dots'` 模式**画图时**把行序颠倒一下，
+> `frame.values` 和 `frame.center` 永远是原始行序。所以你的位置判定逻辑不用管 `flipY`。
+>
+> **但传感器实物朝哪一边放，SDK 不知道。** 第 0 行是贴近用户的那边还是远离的那边，
+> 取决于设备怎么摆。**做位置类功能时给用户一个「上下翻转」开关**（`y → 1 - y`），
+> 比你猜一个方向可靠。
+
+> **多点按压时 `center` 是加权平均。** 两个手指分别按左上和右下，重心会落在正中间——
+> 那里可能根本没人按。SDK **没有**提供「最大压力点的坐标」，需要的话自己遍历 `values` 找最大值下标：
+>
+> ```js
+> let peak = 0, peakIdx = 0;
+> for (let i = 0; i < frame.values.length; i += 1) {
+>   if (frame.values[i] > peak) { peak = frame.values[i]; peakIdx = i; }
+> }
+> const px = peakIdx % frame.cols, py = Math.floor(peakIdx / frame.cols);
+> ```
+>
+> 单点触发类应用（按格子、打地鼠）用峰值点通常比用重心准。
+
+### 典型数值量级（写阈值时的依据）
+
+传感器逐片有差异，下面是**数量级参考**，不是标准值：
+
+| 状态 | `frame.max` 大致范围 |
+| --- | --- |
+| 没人碰 | 0.01 ~ 0.05（底噪） |
+| 手指轻触 | 0.1 ~ 0.3 |
+| 手指正常按 | 0.3 ~ 0.7 |
+| 用力按 / 手掌压 | 0.7 ~ 1.0 |
+
+所以「**判定为按下**」的阈值取 **0.15 左右**是个合理起点，`0.05` 只够用来判断「有没有人碰」。
+
+**更稳的做法是不写死阈值**，开头采一秒基线，然后按相对量触发：
+
+```js
+// 让用户别碰传感器，先量一下底噪
+let baseline = 0.03;
+setTimeout(() => { baseline = observedMax; }, 1000);
+
+const pressed = frame.max > baseline + 0.12;
+```
+
+按压检测建议用**双阈值**，避免在临界点反复触发：
+
+```js
+if (!isDown && frame.max > 0.15) isDown = true;        // 按下
+else if (isDown && frame.max < 0.08) isDown = false;   // 抬起（阈值更低）
 ```
 
 > ### ⚠️ 关于单位：`values` 是相对值，不是物理量
@@ -161,6 +267,45 @@ const off = device.onFrame(handler);
 off();   // 不再收
 ```
 
+> **`close()` 会自动清掉所有订阅**，不用先挨个 `off()` 再 `close()`。
+> `off()` 只在「设备还连着，但某个模块不想再收了」时才需要。
+
+### 4.3.1 connect() 抛错的两种情况
+
+用户在串口选择框上点「取消」也会抛错，**要和真正的连接失败分开处理**，
+否则用户取消一下就看到一句「连接失败」，很莫名其妙：
+
+```js
+try {
+  device = await Shroom.connect();
+} catch (err) {
+  // 用户主动取消：静默返回，什么都不用提示
+  if (err?.name === 'NotFoundError') return;
+  // 其余才是真的出问题了
+  showError('连接失败：' + err.message);
+}
+```
+
+### 4.3.2 切换设备时的顺序（容易踩）
+
+必须**先 connect，成功之后再关旧的**。反过来写会让第二次连接直接失败——
+因为 `await oldDevice.close()` 会消耗掉用户手势（见 §5.1）：
+
+```js
+// ✅ 对
+button.onclick = async () => {
+  const next = await Shroom.connect();   // 先连新的
+  await current?.close();                // 再关旧的
+  current = next;
+};
+
+// ❌ 错：第二次点就连不上了
+button.onclick = async () => {
+  await current?.close();                // ← 这一行让手势失效
+  current = await Shroom.connect();      // 抛错
+};
+```
+
 ### 4.4 连接参数
 
 ```js
@@ -202,6 +347,16 @@ heatmap.canvas;                 // 拿到底层 <canvas>
 
 `render()` 只是**记下**这一帧，实际绘制推到下一个屏幕刷新周期。所以哪怕串口一秒来 100 帧，
 也只会画 60 次，不用你自己做节流。
+
+> **canvas 尺寸交给 CSS 就行。** heatmap 内部按 `clientWidth/clientHeight × devicePixelRatio`
+> 自己设置画布分辨率，高分屏不会糊。你只要给 canvas 一个 CSS 尺寸：
+>
+> ```html
+> <canvas id="view" style="width: 360px; height: 360px"></canvas>
+> ```
+>
+> **不要**自己去写 `canvas.width = 360`，会被覆盖。容器尺寸变化一般能自动跟上，
+> 极端情况下手动调一次 `heatmap.resize()`。
 
 ### 4.6 底层件（自己接数据源时用）
 
@@ -292,15 +447,12 @@ recorded.push(frame);
 
 ## 6. 帧长锁定（`lockLength`，默认开）
 
-分隔符只有 4 个字节，数据里迟早会撞出一串一模一样的 `AA 55 03 99`，
-于是切出一个长度不对的短帧。这种长度多半不是完全平方数，
-`resolveShape` 会把它退化成 `1×N`——画面就在方阵和一条横线之间狂闪。
+分隔符只有 4 字节，数据里迟早会撞出一串一模一样的，于是切出长度不对的脏帧。
+切帧器默认会锁定帧长把这些丢掉，也能自动纠回来。
 
-所以切帧器默认会：**连着 3 帧长度一致就锁死这个长度**，之后长度对不上的一律当脏帧丢掉；
-万一锁错了（比如开头第一帧本身是残的），另一个长度连着来 12 次就改锁它，能自己纠回来。
+**你只需要知道一件事：`droppedCount` 有个小数字在缓慢增长是正常的，不用报错给用户。**
 
-因此 `droppedCount` 有个小数字在缓慢增长是**正常的**，不用报错给用户。
-真需要收变长帧就传 `lockLength: false`。
+（真需要收变长帧就传 `lockLength: false`。）
 
 ---
 
@@ -338,7 +490,41 @@ device.onFrame((frame) => {
 });
 ```
 
-### 8.2 最大压力曲线
+### 8.2 按到哪个格子（打地鼠这类）
+
+把传感器分成 N×N 格，检测「按下 → 抬起」并判定落在哪一格：
+
+```js
+const N = 3;
+let isDown = false, peakMax = 0, peakCenter = null;
+
+device.onFrame((frame) => {
+  heatmap.render(frame);
+
+  if (!isDown && frame.max > 0.15) {           // 按下
+    isDown = true; peakMax = 0;
+  }
+  if (isDown) {
+    if (frame.max > peakMax) {                 // 记住最重那一刻的位置
+      peakMax = frame.max;
+      peakCenter = { x: frame.center.x, y: frame.center.y };   // 存副本
+    }
+    if (frame.max < 0.08) {                    // 抬起，结算
+      isDown = false;
+      const col = Math.min(N - 1, Math.floor(peakCenter.x * N));
+      const row = Math.min(N - 1, Math.floor(peakCenter.y * N));
+      onHit(row, col);                         // ← 你的逻辑
+    }
+  }
+});
+```
+
+两个要点：**取按压过程中最重那一帧的位置**（刚碰到和快松手时重心会飘），
+以及**双阈值**（0.15 按下 / 0.08 抬起）避免在临界点反复触发。
+
+> mock 数据 `max` 一直很高、不会「松手」，**这段逻辑在 mock 下不会触发**，需要真设备测。
+
+### 8.3 最大压力曲线
 
 ```js
 const history = [];
@@ -350,7 +536,7 @@ device.onFrame((frame) => {
 setInterval(() => drawCurve(history), 50);        // 画图跟采集分开，别在 onFrame 里画
 ```
 
-### 8.3 录制与回放
+### 8.4 录制与回放
 
 ```js
 import { decodeFrame } from './sdk/web/index.js';
@@ -369,7 +555,7 @@ const timer = setInterval(() => {
 }, 33);
 ```
 
-### 8.4 分区域统计（比如把 32×32 分成四象限）
+### 8.5 分区域统计（比如把 32×32 分成四象限）
 
 ```js
 function quadrantSums(frame) {
@@ -385,7 +571,7 @@ function quadrantSums(frame) {
 }
 ```
 
-### 8.5 简单去噪（SDK 不提供，自己两行）
+### 8.6 简单去噪（SDK 不提供，自己两行）
 
 ```js
 let smoothed = null;
@@ -402,40 +588,33 @@ device.onFrame((frame) => {
 
 ---
 
-## 9. 目录与每个文件的职责
+## 9. 目录结构（主要用来确认 import 路径）
 
 ```
 sdk/
-├─ core/              纯逻辑，浏览器和 Node 共用，不碰任何设备 API
-│  ├─ framer.js         字节流 → 一帧一帧（找分隔符、切帧、帧长锁定）
-│  ├─ frame.js          一帧字节 → Frame 对象（归一化、算 max/area/center）
-│  ├─ colormap.js       0~1 → [r,g,b]，提供 jet / jetWhite / grey
-│  ├─ device.js         帧订阅中心，onFrame 的实现
-│  └─ mock.js           模拟数据源，产出的是原始字节，和真串口走同一条解码路径
+├─ core/              纯逻辑，浏览器和 Node 共用
+│  ├─ framer.js         字节流 → 一帧一帧
+│  ├─ frame.js          一帧字节 → Frame 对象
+│  ├─ colormap.js       0~1 → [r,g,b]
+│  ├─ device.js         帧订阅中心
+│  └─ mock.js           模拟数据源
 ├─ web/               浏览器
-│  ├─ serial.js         ★ Web Serial API 连接串口
-│  ├─ heatmap.js        canvas 渲染，三种画法
-│  ├─ index.js          浏览器入口，import 这个
-│  ├─ index.html        示例页面（代码已内联，单文件）
-│  └─ shroom.bundle.js  单文件版，不想用模块就 <script> 引这个
-├─ node/              Node / Electron
-│  ├─ serial.js         ★ serialport 连接串口
-│  ├─ ascii.js          终端里的彩色方块图
-│  ├─ demo.js           命令行示例
-│  └─ index.js          Node 入口，import 这个
-├─ start.mjs          起一个本地服务器打开示例页（因为 file:// 连不了串口）
+│  ├─ index.js          ← 浏览器入口，import 这个
+│  ├─ serial.js         Web Serial 连接
+│  ├─ heatmap.js        canvas 渲染
+│  ├─ index.html        官方示例页
+│  └─ shroom.bundle.js  单文件版，<script> 直接引
+├─ node/               Node / Electron
+│  └─ index.js          ← Node 入口，import 这个
+├─ start.mjs          本地服务器（根目录 = sdk/，端口 5178 起，占用则顺延到 5182）
 └─ index.d.ts         TypeScript 类型定义
 ```
 
-**串口连接在哪里？** 就两个文件，上面打 ★ 的：
-- `web/serial.js` —— 浏览器，用 Web Serial API
-- `node/serial.js` —— Node / Electron，用 serialport 包
+**你只需要 import 两个入口之一**：`web/index.js` 或 `node/index.js`，
+路径怎么写见 §0.5。其余文件不用读，本文已经涵盖了它们的全部对外行为。
 
-两者都是：读到字节 → 丢给 `core/framer.js` 切帧 → 丢给 `core/frame.js` 解码 →
-通过 `core/device.js` 发给你的 `onFrame`。所以两端拿到的 Frame 完全一样。
-
-`core/` 不依赖任何环境 API，所以你想接别的数据源（WebSocket、蓝牙、文件），
-自己调 `createFramer()` + `decodeFrame()` 就行，见 §4.6。
+> 唯一的例外是 §4.6 的 `createFramer` / `decodeFrame`——接非串口数据源时才用，
+> 它们同样从入口文件导出，不用去 `core/` 里单独引。
 
 ---
 
