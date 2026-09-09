@@ -8,7 +8,7 @@ import desktopRelease from './desktop-release.json';
 // SDK 压缩包由 scripts/pack-sdk.mjs 从 sdk/ 目录打包生成，构建时自动更新
 const SDK_DOWNLOAD = '/shroom-sdk.zip';
 
-// 上位机安装包 350MB，不进仓库也不走 Node 进程发。
+// 上位机的包 100MB 上下，不进仓库也不走 Node 进程发。
 // 线上把 Nginx 的 /downloads/ alias 到磁盘目录，本地则落在 public/downloads/（已 gitignore）。
 // 换 CDN 或对象存储时只改这个环境变量，页面代码不动。
 const DESKTOP_BASE = process.env.NEXT_PUBLIC_DESKTOP_DOWNLOAD_BASE ?? '/downloads';
@@ -44,7 +44,7 @@ const DESKTOP_TARGET: DownloadTarget = {
   url: DESKTOP_WIN_URL,
   source: 'desktop-win',
   title: `下载 Windows 上位机 ${desktopRelease.version}`,
-  subtitle: `安装包 ${desktopRelease.sizeLabel}，下载需要一点时间。留个联系方式，方便后续技术支持与授权。`,
+  subtitle: `免安装 zip，${desktopRelease.sizeLabel}，下载需要一点时间。留个联系方式，方便后续技术支持。`,
 };
 
 const navItems = [
@@ -136,12 +136,10 @@ const capabilities = [
   },
 ];
 
-// 明说不包含什么，比让人下载完自己发现要好。和 SDK 文档里那张能力边界表一致
-const notIncluded = ['实时曲线', '录制与回放', 'CSV / 报表导出', 'Mapping 生成', '力学标定与 kPa 换算', '算法与识别'];
-
-// Windows 已经有正式产出物，版本号 / 体积 / SHA-256 全部来自 app/desktop-release.json，
-// 那个文件由 scripts/sync-desktop-release.mjs 从安装包本身算出来，不许手填 ——
-// 手填迟早和服务器上挂的那个文件对不上，用户一比对校验值就会以为包被人换了。
+// Windows 已经有正式产出物，版本号 / 体积全部来自 app/desktop-release.json，
+// 那个文件由 scripts/sync-desktop-release.mjs 从包本身算出来，不许手填。
+// 里面的 sha256 是给发布流程核对用的（见 DEPLOY.md），**不往页面上渲染** ——
+// 一串 64 位十六进制挂在下载区，看的人会以为是密钥。
 // macOS / Linux 还没有产出物，就老老实实写「即将发布」，别挂假文件名。
 type DesktopPlatform = {
   id: string;
@@ -165,10 +163,10 @@ const upperComputerPlatforms: DesktopPlatform[] = [
     label: 'Windows',
     badge: 'W',
     eyebrow: 'SHROOM 上位机',
-    title: 'Windows 上位机',
-    description: '连接传感器实时采集，2D 热力图与 3D 模型映射，本地存储与按时间回放，CSV 导出。',
+    title: 'Windows 串口监视器',
+    description: '连接串口，看原始字节、看帧、看实时热力图。免安装，解压双击即用。',
     compatibility: 'Windows 10 / 11（64 位）',
-    packageName: '安装包 · 更新日志 · 排错说明',
+    packageName: '免安装 zip · 解压即用',
     driverNote: '装 CH341SER 驱动后，在设备管理器里确认出现了 COM 口。',
     status: 'available' as const,
     release: desktopRelease,
@@ -366,7 +364,6 @@ export default function Home() {
   const [activePlatform, setActivePlatform] = useState('windows');
   const [productQuery, setProductQuery] = useState('');
   const [copied, setCopied] = useState(false);
-  const [shaCopied, setShaCopied] = useState(false);
   // 下载前的登记弹窗。注意这不是审批：填完当场就下载。
   // gateTarget 记住是谁触发的，SDK 和上位机走同一个弹窗但登记来源不同
   const [gateOpen, setGateOpen] = useState(false);
@@ -430,12 +427,6 @@ export default function Home() {
       // 隐私模式下 localStorage 会抛错，那就当没填过，弹一次也无妨
     }
     setGateOpen(true);
-  }
-
-  async function copySha() {
-    await navigator.clipboard?.writeText(desktopRelease.sha256);
-    setShaCopied(true);
-    window.setTimeout(() => setShaCopied(false), 1600);
   }
 
   async function submitGate(event: FormEvent<HTMLFormElement>) {
@@ -742,21 +733,6 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="mt-6 rounded-2xl border border-dashed border-[#d0d5dd] bg-white/60 p-7 sm:p-8">
-            <h3 className="text-sm font-semibold text-[#344054]">SDK 里没有这些</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-[#667085]">
-              下面这些是你（或者你的 AI）在 SDK 之上要写的部分。写清楚比让人下载完自己发现要好。
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {notIncluded.map((item) => (
-                <span key={item} className="rounded-md bg-[#f2f4f7] px-2.5 py-1.5 text-[11px] font-medium text-[#98a2b3] line-through decoration-[#d0d5dd]">{item}</span>
-              ))}
-            </div>
-            <p className="mt-5 text-xs leading-6 text-[#98a2b3]">
-              尤其是<span className="font-medium text-[#667085]">力学标定</span>：SDK 给到的是 0~1 的相对值，
-              换算成 kPa / 牛顿需要每台设备各自的标定曲线，那不在 SDK 里。要物理单位请联系我们。
-            </p>
-          </div>
         </div>
       </section>
 
@@ -939,19 +915,6 @@ export default function Home() {
                         </li>
                       ))}
                     </ul>
-                    {/* 校验值给企业 IT 用：350MB 的包从哪下的都能自己核一遍，
-                        Windows 上 certutil -hashfile <文件> SHA256 就能算 */}
-                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#eaecf0] pt-3">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">SHA-256</span>
-                      <code className="max-w-full truncate font-mono text-[11px] text-[#667085]">{selectedPlatform.release.sha256}</code>
-                      <button
-                        type="button"
-                        onClick={copySha}
-                        className="rounded-md border border-[#d0d5dd] bg-white px-2 py-1 text-[11px] font-semibold text-[#344054] transition hover:bg-[#f9fafb]"
-                      >
-                        {shaCopied ? '已复制' : '复制'}
-                      </button>
-                    </div>
                   </div>
                 ) : null}
 
@@ -980,11 +943,11 @@ export default function Home() {
                 </div>
 
                 {selectedPlatform.status === 'available' ? (
-                  /* 安装包没做代码签名，SmartScreen 一定会拦。这条必须写在下载按钮旁边，
+                  /* 没做代码签名，SmartScreen 一定会拦。这条必须写在下载按钮旁边，
                      不能只写在文档里 —— 被拦住的人第一反应是「这软件有毒」，然后就走了 */
                   <p className="mt-5 rounded-lg border border-[#eaecf0] bg-white px-4 py-3 text-xs leading-6 text-[#667085]">
-                    安装包未做代码签名，首次运行 Windows 会弹「已保护你的电脑」，点<span className="font-semibold text-[#344054]">「更多信息 → 仍要运行」</span>即可。
-                    上位机需要授权才能采集数据，安装后在软件内查看授权状态。
+                    解压后运行 <code className="font-mono text-[#344054]">ShroomMonitor.exe</code>，不需要安装、不需要授权。
+                    程序未做代码签名，首次运行 Windows 会弹「已保护你的电脑」，点<span className="font-semibold text-[#344054]">「更多信息 → 仍要运行」</span>即可。
                   </p>
                 ) : null}
               </div>

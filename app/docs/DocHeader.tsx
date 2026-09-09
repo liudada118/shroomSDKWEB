@@ -15,6 +15,14 @@ export default function DocHeader() {
         </Link>
 
         <div className="flex items-center gap-2.5 text-sm font-medium">
+          {/* 左上角那个 logo 也回首页，但没人会把它当按钮看 —— 这里给一个写着字的 */}
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#d0d5dd] bg-white px-3 py-2 font-semibold text-[#344054] shadow-sm transition hover:border-[#84adff] hover:text-[#175cd3]"
+          >
+            <span aria-hidden>←</span>
+            返回首页
+          </Link>
           <Link href="/docs" className="hidden text-[#475467] transition hover:text-[#175cd3] sm:inline">
             文档中心
           </Link>

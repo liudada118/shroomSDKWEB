@@ -20,11 +20,7 @@
 需要 Node 18 以上（`node -v` 查一下，没有就去 https://nodejs.org 装）。
 
 **只想先看看长什么样 → 双击 `web/index.html`**，什么都不用装。
-模拟数据、热力图、配色切换都能正常跑，只有「连接设备」是灰的。
-
-> 为什么双击连不了设备？浏览器规定串口只在 `https` 或 `localhost` 下开放
-> （`navigator.serial` 在规范里标了 `SecureContext`），`file://` 不在白名单里。
-> 这是浏览器的硬规定，任何打包方式都绕不过去，只能用上面那个 `start-demo.bat`。
+模拟数据、热力图、配色切换都能正常跑，只有「连接设备」是灰的 —— 要连真实设备用上面那个 `start-demo.bat`。
 
 命令行开法：
 
@@ -218,7 +214,7 @@ await Shroom.connect({
 | 系统 | 要做的事 |
 | --- | --- |
 | Windows | 装 CH341SER 通用驱动，然后在**设备管理器 → 端口 (COM 和 LPT)** 里确认出现了 COM 口 |
-| macOS | 较新的系统自带 CH34x 驱动，插上后应能看到 `/dev/tty.usbserial-*`（终端里 `ls /dev/tty.*` 查）。没有就装芯片厂商驱动，装完要在「系统设置 → 隐私与安全性」里放行 |
+| macOS | 较新的系统自带 CH34x 驱动，插上后应能看到 `/dev/tty.usbserial-*`（终端里 `ls /dev/tty.*` 查）。没有就装 CH34x 驱动，装完要在「系统设置 → 隐私与安全性」里放行 |
 | Linux | 驱动通常在内核里，但**默认用户没有串口权限**：打开设备会报 `Permission denied`。执行 `sudo usermod -aG dialout $USER` 后**重新登录**（`newgrp dialout` 可临时生效）。设备名一般是 `/dev/ttyUSB0` 或 `/dev/ttyACM0` |
 
 > Linux 上还有一个坑：某些发行版的 `brltty` 服务会把 CH340 抢走当盲文设备。

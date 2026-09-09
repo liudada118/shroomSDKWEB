@@ -1,23 +1,23 @@
 /**
- * 把打好的 Windows 上位机安装包接进网站。
+ * 把打好的 Windows 上位机包接进网站。
  *
- *   node scripts/sync-desktop-release.mjs "C:/project/shroom1.0/dist/Shroom Setup 1.1.34.exe"
+ *   node scripts/sync-desktop-release.mjs "C:/project/ShroomConstruction/shroom-monitor/dist/ShroomMonitor-0.1.0-win-x64.zip"
  *
- * 干三件事：算 SHA-256 和体积、把安装包拷进 public/downloads/、把版本信息写进
+ * 干三件事：算 SHA-256 和体积、把包拷进 public/downloads/、把版本信息写进
  * app/desktop-release.json。
  *
- * 为什么要有这个脚本：安装包 350MB，版本号、体积、校验值三样东西如果靠手填，
+ * 为什么要有这个脚本：包有 100MB 上下，版本号、体积、校验值三样东西如果靠手填，
  * 迟早会和真正挂在服务器上的那个文件对不上 —— 那比不写校验值更糟，
  * 用户拿校验值一比对不上，会以为包被人掉了。所以只允许从文件本身算出来。
  *
- * 安装包本身不进 git（public/downloads/ 已在 .gitignore 里）。
- * 线上建议让 Nginx 直接 alias 到磁盘目录，别走 Node 进程发 350MB。
+ * 包本身不进 git（public/downloads/ 已在 .gitignore 里）。
+ * 线上建议让 Nginx 直接 alias 到磁盘目录，别走 Node 进程发这么大的文件。
  * 只有 app/desktop-release.json 这个几百字节的元数据进仓库。
  */
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { copyFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { basename, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -25,7 +25,7 @@ const OUT_JSON = join(ROOT, 'app', 'desktop-release.json');
 const OUT_DIR = join(ROOT, 'public', 'downloads');
 
 // 更新日志从上位机仓库里读，不在这边重抄一遍
-const NOTES_DIR = 'C:/project/shroom1.0/release-notes/windows';
+const NOTES_DIR = 'C:/project/ShroomConstruction/shroom-monitor/release-notes';
 
 function sha256(file) {
   return new Promise((resolve, reject) => {
@@ -41,7 +41,7 @@ function formatSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(0)} MB`;
 }
 
-// 从「Shroom Setup 1.1.34.exe」里抠出 1.1.34
+// 从「ShroomMonitor-0.1.0-win-x64.zip」里抠出 0.1.0
 function versionFrom(name) {
   const m = name.match(/(\d+\.\d+\.\d+)/);
   if (!m) throw new Error(`文件名里看不出版本号：${name}`);
@@ -72,8 +72,10 @@ async function main() {
 
   const original = basename(src);
   const version = versionFrom(original);
+  // 扩展名跟着输入文件走：现在发的是免安装 zip，以后要是换成别的格式也不用再改脚本
+  const ext = extname(original).toLowerCase() || '.zip';
   // 发布用的文件名去掉空格：带空格的 URL 要转义，粘到聊天窗口里容易被截断
-  const fileName = `Shroom-Setup-${version}-win-x64.exe`;
+  const fileName = `ShroomMonitor-${version}-win-x64${ext}`;
 
   console.log(`正在计算 SHA-256（${formatSize(info.size)}，要等一会）…`);
   const digest = await sha256(src);

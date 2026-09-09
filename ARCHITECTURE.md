@@ -9,8 +9,11 @@ Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示�
 **当前版本的下载与文档都是真实可用的，不再是骨架**：
 
 - **统一 SDK** —— `public/shroom-sdk.zip` 由 `npm run build` 从 `sdk/` 现打，不按操作系统分包。
-- **Windows 上位机** —— 真实安装包，版本 / 体积 / SHA-256 来自 `app/desktop-release.json`，
-  由 `scripts/sync-desktop-release.mjs` 从安装包本身算出。macOS / Linux 尚未打包，页面上是灰态「即将发布」。
+- **Windows 上位机** —— **Shroom Monitor（串口监视器）**，只做四件事：连接串口、看原始字节、
+  看帧、看实时热力图，**不做曲线 / 回放 / 报表 / 算法 / 授权**，和 SDK 的能力边界一致。
+  免安装 zip，工程在同级独立目录 `../shroom-monitor`。
+  版本 / 体积 / SHA-256 来自 `app/desktop-release.json`，
+  由 `scripts/sync-desktop-release.mjs` 从包本身算出。macOS / Linux 尚未打包，页面上是灰态「即将发布」。
 - **文档中心** —— `/docs` 与 `/docs/:slug` 在构建期由 `scripts/build-docs.mjs` 把 `sdk/*.md`
   预渲染成 HTML，运行时不读磁盘。
 - **网页测试台** —— `public/lab.html`，浏览器直连串口看数据。
@@ -53,14 +56,14 @@ shroomSDKWEB/
 │  ├─ build-sdk-bundle.mjs  # 生成 sdk/web/shroom.bundle.js 单文件版
 │  ├─ pack-sdk.mjs          # sdk/ → public/shroom-sdk.zip（保留 start.sh 可执行位）
 │  ├─ build-docs.mjs        # sdk/*.md → 预渲染 HTML，供 /docs 使用
-│  └─ sync-desktop-release.mjs  # 安装包 → public/downloads/ + desktop-release.json
+│  └─ sync-desktop-release.mjs  # 上位机包 → public/downloads/ + desktop-release.json
 ├─ sdk/                     # SDK 源码与文档的事实源，打包进 zip 并生成文档站
 ├─ public/
 │  ├─ favicon.svg           # 站点图标
 │  ├─ og.png                # 1200×630 社交分享卡片
 │  ├─ lab.html              # 网页测试台（Web Serial 直连设备）
 │  ├─ shroom-sdk.zip        # 构建产物
-│  └─ downloads/            # 上位机安装包，已 gitignore，生产走 Nginx alias
+│  └─ downloads/            # 上位机压缩包，已 gitignore，生产走 Nginx alias
 ├─ todo/
 │  └─ SDK_SKILL_TODO.md     # SDK、手套接入、Skill 与展示站的分阶段待办
 ├─ ARCHITECTURE.md          # 本架构说明
@@ -73,14 +76,28 @@ shroomSDKWEB/
 └─ vite.config.ts           # Vinext、Sites、Tailwind 与 Worker 构建配置
 ```
 
+上位机是**同级的独立工程**，不在这个仓库里：
+
+```text
+C:/project/ShroomConstruction/
+├─ shroomSDKWEB/            # 本仓库（站点 + SDK 事实源）
+└─ shroom-monitor/          # Shroom Monitor，Electron 串口监视器，独立工程
+   ├─ main/                 # 主进程：窗口 + 串口 + IPC（只搬字节，不拆帧）
+   ├─ renderer/             # 界面；vendor/shroom.bundle.js 由 scripts/sync-sdk.mjs 从本仓库拷入
+   └─ dist/                 # ShroomMonitor-<版本>-win-x64.zip
+```
+
+两边靠 `sdk/web/shroom.bundle.js` 连着：上位机的拆帧、解帧、热力图**全部复用站点这份 SDK**，
+拷贝而不是重写，保证 SDK 只有一个事实源。
+
 ### 关键目录说明
 
 | 目录 | 主要功能 |
 | :--- | :--- |
 | `/app` | App Router 页面、根布局、站点级样式与上位机发布元数据 |
-| `/scripts` | 构建期脚本：打 SDK zip、预渲染文档、同步上位机安装包 |
+| `/scripts` | 构建期脚本：打 SDK zip、预渲染文档、同步上位机压缩包 |
 | `/sdk` | SDK 源码与 `AI-CONTEXT.md` 等文档的**唯一事实源**，zip 和文档站都从这里生成 |
-| `/public` | 静态资源、网页测试台、SDK zip 与上位机安装包 |
+| `/public` | 静态资源、网页测试台、SDK zip 与上位机压缩包 |
 | `/.openai` | OpenAI Sites 部署项目标识与逻辑资源声明 |
 | `/todo` | 记录 SDK 事实源、手套接入闭环、Shroom Skill 和展示站真实业务接入的待办与验收标准 |
 
@@ -154,7 +171,7 @@ flowchart TD
 
 | 变量名 | 描述 | 默认行为 |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_DESKTOP_DOWNLOAD_BASE` | 上位机安装包所在目录 | `/downloads`，指向 Nginx alias 或 CDN |
+| `NEXT_PUBLIC_DESKTOP_DOWNLOAD_BASE` | 上位机压缩包所在目录 | `/downloads`，指向 Nginx alias 或 CDN |
 | `NEXT_PUBLIC_SDK_REGISTRY_URL` | 下载登记提交地址 | `https://shroom.jq-industries.com/sdk-requests` |
 
 构建工具会使用以下非业务变量：
@@ -190,6 +207,8 @@ flowchart TD
 | 2026-09-09 | 能力边界显式化 | 首页新增「SDK 里没有这些」，与 SDK 文档中的能力边界表一致，明确不提供 kPa 换算 |
 | 2026-09-09 | 产品搜索与手套体验站 | 产品系列搜索框接上真实过滤；接入外部手套体验站 <https://glove.jq-industries.io/> |
 | 2026-09-09 | 部署文档 | 新增 `DEPLOY.md`，覆盖上位机打包、同步脚本、Nginx alias 与发版流程 |
+| 2026-09-09 | 自研上位机 Shroom Monitor | 新建独立工程 `../shroom-monitor`：Electron + serialport，串口连接、原始字节十六进制视图、帧列表与帧长锁定、实时热力图、HEX/文本发送。渲染层复用 `sdk/web/shroom.bundle.js`，零构建步骤 |
+| 2026-09-09 | 上位机改为免安装 zip | 站点下载从公司桌面端 `Shroom Setup 1.1.34.exe`（335 MB，带 Python 运行时与授权校验）换成 `ShroomMonitor-0.1.0-win-x64.zip`（103 MB），不出安装器，避开 NSIS「无法关闭」与授权问题 |
 
 ## 9. 更新日志
 
@@ -203,6 +222,7 @@ flowchart TD
 | 2026-09-09 | 新增功能 | 网页测试台、文档中心、Windows 上位机下载与通用下载登记弹窗上线 |
 | 2026-09-09 | 优化重构 | 能力卡片按 SDK 实际能力重写，补「SDK 里没有这些」边界说明，产品资源入口全部指向真实去处 |
 | 2026-09-09 | 文档更新 | 新增 DEPLOY.md；更新本文档第 1、3、4、5、7 节，去掉「前端骨架」「试用申请演示」等过期描述 |
+| 2026-09-09 | 优化重构 | Windows 上位机换成自研的 Shroom Monitor（免安装 zip），页面文案去掉新应用没有的「3D 模型映射 / 回放 / CSV 导出 / 授权」；`sync-desktop-release.mjs` 改为按输入文件扩展名产出 `ShroomMonitor-<版本>-win-x64.<ext>`，更新日志改从 `../shroom-monitor/release-notes/` 读 |
 
 ---
 

@@ -51,6 +51,23 @@ function splitTitle(markdown) {
 }
 
 /**
+ * Markdown 里写的是 SDK 文件夹内部的相对链接（`[README.md](README.md)`），
+ * 那在解压出来的 zip 里点得开，但放到网站上就是 404 —— 网站没有 /docs/README.md 这个地址。
+ *
+ * 所以：能对上文档页的，改成站内地址；对不上的（`index.d.ts` 这种源码文件）
+ * 直接把链接拆掉，只留 `<code>` 文本 —— 宁可不可点，也不能让人点进 404。
+ */
+const FILE_TO_SLUG = new Map(DOCS.map((doc) => [doc.file, doc.slug]));
+
+function rewriteLocalLinks(html) {
+  return html.replace(/<a href="(?!https?:|\/|#)([^"]+)">([\s\S]*?)<\/a>/g, (_all, href, text) => {
+    const file = decodeURIComponent(href.replace(/^\.\//, '').split(/[#?]/)[0]);
+    const slug = FILE_TO_SLUG.get(file);
+    return slug ? `<a href="/docs/${slug}">${text}</a>` : `<code>${text}</code>`;
+  });
+}
+
+/**
  * 给 h2 / h3 补 id，同时收集目录。
  *
  * 用序号而不是标题文本生成 id：标题全是中文，转 slug 要么变成一串百分号编码，
@@ -72,7 +89,8 @@ const pages = [];
 for (const doc of DOCS) {
   const source = await readFile(join(SDK, doc.file), 'utf8');
   const { title, body } = splitTitle(source);
-  const { html, toc } = addAnchors(await marked.parse(body, { gfm: true, breaks: false }));
+  const parsed = await marked.parse(body, { gfm: true, breaks: false });
+  const { html, toc } = addAnchors(rewriteLocalLinks(parsed));
   pages.push({
     slug: doc.slug,
     label: doc.label,

@@ -206,7 +206,7 @@ else if (isDown && frame.max < 0.08) isDown = false;   // 抬起（阈值更低�
 > 所以：
 > - ✅ 可以说「压力 0.72」「比刚才重了」「重心往左移了」
 > - ❌ **不要**在 UI 上写 kPa / N / kg，**不要**自己编一个系数去乘
-> - 如果用户明确要物理单位，告诉他需要找设备厂商拿标定数据，这是 SDK 之外的事
+> - 如果用户明确要物理单位，告诉他需要联系官方技术人员拿标定数据，这是 SDK 之外的事
 
 `raw` 和 `values` 的长度可能不一致：`raw` 是实际收到的字节数，
 `values` 长度恒为 `rows * cols`，不够的位置补 0。日常用 `values` 就行。
@@ -398,18 +398,16 @@ button.onclick = async () => {
 
 ### 5.2 浏览器串口只在 https 或 localhost 下开放
 
-`navigator.serial` 标了 `SecureContext`。所以：
-
 - `http://localhost:xxxx` ✅
 - `https://你的域名` ✅
-- `file://`（双击 html 文件打开）❌ **永远不行**，任何打包方式都绕不过
+- `file://`（双击 html 文件打开）❌
 - `http://192.168.x.x` ❌
 
 写代码时用 `Shroom.isSupported()` 提前判断，给用户一个明确的提示，别让按钮点了没反应。
 
 ### 5.3 只有 Chrome / Edge 支持
 
-Safari 和 Firefox 没有 Web Serial，且短期内不会有。需要跨浏览器就走 Node/Electron 方案。
+Safari 和 Firefox 没有 Web Serial。需要跨浏览器就走 Node/Electron 方案。
 
 **操作系统不是限制**：Windows / macOS / Linux 三个桌面系统上的 Chrome / Edge 都能用，
 代码一份，不用写平台分支。移动端不行（Android Chrome 也没有 Web Serial）。

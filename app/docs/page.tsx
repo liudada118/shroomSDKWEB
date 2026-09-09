@@ -15,7 +15,10 @@ export default function DocsIndex() {
       <DocHeader />
 
       <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
-        <p className="text-sm font-semibold text-[#2563eb]">文档与示例</p>
+        <Link href="/" className="text-sm font-semibold text-[#175cd3] hover:underline">
+          ← 返回首页
+        </Link>
+        <p className="mt-6 text-sm font-semibold text-[#2563eb]">文档与示例</p>
         <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
           三份文档，覆盖从第一次连接到交付。
         </h1>

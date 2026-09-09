@@ -36,9 +36,15 @@ export default async function DocDetail({ params }: { params: Promise<{ slug: st
       <DocHeader />
 
       <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
-        <Link href="/docs" className="text-sm font-semibold text-[#175cd3] hover:underline">
-          ← 返回文档中心
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-semibold">
+          <Link href="/docs" className="text-[#175cd3] hover:underline">
+            ← 返回文档中心
+          </Link>
+          <span className="text-[#d0d5dd]">·</span>
+          <Link href="/" className="text-[#667085] transition hover:text-[#175cd3] hover:underline">
+            返回首页
+          </Link>
+        </div>
 
         <div className="mt-6 flex flex-col gap-6 border-b border-[#eaecf0] pb-9 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
