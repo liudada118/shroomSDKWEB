@@ -1008,45 +1008,35 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="relative overflow-hidden rounded-[28px] bg-[#2563eb] px-7 py-12 text-white shadow-[0_28px_70px_rgba(37,99,235,0.25)] sm:px-12 sm:py-16 lg:px-16">
             <div className="lab-grid pointer-events-none absolute inset-0 opacity-35" />
-            <div className="relative grid items-center gap-10 lg:grid-cols-[1fr_0.9fr]">
-              <div>
-                <p className="font-mono text-[11px] font-semibold tracking-[0.16em] text-[#dbeafe]">SHROOM WEB LAB</p>
-                <h2 className="mt-4 max-w-xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">不用安装，先在网页里验证设备。</h2>
-                <p className="mt-5 max-w-xl text-sm leading-7 text-[#dbeafe] sm:text-base">使用 Chrome 或 Edge 连接设备，检查串口数据、Mapping 与可视化结果，让客户在正式开发前快速完成验证。</p>
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <a
-                    href="/lab.html"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-lg bg-white px-4 py-2.5 text-center text-sm font-semibold text-[#175cd3] shadow-sm transition hover:bg-[#eff6ff]"
-                  >
-                    打开网页测试台
-                  </a>
-                  <Link href="/docs/readme" className="rounded-lg border border-white/30 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10">查看浏览器兼容说明</Link>
+            <div className="relative">
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="font-mono text-[11px] font-semibold tracking-[0.16em] text-[#dbeafe]">SHROOM WEB LAB</p>
+                  <h2 className="mt-4 max-w-xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">无需下载，即可在此试用。</h2>
                 </div>
-                <p className="mt-4 text-xs leading-6 text-[#bfdbfe]">
-                  测试台就是 SDK 压缩包里那个示例页，同一份代码。需要 Chrome 或 Edge。
-                </p>
+                <a
+                  href="/lab.html"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 rounded-lg bg-white px-4 py-2.5 text-center text-sm font-semibold text-[#175cd3] shadow-sm transition hover:bg-[#eff6ff]"
+                >
+                  新标签页打开
+                </a>
               </div>
 
-              <div className="rounded-2xl border border-white/20 bg-[#0b2356]/65 p-5 backdrop-blur-sm">
-                <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                  <span className="text-xs font-semibold">实时压力分布</span>
-                  <span className="flex items-center gap-2 font-mono text-[10px] text-[#bfdbfe]"><span className="h-1.5 w-1.5 rounded-full bg-[#6ee7b7]" /> LIVE</span>
-                </div>
-                <div className="mt-5 grid grid-cols-8 gap-1.5" aria-label="压力热图示意">
-                  {Array.from({ length: 40 }).map((_, index) => (
-                    <span
-                      key={index}
-                      className={`aspect-square rounded-[4px] ${index % 11 === 0 ? 'bg-[#fbbf24]' : index % 7 === 0 ? 'bg-[#38bdf8]' : index % 5 === 0 ? 'bg-[#60a5fa]' : 'bg-white/10'}`}
-                    />
-                  ))}
-                </div>
-                <div className="mt-5 grid grid-cols-3 gap-3 text-center font-mono text-[10px] text-[#bfdbfe]">
-                  <span className="rounded-md bg-white/10 px-2 py-2">256 CH</span>
-                  <span className="rounded-md bg-white/10 px-2 py-2">60 FPS</span>
-                  <span className="rounded-md bg-white/10 px-2 py-2">8.4 ms</span>
-                </div>
+              {/*
+                直接把示例页嵌进来，用户不用下载、不用跳走就能连设备。
+                allow="serial" 不能少 —— 串口能力默认只给顶层文档，
+                iframe 里不显式放行的话，「连接设备」按钮点了会静默失败。
+              */}
+              <div className="mt-9 overflow-hidden rounded-2xl border border-white/20 bg-[#0b0f14] shadow-[0_20px_60px_rgba(8,15,35,0.45)]">
+                <iframe
+                  src="/lab.html"
+                  title="Shroom 网页测试台"
+                  allow="serial"
+                  loading="lazy"
+                  className="block h-[620px] w-full border-0 sm:h-[760px]"
+                />
               </div>
             </div>
           </div>

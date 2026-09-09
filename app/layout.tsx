@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://shroom-developer-center.stelmachtemme1632.chatgpt.site'),
+  metadataBase: new URL('https://sdk.jq-industries.com'),
   title: 'Shroom Developer｜SDK 开发中心',
   description: '通过 Shroom Skill 快速接入统一 SDK，并获取对应系统的 Shroom 上位机、驱动、网页调试和 Mapping 工具。',
   alternates: {

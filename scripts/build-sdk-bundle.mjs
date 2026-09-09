@@ -33,6 +33,7 @@ const PLACEHOLDER = '<!--@INLINE_BUNDLE@-->';
 // 依赖在前，被依赖的先出现。改动 sdk 结构时记得同步这张表。
 const FILES = [
   'core/colormap.js',
+  'core/layout.js',
   'core/framer.js',
   'core/frame.js',
   'core/device.js',
@@ -104,6 +105,8 @@ ${body
     createFramer: createFramer,
     decodeFrame: decodeFrame,
     resolveShape: resolveShape,
+    getLayout: getLayout,
+    LAYOUTS: LAYOUTS,
     getColormap: getColormap,
     DEFAULT_DELIMITER: DEFAULT_DELIMITER,
   };

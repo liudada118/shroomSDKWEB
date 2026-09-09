@@ -2,9 +2,9 @@
   "version": "0.1.0",
   "fileName": "ShroomMonitor-0.1.0-win-x64.zip",
   "releaseDate": "2026-09-09",
-  "size": 107868215,
+  "size": 107870442,
   "sizeLabel": "103 MB",
-  "sha256": "4126aed7e13c7274db32b2717a1b750bd8c4c0311e0cb4f2e0bfd91e41d53509",
+  "sha256": "c4da8a9fc70b024a9994672bcadd1edb272edaaf8cac6204232383b708cfbf2d",
   "notes": [
     "首个版本：串口连接、原始字节十六进制视图、帧列表与帧长锁定、实时热力图",
     "支持发送 HEX 与文本指令，发出去的内容在原始数据里单独标色",

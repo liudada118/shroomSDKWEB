@@ -52,6 +52,8 @@ const FLOOR_SPAN = 1.25;
  * @param {number}  [options.tilt]    俯视角（度），默认 70。越大越像正俯视、方阵看着越方
  * @param {boolean} [options.flipY]   数据第一行画在近处（画面下方），默认 true。
  *                                    按下面却是上面鼓起来，就把它设成 false
+ * @param {string}  [options.background] heat / grid 模式的底色，默认透明（露出 canvas 自己的底色）。
+ *                                    Shroom 桌面端热力图铺的是 '#666'，想一模一样就传它
  */
 export function createHeatmap(target, options = {}) {
   const canvas = typeof target === 'string' ? document.querySelector(target) : target;
@@ -70,6 +72,7 @@ export function createHeatmap(target, options = {}) {
   // 默认 70°：方阵看过去基本还是方的，同时还留得住起伏
   let tilt = Math.min(89, Math.max(5, options.tilt ?? 70));
   let flipY = options.flipY !== false;
+  let background = options.background ?? null;
 
   function normalizeMode(m) {
     return m === 'grid' ? 'grid' : m === 'heat' ? 'heat' : 'dots';
@@ -443,6 +446,11 @@ export function createHeatmap(target, options = {}) {
 
     ctx.imageSmoothingEnabled = smooth;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 圆斑是带透明度的，底下垫一层色才有桌面端那种「灰底上浮着一片热区」的观感
+    if (background) {
+      ctx.fillStyle = background;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height);
   }
 
@@ -495,6 +503,7 @@ export function createHeatmap(target, options = {}) {
       if (next.relief !== undefined) relief = next.relief;
       if (next.tilt !== undefined) tilt = Math.min(89, Math.max(5, next.tilt));
       if (next.flipY !== undefined) flipY = next.flipY !== false;
+      if (next.background !== undefined) background = next.background || null;
     },
     clear() {
       // 断开之后别让排着队的那一帧再画出来，否则清完画面又闪一下

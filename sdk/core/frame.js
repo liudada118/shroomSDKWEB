@@ -16,7 +16,12 @@
  *
  * 说明：默认按「1 字节 = 1 个点」解析，方阵推断行列（1024 → 32×32）。
  * 如果你的设备不是这个规格，用 options.rows / options.cols 显式指定。
+ *
+ * 另外注意：字节的先后顺序是采集板的扫描顺序，不等于垫子上的位置。
+ * 要让画面和手指位置对上，用 options.layout 选一个点位排列（见 core/layout.js）。
  */
+
+import { getLayout } from './layout.js';
 
 /** 由点数推断矩阵行列；不是完全平方数就退化成单行 */
 export function resolveShape(points, options = {}) {
@@ -36,6 +41,7 @@ export function resolveShape(points, options = {}) {
  * @param {number} [options.points]    只取前 N 个字节，默认取全部
  * @param {number} [options.fullScale] 满量程，默认 255
  * @param {number} [options.threshold] 有效点阈值（归一化后），默认 0.02
+ * @param {string} [options.layout]    点位排列，'raw'（默认）或 'mat32'
  * @returns {object} Frame
  */
 export function decodeFrame(payload, options = {}) {
@@ -56,8 +62,13 @@ export function decodeFrame(payload, options = {}) {
   let cx = 0;
   let cy = 0;
 
+  // perm 为 null 时按扫描顺序原样铺；给了排列就按排列取，
+  // 这样 center / area 这些也是按垫子实际位置算的，不用调用方再修一遍
+  const perm = getLayout(options.layout, rows, cols);
+
   for (let i = 0; i < size; i += 1) {
-    const v = i < points ? raw[i] / fullScale : 0;
+    const src = perm ? perm[i] : i;
+    const v = src < points ? raw[src] / fullScale : 0;
     values[i] = v;
     sum += v;
     if (v < min) min = v;

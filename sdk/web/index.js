@@ -16,7 +16,8 @@ export { createHeatmap } from './heatmap.js';
 export { createMockDevice } from '../core/mock.js';
 export { createFramer, DEFAULT_DELIMITER } from '../core/framer.js';
 export { decodeFrame, resolveShape } from '../core/frame.js';
-export { jet, jetWhite, grey, COLORMAPS, getColormap } from '../core/colormap.js';
+export { shroom, jet, jetWhite, grey, COLORMAPS, getColormap } from '../core/colormap.js';
+export { LAYOUTS, getLayout } from '../core/layout.js';
 
 import { connectSerial, isSerialSupported } from './serial.js';
 import { createHeatmap } from './heatmap.js';

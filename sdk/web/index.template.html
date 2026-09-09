@@ -92,18 +92,23 @@
           <option value="460800">460800</option>
           <option value="115200">115200</option>
         </select>
+        <select id="layout" title="点位排列：串口里的字节是采集板扫描顺序，不等于垫子上的位置">
+          <option value="mat32">32×32 垫子</option>
+          <option value="raw">原始扫描顺序</option>
+        </select>
         <select id="mode">
-          <option value="dots">点阵</option>
           <option value="heat">热力</option>
+          <option value="dots">点阵</option>
           <option value="grid">网格</option>
         </select>
         <select id="colormap">
+          <option value="shroom">上位机同款</option>
           <option value="jet">jet 彩虹</option>
           <option value="jetWhite">jetWhite 白底</option>
           <option value="grey">grey 灰度</option>
         </select>
         <label class="gain">增益 <input id="gain" type="range" min="1" max="8" step="0.5" value="1" /><b id="gainv">1</b></label>
-        <label class="gain" id="tiltbox" title="俯视角：越大越像正俯视，方阵看着越方">
+        <label class="gain" id="tiltbox" style="display: none" title="俯视角：越大越像正俯视，方阵看着越方">
           视角 <input id="tilt" type="range" min="45" max="85" step="5" value="70" /><b id="tiltv">70°</b>
           <input id="flip" type="checkbox" checked title="按下面却是上面鼓起来，就点掉它" />前后翻转
         </label>
@@ -142,7 +147,16 @@
           return;
         }
 
-        var heatmap = Shroom.createHeatmap('#view', { mode: 'dots' });
+        // 默认就按 Shroom 桌面端那一套来：热力图 + 同款色标 + 灰底
+        var heatmap = Shroom.createHeatmap('#view', {
+          mode: 'heat',
+          colormap: 'shroom',
+          background: '#666',
+        });
+
+        // 连接参数整个对象传给 SDK，SDK 每帧都按这个对象解码 ——
+        // 所以改 layout 直接改这里就生效，不用断开重连。
+        var opts = { rows: 32, cols: 32, layout: 'mat32' };
         var device = null;
         var frames = 0;
         var lastTick = performance.now();
@@ -180,13 +194,22 @@
 
         $('connect').onclick = function () {
           // 第一件事就是弹串口选择框，前面别 await，否则可能丢掉用户手势
-          Shroom.connect({ baudRate: Number($('baud').value) }).then(
+          opts.baudRate = Number($('baud').value);
+          Shroom.connect(opts).then(
             function (dev) {
               return stop().then(function () { attach(dev, '已连接串口'); });
             },
             function (err) {
               var canceled = /No port selected|cancell?ed/i.test(err.message);
-              $('status').textContent = canceled ? '你取消了选择' : '连接失败：' + err.message;
+              // 「Failed to open serial port」基本都是端口被别的程序占着 —— 上位机、
+              // 串口助手、另一个标签页。原文照抄给用户看不出这一点，这里直接说破。
+              var busy = /Failed to open serial port/i.test(err.message);
+              var text = canceled
+                ? '你取消了选择'
+                : busy
+                  ? '打不开这个串口，多半是被别的程序占着（上位机、串口助手、另一个标签页），先在那边断开再试。'
+                  : '连接失败：' + err.message;
+              $('status').textContent = text;
               $('status').className = 'warn';
             }
           );
@@ -199,6 +222,9 @@
         };
 
         $('stop').onclick = stop;
+        $('layout').onchange = function (e) {
+          opts.layout = e.target.value;
+        };
         $('colormap').onchange = function (e) {
           heatmap.setOptions({ colormap: e.target.value });
         };

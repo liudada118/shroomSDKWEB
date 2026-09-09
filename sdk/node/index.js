@@ -13,7 +13,8 @@ export { renderAscii } from './ascii.js';
 export { createMockDevice } from '../core/mock.js';
 export { createFramer, DEFAULT_DELIMITER } from '../core/framer.js';
 export { decodeFrame, resolveShape } from '../core/frame.js';
-export { jet, jetWhite, grey, COLORMAPS, getColormap } from '../core/colormap.js';
+export { shroom, jet, jetWhite, grey, COLORMAPS, getColormap } from '../core/colormap.js';
+export { LAYOUTS, getLayout } from '../core/layout.js';
 
 import { connectSerial, listPorts } from './serial.js';
 import { renderAscii } from './ascii.js';
