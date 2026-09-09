@@ -1,16 +1,51 @@
 'use client';
 
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+
+import desktopRelease from './desktop-release.json';
 
 // SDK 压缩包由 scripts/pack-sdk.mjs 从 sdk/ 目录打包生成，构建时自动更新
 const SDK_DOWNLOAD = '/shroom-sdk.zip';
+
+// 上位机安装包 350MB，不进仓库也不走 Node 进程发。
+// 线上把 Nginx 的 /downloads/ alias 到磁盘目录，本地则落在 public/downloads/（已 gitignore）。
+// 换 CDN 或对象存储时只改这个环境变量，页面代码不动。
+const DESKTOP_BASE = process.env.NEXT_PUBLIC_DESKTOP_DOWNLOAD_BASE ?? '/downloads';
+const DESKTOP_WIN_URL = `${DESKTOP_BASE}/${desktopRelease.fileName}`;
+
+// 手套的浏览器体验站，独立部署，不在这个仓库里
+const GLOVE_LAB_URL = 'https://glove.jq-industries.io/';
 
 // 下载前留个联系方式，POST 到密钥系统的「SDK 获取」模块。
 // 抽成环境变量是为了本地联调时能指到本地那套（NEXT_PUBLIC_SDK_REGISTRY_URL=http://localhost:3000/sdk-requests）
 const SDK_REGISTRY_URL =
   process.env.NEXT_PUBLIC_SDK_REGISTRY_URL ?? 'https://shroom.jq-industries.com/sdk-requests';
-// 留过一次就别再拦人家了，之后点按钮直接下载
+// 留过一次就别再拦人家了，之后点按钮直接下载。
+// SDK 和上位机共用这一个标记：这是留联系方式，不是按产品逐个授权，没必要问两遍
 const REGISTERED_KEY = 'shroom-sdk-registered';
+
+// SDK 和上位机共用同一个登记弹窗，只有下载地址、登记来源和文案不同
+type DownloadTarget = {
+  url: string;
+  source: string;
+  title: string;
+  subtitle: string;
+};
+
+const SDK_TARGET: DownloadTarget = {
+  url: SDK_DOWNLOAD,
+  source: 'sdk-web',
+  title: '获取 Shroom SDK',
+  subtitle: '留个联系方式，方便后续技术支持。提交后立即开始下载。',
+};
+
+const DESKTOP_TARGET: DownloadTarget = {
+  url: DESKTOP_WIN_URL,
+  source: 'desktop-win',
+  title: `下载 Windows 上位机 ${desktopRelease.version}`,
+  subtitle: `安装包 ${desktopRelease.sizeLabel}，下载需要一点时间。留个联系方式，方便后续技术支持与授权。`,
+};
 
 const navItems = [
   { label: '选择产品', href: '#products' },
@@ -22,6 +57,9 @@ const navItems = [
   { label: '文档中心', href: '/docs' },
 ];
 
+// resources 里每一项都得有真实去处。之前是按下标硬编码 href（0→#docs、1→#downloads…），
+// 结果「规格书」「Mapping JSON」这种还没有的东西也被指到一个页面上，点进去发现没有。
+// 现在没有的就不列，列出来的都点得到。
 const productFamilies = [
   {
     id: 'matrix',
@@ -29,15 +67,25 @@ const productFamilies = [
     code: 'MATRIX SERIES',
     description: '适用于压力分布、接触区域与动态载荷采集。',
     channels: '多通道矩阵',
-    resources: ['规格书', 'SDK', '网页测试', 'Mapping JSON'],
+    resources: [
+      { label: '统一 SDK', href: '#downloads' },
+      { label: '网页测试台', href: '/lab.html', external: true },
+      { label: 'Windows 上位机', href: '#downloads' },
+      { label: '接入示例', href: '#quick-start' },
+    ],
   },
   {
     id: 'glove',
     label: '智能手套',
     code: 'GLOVE SERIES',
     description: '适用于手部压力、触觉交互与动作研究场景。',
-    channels: '柔性点阵',
-    resources: ['规格书', 'SDK', '示例工程', 'Mapping JSON'],
+    channels: '柔性点阵 · 双手',
+    resources: [
+      { label: '手套体验站', href: GLOVE_LAB_URL, external: true },
+      { label: '统一 SDK', href: '#downloads' },
+      { label: 'Windows 上位机', href: '#downloads' },
+      { label: '接入示例', href: '#quick-start' },
+    ],
   },
   {
     id: 'module',
@@ -45,55 +93,86 @@ const productFamilies = [
     code: 'DAQ SERIES',
     description: '面向定制传感器与实验室原型的通用采集接入。',
     channels: '可配置通道',
-    resources: ['协议说明', 'SDK', '串口工具', '示例工程'],
+    resources: [
+      { label: '统一 SDK', href: '#downloads' },
+      { label: '网页测试台', href: '/lab.html', external: true },
+      { label: '协议与排错', href: '/docs/readme' },
+      { label: '接入示例', href: '#quick-start' },
+    ],
   },
 ];
 
+// 这四条必须和 sdk/AI-CONTEXT.md §1「能力边界」对得上。
+// 之前这里写过「异常重连」「实时曲线」「CSV 下载」「Mapping JSON 导出」——
+// SDK 里一个都没有。官网吹的功能下载下来找不到，比少写几条严重得多。
 const capabilities = [
   {
     index: '01',
     tag: 'DEVICE',
     title: '统一设备接入',
-    description: '将 USB 串口驱动、设备发现与连接状态封装为一致接口，减少不同系统间的适配工作。',
-    meta: ['串口通信', '设备发现', '异常重连'],
+    description: '浏览器用 Web Serial、Node 用 serialport，封装成同一个 connect()。业务代码在两端可以直接搬。',
+    meta: ['串口通信', '设备发现', '浏览器 / Node 同接口'],
   },
   {
     index: '02',
     tag: 'DATA',
     title: '稳定数据解析',
-    description: '从原始字节流到结构化传感帧，提供校验、缓存和回调机制，快速进入业务开发。',
-    meta: ['协议解析', '数据校验', '实时回调'],
+    description: '从字节流切出一帧一帧并解码成统一结构。分隔符撞车切出的脏帧由帧长锁定挡掉，画面不会在方阵和横线之间闪。',
+    meta: ['协议解析', '帧长锁定', '实时回调'],
   },
   {
     index: '03',
-    tag: 'MAPPING',
-    title: 'Mapping 配置',
-    description: '把线序与传感点位映射为 JSON 配置，统一硬件布局与前端展示的数据坐标。',
-    meta: ['点位映射', 'JSON 导出', '配置复用'],
+    tag: 'MOCK',
+    title: '没有硬件也能开发',
+    description: 'Shroom.mock() 生成的模拟设备与真实设备接口完全一致。界面先写完，设备到了改一行就切过去。',
+    meta: ['模拟数据源', '接口一致', '先写界面后接设备'],
   },
   {
     index: '04',
     tag: 'VISUAL',
-    title: '可视化调试',
-    description: '在浏览器中实时查看压力与通道数据，先验证设备与协议，再进入正式集成。',
-    meta: ['实时曲线', '压力热图', 'CSV 下载'],
+    title: '压力热图渲染',
+    description: '内置 canvas 热力图，点阵 / 热斑 / 网格三种画法，不依赖 Three.js。绘制按屏幕刷新率节流，串口再快也不会多画一次。',
+    meta: ['三种画法', '可换配色', '按帧节流'],
   },
 ];
 
-// 三个平台的上位机安装包都还没有产出物，所以统一是「即将发布」。
-// 不要在这里填文件名 —— 写上 shroom-desktop-windows.exe 会让人以为点下去就能下到。
-// 想现在就看数据的走网页测试台，那个是真的能用。
-const upperComputerPlatforms = [
+// 明说不包含什么，比让人下载完自己发现要好。和 SDK 文档里那张能力边界表一致
+const notIncluded = ['实时曲线', '录制与回放', 'CSV / 报表导出', 'Mapping 生成', '力学标定与 kPa 换算', '算法与识别'];
+
+// Windows 已经有正式产出物，版本号 / 体积 / SHA-256 全部来自 app/desktop-release.json，
+// 那个文件由 scripts/sync-desktop-release.mjs 从安装包本身算出来，不许手填 ——
+// 手填迟早和服务器上挂的那个文件对不上，用户一比对校验值就会以为包被人换了。
+// macOS / Linux 还没有产出物，就老老实实写「即将发布」，别挂假文件名。
+type DesktopPlatform = {
+  id: string;
+  label: string;
+  badge: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  compatibility: string;
+  packageName: string;
+  driverNote: string;
+  status: 'available' | 'planned';
+  // 只有已发布的平台才有，用它来区分渲染，不用再去判断 id === 'windows'
+  release?: typeof desktopRelease;
+  href?: string;
+};
+
+const upperComputerPlatforms: DesktopPlatform[] = [
   {
     id: 'windows',
     label: 'Windows',
     badge: 'W',
     eyebrow: 'SHROOM 上位机',
     title: 'Windows 上位机',
-    description: '覆盖 Windows 10 / 11，并为 Windows 7 部署环境保留独立兼容版本。',
-    compatibility: 'Windows 7 / 10 / 11',
-    packageName: '上位机 · USB 驱动 · 更新日志',
+    description: '连接传感器实时采集，2D 热力图与 3D 模型映射，本地存储与按时间回放，CSV 导出。',
+    compatibility: 'Windows 10 / 11（64 位）',
+    packageName: '安装包 · 更新日志 · 排错说明',
     driverNote: '装 CH341SER 驱动后，在设备管理器里确认出现了 COM 口。',
+    status: 'available' as const,
+    release: desktopRelease,
+    href: DESKTOP_WIN_URL,
   },
   {
     id: 'macos',
@@ -105,6 +184,7 @@ const upperComputerPlatforms = [
     compatibility: 'Apple Silicon / Intel',
     packageName: '上位机 · 安装说明 · 更新日志',
     driverNote: '较新的 macOS 自带 CH34x 驱动；插上后设备名形如 /dev/tty.usbserial-*。',
+    status: 'planned' as const,
   },
   {
     id: 'linux',
@@ -116,6 +196,7 @@ const upperComputerPlatforms = [
     compatibility: 'x64 / ARM64',
     driverNote: '内核自带驱动，但要把当前用户加进 dialout 组，否则打开串口是 Permission denied。',
     packageName: '上位机 · 权限说明 · 更新日志',
+    status: 'planned' as const,
   },
 ];
 
@@ -170,6 +251,15 @@ const tools = [
     action: '打开测试台',
     accent: 'bg-[#eff6ff] text-[#175cd3]',
     href: '/lab.html',
+    external: true,
+  },
+  {
+    label: 'GLOVE LAB',
+    title: '触觉手套体验站',
+    description: '双手触觉手套的完整采集端：力值热图与 3D 手部映射、陀螺仪、采集任务与回放、CSV 导出。独立部署，浏览器直连手套。',
+    action: '打开手套体验站',
+    accent: 'bg-[#f0f9ff] text-[#0369a1]',
+    href: GLOVE_LAB_URL,
     external: true,
   },
   {
@@ -274,9 +364,13 @@ export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeProduct, setActiveProduct] = useState('matrix');
   const [activePlatform, setActivePlatform] = useState('windows');
+  const [productQuery, setProductQuery] = useState('');
   const [copied, setCopied] = useState(false);
-  // 「获取 SDK」前的登记弹窗。注意这不是审批：填完当场就下载
+  const [shaCopied, setShaCopied] = useState(false);
+  // 下载前的登记弹窗。注意这不是审批：填完当场就下载。
+  // gateTarget 记住是谁触发的，SDK 和上位机走同一个弹窗但登记来源不同
   const [gateOpen, setGateOpen] = useState(false);
+  const [gateTarget, setGateTarget] = useState<DownloadTarget>(SDK_TARGET);
   const [submitting, setSubmitting] = useState(false);
   // 试用密钥表单暂时下线，SDK 点击即可下载
   // const [submitted, setSubmitted] = useState(false);
@@ -289,6 +383,13 @@ export default function Home() {
     () => productFamilies.find((product) => product.id === activeProduct) ?? productFamilies[0],
     [activeProduct],
   );
+  const matchedProducts = useMemo(() => {
+    const q = productQuery.trim().toLowerCase();
+    if (!q) return productFamilies;
+    return productFamilies.filter((product) =>
+      `${product.label} ${product.code} ${product.description}`.toLowerCase().includes(q),
+    );
+  }, [productQuery]);
 
   async function copyCode() {
     await navigator.clipboard?.writeText(heroCode);
@@ -308,26 +409,33 @@ export default function Home() {
 
   // 程序化触发下载：造一个隐藏的 <a download> 点一下。
   // 不用 location.href，那样在部分浏览器里会先跳走再回来，页面闪一下
-  function startDownload() {
+  function startDownload(target: DownloadTarget) {
     const a = document.createElement('a');
-    a.href = SDK_DOWNLOAD;
+    a.href = target.url;
     a.download = '';
     document.body.appendChild(a);
     a.click();
     a.remove();
   }
 
-  function openSdkGate() {
+  function openGate(target: DownloadTarget) {
+    setGateTarget(target);
     // 填过一次的老用户直接放行，别每次下载都问一遍
     try {
       if (window.localStorage.getItem(REGISTERED_KEY)) {
-        startDownload();
+        startDownload(target);
         return;
       }
     } catch {
       // 隐私模式下 localStorage 会抛错，那就当没填过，弹一次也无妨
     }
     setGateOpen(true);
+  }
+
+  async function copySha() {
+    await navigator.clipboard?.writeText(desktopRelease.sha256);
+    setShaCopied(true);
+    window.setTimeout(() => setShaCopied(false), 1600);
   }
 
   async function submitGate(event: FormEvent<HTMLFormElement>) {
@@ -346,7 +454,8 @@ export default function Home() {
           phone: String(fd.get('phone') ?? '').trim(),
           email: String(fd.get('email') ?? '').trim(),
           organization: String(fd.get('organization') ?? '').trim(),
-          source: 'sdk-web',
+          source: gateTarget.source,
+          sdkVersion: gateTarget.source === 'desktop-win' ? desktopRelease.version : undefined,
         }),
       });
     } catch {
@@ -359,7 +468,7 @@ export default function Home() {
     }
     setSubmitting(false);
     setGateOpen(false);
-    startDownload();
+    startDownload(gateTarget);
   }
 
   // function submitTrial(event: FormEvent<HTMLFormElement>) {
@@ -389,15 +498,15 @@ export default function Home() {
           </nav>
 
           <div className="flex items-center gap-2.5">
-            <a
+            <Link
               href="/docs"
               className="hidden rounded-lg border border-[#d0d5dd] bg-white px-4 py-2 text-sm font-semibold text-[#344054] shadow-sm transition hover:border-[#84adff] hover:text-[#175cd3] sm:inline-flex"
             >
               查看文档
-            </a>
+            </Link>
             <button
               type="button"
-              onClick={openSdkGate}
+              onClick={() => openGate(SDK_TARGET)}
               className="hidden rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3] sm:inline-flex"
             >
               获取 SDK
@@ -461,7 +570,7 @@ export default function Home() {
               </a>
               <button
                 type="button"
-                onClick={openSdkGate}
+                onClick={() => openGate(SDK_TARGET)}
                 className="inline-flex items-center justify-center rounded-xl border border-[#d0d5dd] bg-white px-5 py-3 text-sm font-semibold text-[#344054] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f9fafb]"
               >
                 获取通用 SDK
@@ -545,14 +654,22 @@ export default function Home() {
               <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#98a2b3]">⌕</span>
               <input
                 type="search"
-                placeholder="输入产品型号或序列号（结构预留）"
+                value={productQuery}
+                onChange={(event) => setProductQuery(event.target.value)}
+                placeholder="搜索产品系列，如 手套 / 矩阵 / DAQ"
                 className="h-12 w-full rounded-xl border border-[#d0d5dd] bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]"
               />
             </label>
           </div>
 
+          {matchedProducts.length === 0 ? (
+            <p className="mt-10 rounded-xl border border-[#eaecf0] bg-[#f9fafb] px-5 py-4 text-sm text-[#667085]">
+              没有匹配「{productQuery}」的产品系列。清空搜索框可以看到全部三个系列。
+            </p>
+          ) : null}
+
           <div className="mt-10 grid gap-3 lg:grid-cols-3">
-            {productFamilies.map((product) => (
+            {matchedProducts.map((product) => (
               <button
                 key={product.id}
                 type="button"
@@ -580,12 +697,16 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {selectedProduct.resources.map((resource, index) => (
                   <a
-                    key={resource}
-                    href={index === 1 ? '#downloads' : index === 2 ? '#quick-start' : '#docs'}
+                    key={resource.label}
+                    href={resource.href}
+                    {...(resource.external ? { target: '_blank', rel: 'noreferrer' } : {})}
                     className="rounded-xl border border-white/10 bg-white/[0.05] p-4 transition hover:border-[#2e90fa] hover:bg-white/10"
                   >
                     <span className="font-mono text-[9px] text-[#667085]">0{index + 1}</span>
-                    <p className="mt-3 text-xs font-semibold text-[#e2e8f0]">{resource}</p>
+                    <p className="mt-3 text-xs font-semibold text-[#e2e8f0]">
+                      {resource.label}
+                      {resource.external ? <span className="ml-1 text-[#84adff]">↗</span> : null}
+                    </p>
                   </a>
                 ))}
               </div>
@@ -620,6 +741,22 @@ export default function Home() {
               </article>
             ))}
           </div>
+
+          <div className="mt-6 rounded-2xl border border-dashed border-[#d0d5dd] bg-white/60 p-7 sm:p-8">
+            <h3 className="text-sm font-semibold text-[#344054]">SDK 里没有这些</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-[#667085]">
+              下面这些是你（或者你的 AI）在 SDK 之上要写的部分。写清楚比让人下载完自己发现要好。
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {notIncluded.map((item) => (
+                <span key={item} className="rounded-md bg-[#f2f4f7] px-2.5 py-1.5 text-[11px] font-medium text-[#98a2b3] line-through decoration-[#d0d5dd]">{item}</span>
+              ))}
+            </div>
+            <p className="mt-5 text-xs leading-6 text-[#98a2b3]">
+              尤其是<span className="font-medium text-[#667085]">力学标定</span>：SDK 给到的是 0~1 的相对值，
+              换算成 kPa / 牛顿需要每台设备各自的标定曲线，那不在 SDK 里。要物理单位请联系我们。
+            </p>
+          </div>
         </div>
       </section>
 
@@ -642,9 +779,9 @@ export default function Home() {
                   硬性约束和常见错误都写在里面。整篇复制给 AI，再描述你的产品和目标，它就能生成连接、读取和展示代码。
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <a href="/docs/ai-context" className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.28)] transition hover:bg-[#175cd3]">
+                  <Link href="/docs/ai-context" className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.28)] transition hover:bg-[#175cd3]">
                     获取 SDK Skill
-                  </a>
+                  </Link>
                   <a href="#quick-start" className="rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10">
                     查看接入示例
                   </a>
@@ -711,7 +848,9 @@ export default function Home() {
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">SDK 保持统一，上位机按平台下载。</h2>
               <p className="mt-5 leading-7 text-[#667085]">开发者使用同一套 SDK 接口；只有用于设备调试和数据查看的 Shroom 上位机与驱动需要选择操作系统。</p>
             </div>
-            <p className="text-xs text-[#98a2b3]">SDK 可直接下载，无需申请密钥；上位机下载将在发布时接入</p>
+            <p className="text-xs text-[#98a2b3]">
+              SDK 与 Windows 上位机均可直接下载；macOS / Linux 上位机尚未发布
+            </p>
           </div>
 
           <article className="relative mt-10 overflow-hidden rounded-2xl border border-[#84adff] bg-white p-7 shadow-[0_16px_46px_rgba(37,99,235,0.09)] sm:p-9">
@@ -733,7 +872,7 @@ export default function Home() {
                 </div>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-                <button type="button" onClick={openSdkGate} className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3]">获取统一 SDK</button>
+                <button type="button" onClick={() => openGate(SDK_TARGET)} className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3]">获取统一 SDK</button>
                 <a href="#quick-start" className="rounded-lg border border-[#d0d5dd] bg-white px-5 py-3 text-center text-sm font-semibold text-[#344054] transition hover:bg-[#f9fafb]">查看接入示例</a>
               </div>
             </div>
@@ -778,14 +917,58 @@ export default function Home() {
                     <p className="mt-2 text-sm font-semibold text-[#344054]">{selectedPlatform.compatibility}</p>
                   </div>
                   <div className="rounded-xl border border-[#eaecf0] bg-[#f9fafb] p-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">资源内容</p>
-                    <p className="mt-2 text-sm font-semibold text-[#344054]">{selectedPlatform.packageName}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">
+                      {selectedPlatform.release ? '版本与体积' : '资源内容'}
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-[#344054]">
+                      {selectedPlatform.release
+                        ? `v${selectedPlatform.release.version} · ${selectedPlatform.release.sizeLabel} · ${selectedPlatform.release.releaseDate}`
+                        : selectedPlatform.packageName}
+                    </p>
                   </div>
                 </div>
+
+                {selectedPlatform.release ? (
+                  <div className="mt-4 max-w-xl rounded-xl border border-[#eaecf0] bg-[#f9fafb] p-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">本次更新</p>
+                    <ul className="mt-2 grid gap-1.5">
+                      {selectedPlatform.release.notes.map((note) => (
+                        <li key={note} className="flex gap-2 text-xs leading-6 text-[#475467]">
+                          <span className="text-[#2563eb]">·</span>
+                          {note}
+                        </li>
+                      ))}
+                    </ul>
+                    {/* 校验值给企业 IT 用：350MB 的包从哪下的都能自己核一遍，
+                        Windows 上 certutil -hashfile <文件> SHA256 就能算 */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#eaecf0] pt-3">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#98a2b3]">SHA-256</span>
+                      <code className="max-w-full truncate font-mono text-[11px] text-[#667085]">{selectedPlatform.release.sha256}</code>
+                      <button
+                        type="button"
+                        onClick={copySha}
+                        className="rounded-md border border-[#d0d5dd] bg-white px-2 py-1 text-[11px] font-semibold text-[#344054] transition hover:bg-[#f9fafb]"
+                      >
+                        {shaCopied ? '已复制' : '复制'}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="mt-auto flex flex-col items-start gap-4 pt-8 sm:flex-row sm:items-center">
-                  <span className="cursor-not-allowed rounded-lg border border-[#d0d5dd] bg-[#f2f4f7] px-4 py-2.5 text-sm font-semibold text-[#98a2b3]">
-                    {selectedPlatform.label} 上位机 · 即将发布
-                  </span>
+                  {selectedPlatform.status === 'available' ? (
+                    <button
+                      type="button"
+                      onClick={() => openGate(DESKTOP_TARGET)}
+                      className="rounded-lg bg-[#2563eb] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3]"
+                    >
+                      下载 {selectedPlatform.label} 上位机 · {selectedPlatform.release?.sizeLabel}
+                    </button>
+                  ) : (
+                    <span className="cursor-not-allowed rounded-lg border border-[#d0d5dd] bg-[#f2f4f7] px-4 py-2.5 text-sm font-semibold text-[#98a2b3]">
+                      {selectedPlatform.label} 上位机 · 即将发布
+                    </span>
+                  )}
                   <a
                     href="/lab.html"
                     target="_blank"
@@ -795,6 +978,15 @@ export default function Home() {
                     先用网页测试台看数据 →
                   </a>
                 </div>
+
+                {selectedPlatform.status === 'available' ? (
+                  /* 安装包没做代码签名，SmartScreen 一定会拦。这条必须写在下载按钮旁边，
+                     不能只写在文档里 —— 被拦住的人第一反应是「这软件有毒」，然后就走了 */
+                  <p className="mt-5 rounded-lg border border-[#eaecf0] bg-white px-4 py-3 text-xs leading-6 text-[#667085]">
+                    安装包未做代码签名，首次运行 Windows 会弹「已保护你的电脑」，点<span className="font-semibold text-[#344054]">「更多信息 → 仍要运行」</span>即可。
+                    上位机需要授权才能采集数据，安装后在软件内查看授权状态。
+                  </p>
+                ) : null}
               </div>
             </article>
           </div>
@@ -804,7 +996,7 @@ export default function Home() {
               <span className="font-semibold">{selectedPlatform.label} 驱动与权限：</span>
               {selectedPlatform.driverNote}
             </p>
-            <a href="/docs/readme" className="shrink-0 font-semibold text-[#b54708] hover:underline">查看完整排错表 →</a>
+            <Link href="/docs/readme" className="shrink-0 font-semibold text-[#b54708] hover:underline">查看完整排错表 →</Link>
           </div>
         </div>
       </section>
@@ -867,7 +1059,7 @@ export default function Home() {
                   >
                     打开网页测试台
                   </a>
-                  <a href="/docs/readme" className="rounded-lg border border-white/30 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10">查看浏览器兼容说明</a>
+                  <Link href="/docs/readme" className="rounded-lg border border-white/30 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10">查看浏览器兼容说明</Link>
                 </div>
                 <p className="mt-4 text-xs leading-6 text-[#bfdbfe]">
                   测试台就是 SDK 压缩包里那个示例页，同一份代码。需要 Chrome 或 Edge。
@@ -950,7 +1142,7 @@ export default function Home() {
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">从第一个 Demo 到完整应用。</h2>
               <p className="mt-5 leading-7 text-[#667085]">用清晰的入门路径、API 说明和示例代码，帮助团队快速形成可交付成果。</p>
             </div>
-            <a href="/docs" className="text-sm font-semibold text-[#175cd3] hover:underline">进入完整文档中心 →</a>
+            <Link href="/docs" className="text-sm font-semibold text-[#175cd3] hover:underline">进入完整文档中心 →</Link>
           </div>
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
             {resources.map((resource, index) => (
@@ -1055,11 +1247,11 @@ export default function Home() {
               ×
             </button>
 
-            <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">SDK DOWNLOAD</p>
-            <h3 id="sdk-gate-title" className="mt-2 text-xl font-semibold">获取 Shroom SDK</h3>
-            <p className="mt-2 text-sm leading-6 text-[#667085]">
-              留个联系方式，方便后续给你技术支持。
+            <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">
+              {gateTarget.source === 'desktop-win' ? 'DESKTOP DOWNLOAD' : 'SDK DOWNLOAD'}
             </p>
+            <h3 id="sdk-gate-title" className="mt-2 text-xl font-semibold">{gateTarget.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-[#667085]">{gateTarget.subtitle}</p>
 
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
               <label className="grid gap-2 text-xs font-semibold text-[#344054]">
@@ -1088,7 +1280,7 @@ export default function Home() {
               {submitting ? '下载中…' : '提交并下载'}
             </button>
             <p className="mt-3 text-center text-[11px] leading-5 text-[#98a2b3]">
-              提交即表示你同意我们仅将信息用于 SDK 相关的技术支持联系。
+              提交即表示你同意我们仅将信息用于产品相关的技术支持联系。
             </p>
           </form>
         </div>
@@ -1106,9 +1298,9 @@ export default function Home() {
           <div className="flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-[#667085]">
             <a href="#capabilities" className="hover:text-[#175cd3]">产品能力</a>
             <a href="#downloads" className="hover:text-[#175cd3]">SDK 与上位机</a>
-            <a href="/docs" className="hover:text-[#175cd3]">文档中心</a>
+            <Link href="/docs" className="hover:text-[#175cd3]">文档中心</Link>
             <a href="/lab.html" target="_blank" rel="noreferrer" className="hover:text-[#175cd3]">网页测试台</a>
-            <a href="/docs/readme" className="hover:text-[#175cd3]">排错与支持</a>
+            <Link href="/docs/readme" className="hover:text-[#175cd3]">排错与支持</Link>
           </div>
           <p className="text-[11px] text-[#98a2b3]">© 2026 Shroom. All rights reserved.</p>
         </div>

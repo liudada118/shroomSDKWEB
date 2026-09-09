@@ -39,3 +39,8 @@ next-env.d.ts
 
 # typescript 增量编译缓存
 *.tsbuildinfo
+
+# 上位机安装包：单个 350MB，三个平台每发一版就是一份，进了 git 仓库直接废掉
+# （git 里删掉也不会变小）。线上让 Nginx alias 到磁盘目录去发，
+# 只有 app/desktop-release.json 那份元数据进仓库。
+/public/downloads/

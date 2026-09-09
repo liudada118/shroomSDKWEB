@@ -1,12 +1,27 @@
 # 架构文档
 
-> 本文档由 Codex 自动生成和维护。最后更新于：2026-08-26
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-09-09
 
 ## 1. 项目概述
 
-Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示站。页面按照“选择产品 → 使用 Shroom Skill 快速接入 → 获取统一 SDK → 下载分平台上位机与驱动 → 使用工具 → 阅读文档 → 申请试用”的路径组织内容，集中展示规格书、AI Skill、统一 SDK、网页测试、Mapping 配置、示例工程与 7 天试用入口。
+Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示站。页面按照“选择产品 → 使用 Shroom Skill 快速接入 → 获取统一 SDK → 下载 Shroom 上位机 → 使用工具 → 阅读文档”的路径组织内容。
 
-当前版本为可交互的前端页面骨架：SDK 被定义为不按操作系统分包的统一开发能力，Windows、macOS、Linux 选择仅作用于 Shroom 上位机与驱动。产品与上位机平台切换、移动端导航、代码复制和试用表单状态均在浏览器本地完成；真实产品目录、下载文件、串口连接、文档地址和试用申请接口尚待业务系统接入。
+**当前版本的下载与文档都是真实可用的，不再是骨架**：
+
+- **统一 SDK** —— `public/shroom-sdk.zip` 由 `npm run build` 从 `sdk/` 现打，不按操作系统分包。
+- **Windows 上位机** —— 真实安装包，版本 / 体积 / SHA-256 来自 `app/desktop-release.json`，
+  由 `scripts/sync-desktop-release.mjs` 从安装包本身算出。macOS / Linux 尚未打包，页面上是灰态「即将发布」。
+- **文档中心** —— `/docs` 与 `/docs/:slug` 在构建期由 `scripts/build-docs.mjs` 把 `sdk/*.md`
+  预渲染成 HTML，运行时不读磁盘。
+- **网页测试台** —— `public/lab.html`，浏览器直连串口看数据。
+- **手套体验站** —— 外链到独立部署的 <https://glove.jq-industries.io/>。
+- **获取登记** —— 下载前弹窗收集姓名/手机，POST 到密钥系统的 `/sdk-requests`；
+  **登记失败不挡下载**，这不是审批流程。
+
+仍为占位的只有两处：「点位映射生成器」与「工程验证工具（含力学标定）」，页面上明确标注为灰态「规划中」。
+
+页面 **不提供、也不会提供** kPa / 牛顿等物理单位换算 —— SDK 给到的是 0~1 相对值，
+标定曲线逐台设备不同，不在公开 SDK 范围内。`#capabilities` 里有一块「SDK 里没有这些」把边界写死。
 
 ## 2. 技术栈
 
@@ -25,19 +40,31 @@ Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示�
 ## 3. 目录结构
 
 ```text
-C:\sdk
+shroomSDKWEB/
 ├─ .openai/
 │  └─ hosting.json          # Sites 项目及逻辑资源绑定
 ├─ app/
 │  ├─ globals.css           # Tailwind 入口、全局基础样式与背景纹理
 │  ├─ layout.tsx            # 页面语言、字体与站点分享元数据
-│  └─ page.tsx              # 单页内容、数据模型与前端交互
+│  ├─ page.tsx              # 单页内容、数据模型与前端交互
+│  ├─ desktop-release.json  # 上位机版本/体积/SHA-256，由脚本生成，禁止手改
+│  └─ docs/                 # 文档中心路由（内容构建期生成）
+├─ scripts/
+│  ├─ build-sdk-bundle.mjs  # 生成 sdk/web/shroom.bundle.js 单文件版
+│  ├─ pack-sdk.mjs          # sdk/ → public/shroom-sdk.zip（保留 start.sh 可执行位）
+│  ├─ build-docs.mjs        # sdk/*.md → 预渲染 HTML，供 /docs 使用
+│  └─ sync-desktop-release.mjs  # 安装包 → public/downloads/ + desktop-release.json
+├─ sdk/                     # SDK 源码与文档的事实源，打包进 zip 并生成文档站
 ├─ public/
 │  ├─ favicon.svg           # 站点图标
-│  └─ og.png                # 1200×630 社交分享卡片
+│  ├─ og.png                # 1200×630 社交分享卡片
+│  ├─ lab.html              # 网页测试台（Web Serial 直连设备）
+│  ├─ shroom-sdk.zip        # 构建产物
+│  └─ downloads/            # 上位机安装包，已 gitignore，生产走 Nginx alias
 ├─ todo/
 │  └─ SDK_SKILL_TODO.md     # SDK、手套接入、Skill 与展示站的分阶段待办
 ├─ ARCHITECTURE.md          # 本架构说明
+├─ DEPLOY.md                # 部署、上位机发版流程与 Nginx 配置
 ├─ eslint.config.mjs        # ESLint 配置
 ├─ next.config.ts           # Next.js 配置
 ├─ package.json             # 脚本与依赖
@@ -50,8 +77,10 @@ C:\sdk
 
 | 目录 | 主要功能 |
 | :--- | :--- |
-| `/app` | App Router 页面、根布局和站点级样式 |
-| `/public` | Favicon、Open Graph 分享图等静态资源 |
+| `/app` | App Router 页面、根布局、站点级样式与上位机发布元数据 |
+| `/scripts` | 构建期脚本：打 SDK zip、预渲染文档、同步上位机安装包 |
+| `/sdk` | SDK 源码与 `AI-CONTEXT.md` 等文档的**唯一事实源**，zip 和文档站都从这里生成 |
+| `/public` | 静态资源、网页测试台、SDK zip 与上位机安装包 |
 | `/.openai` | OpenAI Sites 部署项目标识与逻辑资源声明 |
 | `/todo` | 记录 SDK 事实源、手套接入闭环、Shroom Skill 和展示站真实业务接入的待办与验收标准 |
 
@@ -84,18 +113,28 @@ flowchart TD
    - 页面突出展示 Skill 所包含的设备协议、统一 SDK 接口、Mapping 规则和示例上下文。
    - 用户按“安装 Skill → 描述设备与目标 → 生成并验证接入”的三步路径开始开发。
 3. **统一 SDK 与上位机资源**
-   - 统一 SDK 作为单一资源呈现，不再按 Windows、macOS、Linux 分包。
-   - `activePlatform` 仅驱动 Shroom 上位机的兼容环境、驱动资源和安装包名称更新。
+   - 统一 SDK 作为单一资源呈现，不按 Windows、macOS、Linux 分包。
+   - `activePlatform` 驱动上位机卡片：Windows 显示真实版本、体积、更新日志、SHA-256 与下载按钮；
+     macOS / Linux 为 `status: 'planned'`，渲染成不可点的「即将发布」，**不挂假文件名**。
 4. **手动接入与代码复制**
    - 示例代码以静态内容呈现。
-   - 复制按钮通过 Clipboard API 写入剪贴板并显示短暂反馈。
-5. **试用申请演示**
-   - 浏览器原生校验必填项和邮箱格式。
-   - 提交后仅切换本地成功状态；当前不会向外部服务发送数据。
+   - 复制按钮通过 Clipboard API 写入剪贴板并显示短暂反馈；SHA-256 复用同一套复制反馈。
+5. **下载登记**
+   - SDK 与 Windows 上位机共用一个弹窗（`gateTarget` 记住是谁触发的），
+     标题、副标题、登记来源 `source` 随触发方切换。
+   - 提交后 POST 到密钥系统的 `/sdk-requests`，**无论成功失败都立即开始下载**并写
+     `localStorage`，下次不再弹。
 
 ## 5. API 端点
 
-当前项目没有 API 路由。后续接入下载鉴权、产品目录或试用申请时，建议新增服务端端点并将前端演示状态替换为真实请求。
+站点自身没有 API 路由（`next.config.ts` 为空配置，页面是 `'use client'` 单文件）。
+唯一的外部写入是浏览器直接跨域 POST 到密钥系统：
+
+| 方法 | 地址 | 用途 |
+| :--- | :--- | :--- |
+| `POST` | `${NEXT_PUBLIC_SDK_REGISTRY_URL}`（默认 `https://shroom.jq-industries.com/sdk-requests`） | 提交下载登记线索，由密钥系统的 CORS 接口接住 |
+
+该接口不参与鉴权，也不阻塞下载。
 
 ## 6. 外部依赖与集成
 
@@ -110,7 +149,13 @@ flowchart TD
 
 ## 7. 环境变量
 
-应用运行时不要求环境变量。`page.tsx` 中出现的 `SHROOM_KEY` 仅是页面展示的 SDK 示例代码，不会被站点读取。
+应用运行时不要求环境变量，全部有默认值。下面两个是**构建期注入**的（`NEXT_PUBLIC_` 前缀），
+改完必须重新 `npm run build` 才生效，详见 [DEPLOY.md](DEPLOY.md)：
+
+| 变量名 | 描述 | 默认行为 |
+| :--- | :--- | :--- |
+| `NEXT_PUBLIC_DESKTOP_DOWNLOAD_BASE` | 上位机安装包所在目录 | `/downloads`，指向 Nginx alias 或 CDN |
+| `NEXT_PUBLIC_SDK_REGISTRY_URL` | 下载登记提交地址 | `https://shroom.jq-industries.com/sdk-requests` |
 
 构建工具会使用以下非业务变量：
 
@@ -136,6 +181,15 @@ flowchart TD
 | 2026-08-25 | 生产站点发布 | 配置规范链接、生产基址与可解析为绝对地址的分享卡片元数据 |
 | 2026-08-25 | Skill 优先接入与资源重构 | 将 Shroom Skill 提升为推荐入口，并拆分统一 SDK 与分平台上位机下载 |
 | 2026-08-26 | SDK 与 Skill 实施清单 | 基于手套接入样例整理 SDK 契约、设备描述、Mapping、真实数据、Skill、展示站和发布工作的分阶段 TODO |
+| 2026-09-09 | 清理假入口 | 未实现的资源入口改为真实去处或标注「规划中」，不再把「规格书」「Mapping JSON」指到空页面 |
+| 2026-09-09 | 网页测试台上线 | `public/lab.html`，Web Serial 直连设备看数据 |
+| 2026-09-09 | 文档中心上线 | `scripts/build-docs.mjs` 构建期预渲染 `sdk/*.md`，提供 `/docs` 与 `/docs/:slug` |
+| 2026-09-09 | 跨平台说明补全 | README / AI-CONTEXT / 怎么用AI开发 三份文档补齐三系统的启动方式与驱动权限差异 |
+| 2026-09-09 | Windows 上位机发布 | 打出 1.1.34 安装包并接入站点，展示版本、体积、更新日志与 SHA-256；macOS / Linux 保持「即将发布」 |
+| 2026-09-09 | 下载登记通用化 | SDK 与上位机共用一个登记弹窗，来源区分开，登记失败不阻塞下载 |
+| 2026-09-09 | 能力边界显式化 | 首页新增「SDK 里没有这些」，与 SDK 文档中的能力边界表一致，明确不提供 kPa 换算 |
+| 2026-09-09 | 产品搜索与手套体验站 | 产品系列搜索框接上真实过滤；接入外部手套体验站 <https://glove.jq-industries.io/> |
+| 2026-09-09 | 部署文档 | 新增 `DEPLOY.md`，覆盖上位机打包、同步脚本、Nginx alias 与发版流程 |
 
 ## 9. 更新日志
 
@@ -146,6 +200,9 @@ flowchart TD
 | 2026-08-25 | 配置变更 | 绑定 OpenAI Sites 项目并补充生产站点元数据基址 |
 | 2026-08-25 | 优化重构 | 强化 Shroom Skill 快速接入说明，明确 SDK 不区分平台、上位机按系统提供 |
 | 2026-08-26 | 文档更新 | 新增 SDK、手套接入与 Shroom Skill 分阶段 TODO，并补充对应目录说明 |
+| 2026-09-09 | 新增功能 | 网页测试台、文档中心、Windows 上位机下载与通用下载登记弹窗上线 |
+| 2026-09-09 | 优化重构 | 能力卡片按 SDK 实际能力重写，补「SDK 里没有这些」边界说明，产品资源入口全部指向真实去处 |
+| 2026-09-09 | 文档更新 | 新增 DEPLOY.md；更新本文档第 1、3、4、5、7 节，去掉「前端骨架」「试用申请演示」等过期描述 |
 
 ---
 
