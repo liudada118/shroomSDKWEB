@@ -7,10 +7,11 @@
   },
   "scripts": {
     "dev": "vinext dev",
-    "build": "npm run pack:sdk && vinext build",
+    "build": "npm run pack:sdk && npm run build:docs && vinext build",
     "start": "vinext start",
     "pack:sdk": "npm run build:sdk-bundle && node scripts/pack-sdk.mjs",
     "build:sdk-bundle": "node scripts/build-sdk-bundle.mjs",
+    "build:docs": "node scripts/build-docs.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@vitejs/plugin-rsc": "0.5.26",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
+    "marked": "^18.0.12",
     "react-server-dom-webpack": "19.2.6",
     "tailwindcss": "4.2.1",
     "typescript": "5.9.3",

@@ -23,6 +23,14 @@ const SKIP = new Set(['node_modules', '.git', '.DS_Store', 'index.template.html'
 const DOS_TIME = 0;
 const DOS_DATE = ((2026 - 1980) << 9) | (1 << 5) | 1;
 
+// zip 要记录 Unix 权限位，「version made by」的高字节必须声明成 Unix(3)，
+// 否则解压工具不会去读 external attributes 里的 mode，start.sh 就丢了可执行位 ——
+// macOS / Linux 用户解压后 ./start.sh 直接 Permission denied。
+const MADE_BY_UNIX = (3 << 8) | 20;
+const MODE_EXEC = 0o100755;
+const MODE_FILE = 0o100644;
+const isExecutable = (name) => name.endsWith('.sh');
+
 const CRC_TABLE = (() => {
   const t = new Int32Array(256);
   for (let i = 0; i < 256; i += 1) {
@@ -86,7 +94,7 @@ async function main() {
 
     const central = Buffer.alloc(46);
     central.writeUInt32LE(0x02014b50, 0);
-    central.writeUInt16LE(20, 4); // version made by
+    central.writeUInt16LE(MADE_BY_UNIX, 4); // version made by：Unix + 2.0
     central.writeUInt16LE(20, 6); // version needed
     central.writeUInt16LE(0x800, 8);
     central.writeUInt16LE(method, 10);
@@ -96,7 +104,8 @@ async function main() {
     central.writeUInt32LE(body.length, 20);
     central.writeUInt32LE(raw.length, 24);
     central.writeUInt16LE(nameBuf.length, 28);
-    central.writeUInt32LE(0, 38); // external attributes
+    // external attributes 高 16 位放 Unix mode，.sh 给 755，其余 644
+    central.writeUInt32LE((isExecutable(name) ? MODE_EXEC : MODE_FILE) * 0x10000, 38);
     central.writeUInt32LE(offset, 42);
     centrals.push(central, nameBuf);
 

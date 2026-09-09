@@ -19,7 +19,7 @@ const navItems = [
   { label: '资源下载', href: '#downloads' },
   { label: '快速开始', href: '#quick-start' },
   { label: '开发工具', href: '#tools' },
-  { label: '文档中心', href: '#docs' },
+  { label: '文档中心', href: '/docs' },
 ];
 
 const productFamilies = [
@@ -80,6 +80,9 @@ const capabilities = [
   },
 ];
 
+// 三个平台的上位机安装包都还没有产出物，所以统一是「即将发布」。
+// 不要在这里填文件名 —— 写上 shroom-desktop-windows.exe 会让人以为点下去就能下到。
+// 想现在就看数据的走网页测试台，那个是真的能用。
 const upperComputerPlatforms = [
   {
     id: 'windows',
@@ -90,7 +93,7 @@ const upperComputerPlatforms = [
     description: '覆盖 Windows 10 / 11，并为 Windows 7 部署环境保留独立兼容版本。',
     compatibility: 'Windows 7 / 10 / 11',
     packageName: '上位机 · USB 驱动 · 更新日志',
-    command: 'shroom-desktop-windows.exe',
+    driverNote: '装 CH341SER 驱动后，在设备管理器里确认出现了 COM 口。',
   },
   {
     id: 'macos',
@@ -101,7 +104,7 @@ const upperComputerPlatforms = [
     description: '用于 Apple Silicon 与 Intel Mac 的设备调试、数据查看和采集回放。',
     compatibility: 'Apple Silicon / Intel',
     packageName: '上位机 · 安装说明 · 更新日志',
-    command: 'shroom-desktop-macos.dmg',
+    driverNote: '较新的 macOS 自带 CH34x 驱动；插上后设备名形如 /dev/tty.usbserial-*。',
   },
   {
     id: 'linux',
@@ -111,16 +114,16 @@ const upperComputerPlatforms = [
     title: 'Linux 上位机',
     description: '用于 Linux 工作站与实验室环境的设备调试、数据采集和结果导出。',
     compatibility: 'x64 / ARM64',
+    driverNote: '内核自带驱动，但要把当前用户加进 dialout 组，否则打开串口是 Permission denied。',
     packageName: '上位机 · 权限说明 · 更新日志',
-    command: 'shroom-desktop-linux.tar.gz',
   },
 ];
 
 const skillSteps = [
   {
     number: '01',
-    title: '安装 Shroom Skill',
-    description: '把设备协议、SDK API、Mapping 规则与示例工程交给你的 AI 编程助手。',
+    title: '把上下文发给 AI',
+    description: '复制 AI-CONTEXT.md 全文，或把 SDK 文件夹放进项目让 AI 先读它。',
   },
   {
     number: '02',
@@ -130,7 +133,7 @@ const skillSteps = [
   {
     number: '03',
     title: '生成并验证接入',
-    description: '由 AI 生成连接、读取和展示代码，再配合网页测试台完成验证。',
+    description: '由 AI 生成连接、读取和展示代码，没有设备就先用 Shroom.mock() 跑通。',
   },
 ];
 
@@ -157,45 +160,63 @@ const workflow = [
   },
 ];
 
+// planned 为 true 的卡片渲染成不可点的灰态。宁可写「规划中」，
+// 也不要挂一个指回本页的假链接 —— 那种链接点下去毫无反应，比明说没做更糟。
 const tools = [
   {
     label: 'WEB LAB',
     title: '网页测试台',
-    description: '在 Chrome / Edge 中连接设备，实时查看通道、压力热图与原始数据。',
+    description: '在 Chrome / Edge 中连接设备，实时查看压力热图与原始数据，不用装任何东西。',
     action: '打开测试台',
     accent: 'bg-[#eff6ff] text-[#175cd3]',
-    href: '#web-lab',
+    href: '/lab.html',
+    external: true,
+  },
+  {
+    label: 'AI SKILL',
+    title: 'Shroom SDK Skill',
+    description: '一份写给 AI 的上下文文件，让它掌握 SDK 的接口和能力边界，直接辅助生成接入代码。',
+    action: '查看并复制给 AI',
+    accent: 'bg-[#faf5ff] text-[#7e22ce]',
+    href: '/docs/ai-context',
   },
   {
     label: 'MAPPING',
     title: '点位映射生成器',
     description: '导入点位表与线序信息，自动生成可复用的 Mapping JSON 配置。',
-    action: '生成 Mapping',
+    action: '规划中',
     accent: 'bg-[#f0fdf4] text-[#15803d]',
-    href: '#downloads',
-  },
-  {
-    label: 'AI SKILL',
-    title: 'Shroom SDK Skill',
-    description: '让 AI 理解设备协议、SDK 接口和 Mapping 规则，直接辅助生成接入代码。',
-    action: '进入 Skill 快速接入',
-    accent: 'bg-[#faf5ff] text-[#7e22ce]',
-    href: '#skill',
+    planned: true,
   },
   {
     label: 'ENGINEERING',
     title: '工程验证工具',
-    description: '集中提供力学校定、公式推导、疲劳测试与温湿度耐受性测试入口。',
-    action: '浏览全部工具',
+    description: '力学校定、公式推导、疲劳测试与温湿度耐受性测试。标定相关能力不随公开 SDK 发放。',
+    action: '规划中',
     accent: 'bg-[#fff7ed] text-[#c2410c]',
-    href: '#downloads',
+    planned: true,
   },
 ];
 
 const resources = [
-  { type: 'GUIDE', title: '5 分钟快速开始', description: '完成安装、连接设备并读取第一帧数据。' },
-  { type: 'REFERENCE', title: 'SDK API 参考', description: '按模块查阅设备、数据与 Mapping 接口。' },
-  { type: 'EXAMPLE', title: '示例项目', description: '从最小 Demo 到完整可视化应用的参考实现。' },
+  {
+    type: 'FOR AI',
+    title: '给 AI 的上下文',
+    description: '整篇复制给 AI，它就掌握了全部接口和能力边界，不必再翻源码。',
+    href: '/docs/ai-context',
+  },
+  {
+    type: 'GUIDE',
+    title: '怎么用 AI 来开发',
+    description: '写给不写代码的人：怎么描述需求，出了问题怎么跟 AI 说。',
+    href: '/docs/ai-guide',
+  },
+  {
+    type: 'REFERENCE',
+    title: 'SDK 说明与排错',
+    description: '完整 API 一览和排错对照表。连不上设备时先查这份。',
+    href: '/docs/readme',
+  },
 ];
 
 const heroCode = `import { Shroom } from './sdk/web/index.js'
@@ -369,7 +390,7 @@ export default function Home() {
 
           <div className="flex items-center gap-2.5">
             <a
-              href="#docs"
+              href="/docs"
               className="hidden rounded-lg border border-[#d0d5dd] bg-white px-4 py-2 text-sm font-semibold text-[#344054] shadow-sm transition hover:border-[#84adff] hover:text-[#175cd3] sm:inline-flex"
             >
               查看文档
@@ -617,10 +638,11 @@ export default function Home() {
                   用 AI Skill，<br />更快接入 Shroom SDK。
                 </h2>
                 <p className="mt-6 max-w-xl text-sm leading-7 text-[#a7b4c8] sm:text-base">
-                  Skill 已包含设备协议、统一 SDK 接口、Mapping 规则与示例。告诉 AI 你的产品和目标，即可生成连接、读取、异常处理与数据展示代码。
+                  Skill 就是 SDK 里那份 <span className="font-mono text-[#84adff]">AI-CONTEXT.md</span>：接口、数据结构、坐标系、
+                  硬性约束和常见错误都写在里面。整篇复制给 AI，再描述你的产品和目标，它就能生成连接、读取和展示代码。
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <a href="#downloads" className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.28)] transition hover:bg-[#175cd3]">
+                  <a href="/docs/ai-context" className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-[0_10px_24px_rgba(37,99,235,0.28)] transition hover:bg-[#175cd3]">
                     获取 SDK Skill
                   </a>
                   <a href="#quick-start" className="rounded-lg border border-white/15 bg-white/[0.04] px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-white/10">
@@ -628,7 +650,7 @@ export default function Home() {
                   </a>
                 </div>
                 <div className="mt-7 flex flex-wrap gap-2">
-                  {['设备协议', '统一 API', 'Mapping 规则', '示例工程'].map((item) => (
+                  {['接口与数据结构', '坐标系与量级', '硬性约束', '可抄的例子'].map((item) => (
                     <span key={item} className="rounded-md border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[10px] font-medium text-[#a7b4c8]">{item}</span>
                   ))}
                 </div>
@@ -761,18 +783,28 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="mt-auto flex flex-col items-start gap-4 pt-8 sm:flex-row sm:items-center">
-                  <a href="#downloads" className="rounded-lg bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3]">
-                    下载 {selectedPlatform.label} 上位机
+                  <span className="cursor-not-allowed rounded-lg border border-[#d0d5dd] bg-[#f2f4f7] px-4 py-2.5 text-sm font-semibold text-[#98a2b3]">
+                    {selectedPlatform.label} 上位机 · 即将发布
+                  </span>
+                  <a
+                    href="/lab.html"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-semibold text-[#175cd3] hover:underline"
+                  >
+                    先用网页测试台看数据 →
                   </a>
-                  <code className="rounded-md bg-[#f2f4f7] px-3 py-2 font-mono text-[11px] text-[#475467]">{selectedPlatform.command}</code>
                 </div>
               </div>
             </article>
           </div>
 
-          <div className="mt-6 flex flex-col gap-3 rounded-xl border border-[#fedf89] bg-[#fffaeb] px-5 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[#7a2e0e]"><span className="font-semibold">Windows 驱动说明：</span>上位机连接设备前，可先安装 CH341SER 通用驱动并确认串口状态。</p>
-            <a href="#docs" className="shrink-0 font-semibold text-[#b54708] hover:underline">查看驱动说明 →</a>
+          <div className="mt-6 flex flex-col gap-3 rounded-xl border border-[#fedf89] bg-[#fffaeb] px-5 py-4 text-sm sm:flex-row sm:items-start sm:justify-between">
+            <p className="text-[#7a2e0e]">
+              <span className="font-semibold">{selectedPlatform.label} 驱动与权限：</span>
+              {selectedPlatform.driverNote}
+            </p>
+            <a href="/docs/readme" className="shrink-0 font-semibold text-[#b54708] hover:underline">查看完整排错表 →</a>
           </div>
         </div>
       </section>
@@ -827,9 +859,19 @@ export default function Home() {
                 <h2 className="mt-4 max-w-xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">不用安装，先在网页里验证设备。</h2>
                 <p className="mt-5 max-w-xl text-sm leading-7 text-[#dbeafe] sm:text-base">使用 Chrome 或 Edge 连接设备，检查串口数据、Mapping 与可视化结果，让客户在正式开发前快速完成验证。</p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                  <a href="#downloads" className="rounded-lg bg-white px-4 py-2.5 text-center text-sm font-semibold text-[#175cd3] shadow-sm transition hover:bg-[#eff6ff]">打开网页测试台</a>
-                  <a href="#docs" className="rounded-lg border border-white/30 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10">查看浏览器兼容说明</a>
+                  <a
+                    href="/lab.html"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg bg-white px-4 py-2.5 text-center text-sm font-semibold text-[#175cd3] shadow-sm transition hover:bg-[#eff6ff]"
+                  >
+                    打开网页测试台
+                  </a>
+                  <a href="/docs/readme" className="rounded-lg border border-white/30 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-white/10">查看浏览器兼容说明</a>
                 </div>
+                <p className="mt-4 text-xs leading-6 text-[#bfdbfe]">
+                  测试台就是 SDK 压缩包里那个示例页，同一份代码。需要 Chrome 或 Edge。
+                </p>
               </div>
 
               <div className="rounded-2xl border border-white/20 bg-[#0b2356]/65 p-5 backdrop-blur-sm">
@@ -865,11 +907,35 @@ export default function Home() {
           </div>
           <div className="mt-12 grid gap-5 md:grid-cols-2">
             {tools.map((tool) => (
-              <article key={tool.title} className="rounded-2xl border border-[#e4e7ec] bg-white p-7 transition hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(16,24,40,0.07)] sm:p-8">
-                <span className={`inline-flex rounded-md px-2.5 py-1.5 font-mono text-[10px] font-semibold tracking-[0.12em] ${tool.accent}`}>{tool.label}</span>
-                <h3 className="mt-6 text-xl font-semibold tracking-[-0.03em]">{tool.title}</h3>
+              <article
+                key={tool.title}
+                className={`rounded-2xl border p-7 transition sm:p-8 ${
+                  tool.planned
+                    ? 'border-dashed border-[#d0d5dd] bg-[#fcfcfd]'
+                    : 'border-[#e4e7ec] bg-white hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(16,24,40,0.07)]'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex rounded-md px-2.5 py-1.5 font-mono text-[10px] font-semibold tracking-[0.12em] ${tool.accent}`}>{tool.label}</span>
+                  {tool.planned && (
+                    <span className="inline-flex rounded-md bg-[#f2f4f7] px-2.5 py-1.5 font-mono text-[10px] font-semibold tracking-[0.12em] text-[#98a2b3]">
+                      未开放
+                    </span>
+                  )}
+                </div>
+                <h3 className={`mt-6 text-xl font-semibold tracking-[-0.03em] ${tool.planned ? 'text-[#667085]' : ''}`}>{tool.title}</h3>
                 <p className="mt-3 text-sm leading-7 text-[#667085]">{tool.description}</p>
-                <a href={tool.href} className="mt-7 inline-flex text-sm font-semibold text-[#175cd3] hover:underline">{tool.action} <span className="ml-2">→</span></a>
+                {tool.planned ? (
+                  <span className="mt-7 inline-flex text-sm font-semibold text-[#98a2b3]">{tool.action}</span>
+                ) : (
+                  <a
+                    href={tool.href}
+                    {...(tool.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                    className="mt-7 inline-flex text-sm font-semibold text-[#175cd3] hover:underline"
+                  >
+                    {tool.action} <span className="ml-2">→</span>
+                  </a>
+                )}
               </article>
             ))}
           </div>
@@ -884,11 +950,11 @@ export default function Home() {
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">从第一个 Demo 到完整应用。</h2>
               <p className="mt-5 leading-7 text-[#667085]">用清晰的入门路径、API 说明和示例代码，帮助团队快速形成可交付成果。</p>
             </div>
-            <a href="#quick-start" className="text-sm font-semibold text-[#175cd3] hover:underline">进入完整文档中心 →</a>
+            <a href="/docs" className="text-sm font-semibold text-[#175cd3] hover:underline">进入完整文档中心 →</a>
           </div>
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
             {resources.map((resource, index) => (
-              <a key={resource.title} href="#quick-start" className="group rounded-2xl border border-[#e4e7ec] p-7 transition hover:border-[#84adff] hover:shadow-[0_14px_40px_rgba(16,24,40,0.06)]">
+              <a key={resource.title} href={resource.href} className="group rounded-2xl border border-[#e4e7ec] p-7 transition hover:border-[#84adff] hover:shadow-[0_14px_40px_rgba(16,24,40,0.06)]">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">{resource.type}</span>
                   <span className="grid h-8 w-8 place-items-center rounded-full bg-[#f2f4f7] text-sm text-[#667085] transition group-hover:bg-[#eff4ff] group-hover:text-[#175cd3]">↗</span>
@@ -1040,8 +1106,9 @@ export default function Home() {
           <div className="flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-[#667085]">
             <a href="#capabilities" className="hover:text-[#175cd3]">产品能力</a>
             <a href="#downloads" className="hover:text-[#175cd3]">SDK 与上位机</a>
-            <a href="#docs" className="hover:text-[#175cd3]">文档中心</a>
-            <a href="#docs" className="hover:text-[#175cd3]">技术支持</a>
+            <a href="/docs" className="hover:text-[#175cd3]">文档中心</a>
+            <a href="/lab.html" target="_blank" rel="noreferrer" className="hover:text-[#175cd3]">网页测试台</a>
+            <a href="/docs/readme" className="hover:text-[#175cd3]">排错与支持</a>
           </div>
           <p className="text-[11px] text-[#98a2b3]">© 2026 Shroom. All rights reserved.</p>
         </div>

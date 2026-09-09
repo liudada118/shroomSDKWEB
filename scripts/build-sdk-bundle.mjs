@@ -27,6 +27,7 @@ const SDK = join(ROOT, 'sdk');
 const OUT = join(SDK, 'web', 'shroom.bundle.js');
 const PAGE_TEMPLATE = join(SDK, 'web', 'index.template.html');
 const PAGE_OUT = join(SDK, 'web', 'index.html');
+const LAB_OUT = join(ROOT, 'public', 'lab.html');
 const PLACEHOLDER = '<!--@INLINE_BUNDLE@-->';
 
 // 依赖在前，被依赖的先出现。改动 sdk 结构时记得同步这张表。
@@ -146,3 +147,9 @@ const page = template.replace(
 
 await writeFile(PAGE_OUT, page);
 console.log(`  已生成 sdk/web/index.html（自包含，${page.length} 字节）`);
+
+// 站点上的「网页测试台」直接用同一个文件，不另写一份。
+// 这样测试台和用户下载到的示例页永远是同一份代码，不会各自演化到对不上。
+// 用 .html 后缀而不是 /lab/index.html：静态托管下 /lab 不一定会自动补 index.html。
+await writeFile(LAB_OUT, page);
+console.log(`  已同步 public/lab.html（站点网页测试台，与上面同一份）`);

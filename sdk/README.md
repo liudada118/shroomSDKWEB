@@ -7,6 +7,10 @@
 > **不想自己写代码？** 看 [怎么用AI开发.md](怎么用AI开发.md)——把 [AI-CONTEXT.md](AI-CONTEXT.md)
 > 丢给 AI，然后说人话描述你要什么就行。
 
+**Windows / macOS / Linux 都支持**，SDK 是同一份，不分平台版本。
+差别只在两件事：启动脚本（`start-demo.bat` vs `sh start.sh`）和串口驱动/权限（见文末排错表）。
+浏览器方案要 Chrome 或 Edge —— Safari 和 Firefox 三个平台上都没有 Web Serial。
+
 ---
 
 ## 30 秒跑起来
@@ -206,8 +210,19 @@ await Shroom.connect({
 | `localhost:5178` 打不开 | 服务器没起来 | 见下面「服务器起不来」 |
 | 提示「不是安全上下文」 | 页面地址不是 https 或 localhost | 换成 localhost，或给站点配 https |
 | 提示「没有 Web Serial API」 | 浏览器不支持（Safari / Firefox / 部分国产壳浏览器） | 换 Chrome 或 Edge |
-| 弹了框但列表是空的 | 设备没插好，或缺 USB 串口驱动 | Windows 上装 CH341SER，再看设备管理器里有没有 COM 口 |
+| 弹了框但列表是空的 | 设备没插好，或缺 USB 串口驱动 | 见下面「按系统看驱动与权限」 |
 | 点了「连接设备」直接说「你取消了选择」 | 弹框被你关掉了 | 重新点，在列表里选中设备再确认 |
+
+**按系统看驱动与权限**（列表是空的、或 Node 端 `listPorts()` 返回空时看这里）：
+
+| 系统 | 要做的事 |
+| --- | --- |
+| Windows | 装 CH341SER 通用驱动，然后在**设备管理器 → 端口 (COM 和 LPT)** 里确认出现了 COM 口 |
+| macOS | 较新的系统自带 CH34x 驱动，插上后应能看到 `/dev/tty.usbserial-*`（终端里 `ls /dev/tty.*` 查）。没有就装芯片厂商驱动，装完要在「系统设置 → 隐私与安全性」里放行 |
+| Linux | 驱动通常在内核里，但**默认用户没有串口权限**：打开设备会报 `Permission denied`。执行 `sudo usermod -aG dialout $USER` 后**重新登录**（`newgrp dialout` 可临时生效）。设备名一般是 `/dev/ttyUSB0` 或 `/dev/ttyACM0` |
+
+> Linux 上还有一个坑：某些发行版的 `brltty` 服务会把 CH340 抢走当盲文设备。
+> 插上后 `/dev/ttyUSB0` 一闪就消失的话，`sudo systemctl stop brltty` 试一下。
 
 **服务器起不来 / `localhost:5178` 打不开？** 先看运行 `node start.mjs` 的那个窗口打印了什么：
 

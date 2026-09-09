@@ -411,6 +411,11 @@ button.onclick = async () => {
 
 Safari 和 Firefox 没有 Web Serial，且短期内不会有。需要跨浏览器就走 Node/Electron 方案。
 
+**操作系统不是限制**：Windows / macOS / Linux 三个桌面系统上的 Chrome / Edge 都能用，
+代码一份，不用写平台分支。移动端不行（Android Chrome 也没有 Web Serial）。
+
+写给用户看的提示文案里，**别写「请在 Windows 上运行」**——限制是浏览器，不是系统。
+
 ### 5.4 帧率很高，回调里别做重活
 
 一秒可能来 100 帧。`onFrame` 里做 DOM 操作、`JSON.stringify`、
@@ -470,6 +475,8 @@ recorded.push(frame);
 | `droppedCount` 猛涨 | 波特率不稳 | 换一档波特率 |
 | 点阵按下面却是上面鼓起来 | 传感器行序和默认相反 | `heatmap.setOptions({ flipY: false })` |
 | 连接按钮点了没反应 | 不在用户手势里 / 不是安全上下文 | 见 §5.1、§5.2 |
+| 浏览器弹了选择框但列表是空的 | 设备没插好，或系统缺驱动 / 缺权限 | 见下面这行 |
+| Node 端 `Permission denied` 或 `listPorts()` 返回空 | Linux 上普通用户默认没有串口权限 | `sudo usermod -aG dialout $USER` 后重新登录；设备名一般是 `/dev/ttyUSB0` |
 
 ---
 
