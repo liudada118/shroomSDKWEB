@@ -44,3 +44,4 @@ next-env.d.ts
 # （git 里删掉也不会变小）。线上让 Nginx alias 到磁盘目录去发，
 # 只有 app/desktop-release.json 那份元数据进仓库。
 /public/downloads/
+/sdk/node_modules
