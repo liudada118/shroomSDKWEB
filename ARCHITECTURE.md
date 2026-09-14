@@ -68,6 +68,8 @@ shroomSDKWEB/
 │  └─ SDK_SKILL_TODO.md     # SDK、手套接入、Skill 与展示站的分阶段待办
 ├─ ARCHITECTURE.md          # 本架构说明
 ├─ DEPLOY.md                # 部署、上位机发版流程与 Nginx 配置
+├─ deploy.sh                # 服务器一键部署：装依赖 → 构建 → 重启 PM2 → 健康检查
+├─ ecosystem.config.cjs     # PM2 进程配置（fork 单实例，只监听 127.0.0.1）
 ├─ eslint.config.mjs        # ESLint 配置
 ├─ next.config.ts           # Next.js 配置
 ├─ package.json             # 脚本与依赖

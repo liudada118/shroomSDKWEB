@@ -19,7 +19,71 @@ npm run start     # 默认 3000，用 PORT=3001 npm run start 改端口
 - `build:docs` 把 `sdk/*.md` 预渲染成 HTML 塞进产物 —— **文档站是构建期生成的**，
   运行时不读磁盘，所以服务器上没有 `sdk/` 目录也不影响 `/docs`
 
-建议用 PM2 之类的守住进程，监听 `127.0.0.1`，外面套 Nginx。
+生产上不要手敲这两条，用 PM2 守住进程、只监听 `127.0.0.1`、外面套 Nginx，见下一节。
+
+## 1.1 PM2 托管
+
+源码更新到服务器上（`git pull` / `rsync`）之后，**只需要一条命令**：
+
+```bash
+./deploy.sh
+```
+
+它依次做：环境检查 → `npm ci` → `npm run build` → `pm2 startOrRestart` → 健康检查。
+任何一步失败都会退出且**不会去动正在跑的进程**，构建失败时还会把上一版 `dist/` 放回去
+（`vinext build` 开头会清空 `dist/`，失败了线上连静态资源都读不到）。
+
+常用变体：
+
+```bash
+./deploy.sh --skip-install      # 依赖没动过，省掉 npm ci
+./deploy.sh --skip-build        # 只重启进程
+PORT=3002 ./deploy.sh           # 换端口（记得同步改 Nginx 的 proxy_pass）
+./deploy.sh --help
+```
+
+第一次部署额外跑一次开机自启：
+
+```bash
+pm2 startup      # 按它打印的那行 sudo 命令执行一次
+pm2 save         # deploy.sh 每次也会自动存
+```
+
+### 1.1.1 为什么 `ecosystem.config.cjs` 是这么写的
+
+配置在根目录的 [ecosystem.config.cjs](ecosystem.config.cjs)，进程名 `shroom-sdk`。几个不明显的决定：
+
+| 决定 | 原因 |
+| :--- | :--- |
+| 文件名是 `.cjs` 不是 `.js` | `package.json` 里 `"type": "module"`，而 PM2 用 `require()` 读配置，叫 `.js` 会当成 ESM 加载然后报错 |
+| 直接跑 `node_modules/vinext/dist/cli.js`，不套 `npm start` | 中间多一层 npm + sh，PM2 的信号、重启和内存统计就都打在 npm 上，真正的 Node 进程可能变成孤儿 |
+| 显式 `--hostname 127.0.0.1` | `vinext start` 不传这个参数时默认绑 **`0.0.0.0`**，3001 会直接暴露在公网上，绕过 Nginx 的 TLS 和 `/downloads/` 规则 |
+| `exec_mode: 'fork'` + 单实例 | vinext 的生产服务器把预渲染 / ISR 缓存放在**进程内存**里，多实例各存各的，`revalidate` 只在命中的那个进程生效，页面会在版本之间来回跳 |
+| `cwd: __dirname` | `vinext start` 用 `process.cwd()` 定位 `dist/` 和 `.env`，写死绝对路径换个部署目录就废了 |
+| `interpreter: process.execPath` | 服务器上用 nvm 时，systemd 里的 PATH 往往指向系统自带的旧 Node，而本项目要求 `>= 22.13.0` |
+| `VINEXT_TRUST_PROXY=1` | Nginx 传了 `X-Real-IP` / `X-Forwarded-Proto`，但 vinext 默认**不信任**任何代理头，不开的话服务端看到的协议永远是 http、客户端 IP 永远是 `127.0.0.1` |
+
+日志走 PM2 默认位置（`~/.pm2/logs/shroom-sdk-{out,error}.log`），没写死 `/var/log/pm2` ——
+那个目录不存在或没权限时 PM2 会直接起不来。要轮转就装 `pm2 install pm2-logrotate`。
+
+```bash
+pm2 logs shroom-sdk          # 跟日志
+pm2 list                     # 看状态
+pm2 restart shroom-sdk       # 只重启，不重新构建
+```
+
+### 1.1.2 四个会踩的坑
+
+1. **不能 `npm ci --omit=dev`。** `vinext` 在 `devDependencies` 里，省掉之后 `build` 和 `start`
+   一起没有。`deploy.sh` 里写死了 `--include=dev`，防的是 shell 里已经 export 了
+   `NODE_ENV=production` 的情况。
+2. **重启有 1~2 秒 502。** vinext 的生产服务器没有 `SIGTERM` 处理，收到信号立即退出，在途请求直接断。
+   调大 PM2 的 `kill_timeout` 没用（那是留给有 handler 的进程的）。真要零停机得起两个实例
+   + Nginx `upstream`，目前这个站的体量不值得。
+3. **`NEXT_PUBLIC_*` 写进 PM2 的 `env` 里无效**，它们是构建期注入的（见第 3 节），改完要重新构建。
+4. **构建前 `public/downloads/` 必须是空的。** Vite 会把 `public/` 整个拷进 `dist/client/`，
+   100MB 的上位机包会被打进产物并由 Node 进程发出去，正好撞上 2.1 的铁律 3。
+   `deploy.sh` 检测到非空会直接拦下来。
 
 ---
 
@@ -146,7 +210,7 @@ server {
 5. `node scripts/sync-desktop-release.mjs "<新包路径>"`
 6. `git diff app/desktop-release.json` 确认版本 / 体积 / SHA-256 / 日期都变了
 7. rsync 新包上服务器（**旧版本先别删**，可能有人正下到一半）
-8. `npm run build && pm2 restart shroom-sdk`
+8. 在服务器上 `./deploy.sh`（构建 + 重启 + 健康检查，见 1.1）
 9. 打开页面点一次下载，**核一遍校验值**：
    ```powershell
    certutil -hashfile "ShroomMonitor-0.1.0-win-x64.zip" SHA256

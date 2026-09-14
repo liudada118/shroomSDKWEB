@@ -29,10 +29,15 @@ yarn-error.log*
 # local environment
 .env*
 
+# 本机工具配置，因人而异，不进仓库
+.claude/settings.local.json
+
 # deployment and generated files
 .vercel
 next-env.d.ts
 /dist/
+# deploy.sh 在构建前留的上一版产物，构建成功就删掉，失败时用来回滚
+/dist.prev/
 /.wrangler/
 /outputs/
 /work/
