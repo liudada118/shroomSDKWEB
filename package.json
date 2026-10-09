@@ -12,6 +12,7 @@
     "pack:sdk": "npm run build:sdk-bundle && node scripts/pack-sdk.mjs",
     "build:sdk-bundle": "node scripts/build-sdk-bundle.mjs",
     "build:docs": "node scripts/build-docs.mjs",
+    "test:knowledge": "npm run build:docs && node --experimental-strip-types --test server/*.test.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {

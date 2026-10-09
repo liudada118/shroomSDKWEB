@@ -1,5 +1,5 @@
 /**
- * 把 sdk/ 打包成 public/shroom-sdk.zip，供网站上的「获取 SDK」按钮直接下载。
+ * 打包 Python / Node.js 独立 ZIP，并保留 shroom-sdk.zip 兼容旧链接。
  *
  *   npm run pack:sdk
  *
@@ -14,10 +14,11 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const SRC = join(ROOT, 'sdk');
-const OUT = join(ROOT, 'public', 'shroom-sdk.zip');
-const PREFIX = 'shroom-sdk/';
 // index.template.html 是给构建脚本用的源文件，用户拿到的是渲染好的 index.html
-const SKIP = new Set(['node_modules', '.git', '.DS_Store', 'index.template.html']);
+const SKIP = new Set([
+  'node_modules', '.git', '.DS_Store', 'index.template.html',
+  '__pycache__', '.venv', 'venv', 'build', 'dist', '.pytest_cache', '.ruff_cache',
+]);
 
 // 固定为 2026-01-01 00:00:00 的 DOS 时间，保证产物可复现
 const DOS_TIME = 0;
@@ -49,7 +50,7 @@ function crc32(buf) {
 
 async function walk(dir, out = []) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue;
+    if (SKIP.has(entry.name) || /\.(?:pyc|pyo|egg-info|whl)$/.test(entry.name)) continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) await walk(full, out);
     else out.push(full);
@@ -57,18 +58,13 @@ async function walk(dir, out = []) {
   return out;
 }
 
-async function main() {
-  await stat(SRC).catch(() => {
-    throw new Error(`找不到 ${SRC}`);
-  });
-
-  const files = (await walk(SRC)).sort(); // 排序保证顺序稳定
+async function pack(fileName, files, prefix = 'shroom-sdk/') {
   const locals = [];
   const centrals = [];
   let offset = 0;
 
   for (const file of files) {
-    const name = PREFIX + relative(SRC, file).split(sep).join('/');
+    const name = prefix + relative(SRC, file).split(sep).join('/');
     const nameBuf = Buffer.from(name, 'utf8');
     const raw = await readFile(file);
     const deflated = deflateRawSync(raw, { level: 9 });
@@ -122,9 +118,19 @@ async function main() {
 
   const zip = Buffer.concat([...locals, centralBuf, eocd]);
   await mkdir(join(ROOT, 'public'), { recursive: true });
-  await writeFile(OUT, zip);
+  await writeFile(join(ROOT, 'public', fileName), zip);
 
-  console.log(`已打包 ${files.length} 个文件 → public/shroom-sdk.zip (${(zip.length / 1024).toFixed(1)} KB)`);
+  console.log(`已打包 ${files.length} 个文件 → public/${fileName} (${(zip.length / 1024).toFixed(1)} KB)`);
+}
+
+async function main() {
+  await stat(SRC);
+  const files = (await walk(SRC)).sort();
+  const pathFor = (file) => relative(SRC, file).split(sep).join('/');
+  await pack('shroom-sdk.zip', files);
+  // Node 保留 Python 说明作为文档交叉引用，但不附带 Python 源码或依赖。
+  await pack('shroom-sdk-node.zip', files.filter((file) => !pathFor(file).startsWith('python/') || pathFor(file) === 'python/README.md'), 'shroom-sdk-node/');
+  await pack('shroom-sdk-python.zip', files.filter((file) => pathFor(file).startsWith('python/')), 'shroom-sdk-python/');
 }
 
 main().catch((err) => {

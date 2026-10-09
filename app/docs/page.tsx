@@ -1,33 +1,32 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import DocHeader from './DocHeader';
 import { docPages } from './generated';
 
 export const metadata: Metadata = {
   title: '文档中心｜Shroom Developer',
-  description: 'Shroom SDK 的完整说明、给 AI 的上下文，以及不写代码也能用 AI 开发的操作指南。',
+  description: 'Shroom SDK 的浏览器、Node.js 与 Python 接入说明、给 AI 的上下文，以及不写代码也能用 AI 开发的操作指南。',
   alternates: { canonical: '/docs' },
 };
 
 export default function DocsIndex() {
   return (
-    <main className="min-h-screen bg-white text-[#101828]">
-      <DocHeader />
-
-      <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-7xl scroll-mt-[72px] px-5 pb-12 pt-24 sm:px-8 sm:pb-16 lg:px-10">
         <Link href="/" className="text-sm font-semibold text-[#175cd3] hover:underline">
           ← 返回首页
         </Link>
         <p className="mt-6 text-sm font-semibold text-[#2563eb]">文档与示例</p>
         <h1 className="mt-3 max-w-3xl text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-          三份文档，覆盖从第一次连接到交付。
+          从第一次连接到交付，找到对应的接入指南。
         </h1>
         <p className="mt-5 max-w-2xl leading-7 text-[#667085]">
           内容与下载的 SDK 压缩包完全一致，构建时从 <code className="rounded bg-[#f2f4f7] px-1.5 py-0.5 font-mono text-[13px] text-[#b54708]">sdk/</code>{' '}
           目录同步生成，不会出现网页和压缩包对不上的情况。
         </p>
 
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
+        <Link href="/knowledge" className="mt-8 flex min-h-14 items-center justify-between gap-4 rounded-xl border border-[#84adff] bg-[#eff4ff] px-5 py-4 text-sm font-semibold text-[#175cd3] transition hover:bg-[#dbeafe]">
+          <span>不确定看哪份文档？直接问 AI 知识助手</span><span aria-hidden="true">→</span>
+        </Link>
+        <div className="mt-8 grid gap-5 sm:grid-cols-2">
           {docPages.map((doc, index) => (
             <Link
               key={doc.slug}
@@ -59,7 +58,7 @@ export default function DocsIndex() {
               <dt className="text-sm font-semibold text-[#175cd3]">你自己写代码</dt>
               <dd className="mt-2 text-sm leading-6 text-[#667085]">
                 看 <Link href="/docs/readme" className="font-semibold text-[#175cd3] hover:underline">SDK 说明与排错</Link>，
-                连不上设备时那张排错表最有用。
+                或从 <Link href="/docs/python" className="font-semibold text-[#175cd3] hover:underline">Python SDK 接入指南</Link> 开始。
               </dd>
             </div>
             <div>
@@ -79,6 +78,5 @@ export default function DocsIndex() {
           </dl>
         </div>
       </div>
-    </main>
   );
 }

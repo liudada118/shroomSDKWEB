@@ -28,6 +28,7 @@ yarn-error.log*
 
 # local environment
 .env*
+!.env.example
 
 # 本机工具配置，因人而异，不进仓库
 .claude/settings.local.json
@@ -50,3 +51,15 @@ next-env.d.ts
 # 只有 app/desktop-release.json 那份元数据进仓库。
 /public/downloads/
 /sdk/node_modules
+
+# Python SDK local environments and build output
+__pycache__/
+*.py[cod]
+*.egg-info/
+/.venv/
+/sdk/python/.venv/
+/sdk/python/venv/
+/sdk/python/build/
+/sdk/python/dist/
+.pytest_cache/
+.ruff_cache/

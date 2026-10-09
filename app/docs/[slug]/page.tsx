@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import CopyRawButton from '../CopyRawButton';
-import DocHeader from '../DocHeader';
 import { docPages, getDoc } from '../generated';
 
 export function generateStaticParams() {
@@ -30,12 +29,20 @@ export default async function DocDetail({ params }: { params: Promise<{ slug: st
   if (!doc) notFound();
 
   const others = docPages.filter((page) => page.slug !== doc.slug);
+  const contents = (
+    <ul className="space-y-1 text-sm">
+      {doc.toc.map((item) => (
+        <li key={item.id} className={item.level === 3 ? 'pl-3' : ''}>
+          <a href={`#${item.id}`} className={`block rounded py-1.5 leading-6 transition hover:text-[#175cd3] focus-visible:outline-2 focus-visible:outline-[#2563eb] ${item.level === 3 ? 'text-[13px] text-[#667085]' : 'text-[#475467]'}`}>
+            {item.text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
-    <main className="min-h-screen bg-white text-[#101828]">
-      <DocHeader />
-
-      <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
+      <div className="mx-auto max-w-7xl scroll-mt-[72px] px-5 pb-12 pt-24 sm:px-8 sm:pb-16 lg:px-10">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-semibold">
           <Link href="/docs" className="text-[#175cd3] hover:underline">
             ← 返回文档中心
@@ -46,7 +53,7 @@ export default async function DocDetail({ params }: { params: Promise<{ slug: st
           </Link>
         </div>
 
-        <div className="mt-6 flex flex-col gap-6 border-b border-[#eaecf0] pb-9 lg:flex-row lg:items-end lg:justify-between">
+        <div className="mt-6 flex flex-col gap-6 border-b border-[#eaecf0] pb-9 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-2xl">
             <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">
               {doc.forAi ? 'FOR AI' : 'GUIDE'}
@@ -62,30 +69,19 @@ export default async function DocDetail({ params }: { params: Promise<{ slug: st
           </div>
         </div>
 
-        <div className="mt-10 grid gap-12 lg:grid-cols-[220px_1fr]">
-          {/* 目录在窄屏上没有足够宽度，直接不显示，正文本身有标题层级 */}
-          <nav className="hidden lg:block" aria-label="本页目录">
-            <div className="sticky top-[96px] max-h-[calc(100vh-140px)] overflow-y-auto pr-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#98a2b3]">本页目录</p>
-              <ul className="mt-4 space-y-1.5 text-sm">
-                {doc.toc.map((item) => (
-                  <li key={item.id} className={item.level === 3 ? 'pl-3' : ''}>
-                    <a
-                      href={`#${item.id}`}
-                      className={`block leading-6 transition hover:text-[#175cd3] ${
-                        item.level === 3 ? 'text-[13px] text-[#98a2b3]' : 'text-[#475467]'
-                      }`}
-                    >
-                      {item.text}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </nav>
-
+        <details className="mt-8 rounded-xl border border-[#e4e7ec] bg-[#f9fafb] px-4 xl:hidden">
+          <summary className="cursor-pointer py-4 text-sm font-semibold text-[#344054]">本页目录</summary>
+          <nav aria-label="本页目录" className="mb-4 max-h-72 overflow-y-auto">{contents}</nav>
+        </details>
+        <div className="mt-10 grid gap-10 xl:grid-cols-[minmax(0,1fr)_200px]">
           {/* 内容来自本仓库 sdk/ 下自己写的 Markdown，构建时渲染，没有外部输入 */}
           <article className="doc-body min-w-0" dangerouslySetInnerHTML={{ __html: doc.html }} />
+          <aside className="hidden xl:block">
+            <nav aria-label="本页目录" className="sticky top-24 max-h-[calc(100dvh-120px)] overflow-y-auto border-l border-[#eaecf0] pl-5 pr-2">
+              <p className="mb-4 text-xs font-semibold text-[#667085]">本页目录</p>
+              {contents}
+            </nav>
+          </aside>
         </div>
 
         <div className="mt-16 grid gap-4 border-t border-[#eaecf0] pt-9 sm:grid-cols-2">
@@ -104,6 +100,5 @@ export default async function DocDetail({ params }: { params: Promise<{ slug: st
           ))}
         </div>
       </div>
-    </main>
   );
 }

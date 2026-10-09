@@ -15,7 +15,7 @@ npm run start     # 默认 3000，用 PORT=3001 npm run start 改端口
 
 `npm run build` 会顺带做两件容易被忘的事：
 
-- `pack:sdk` 把 `sdk/` 打成 `public/shroom-sdk.zip`（含单文件 bundle，且保留 `start.sh` 的可执行位）
+- `pack:sdk` 把 `sdk/` 打成 Python / Node.js 独立 ZIP 与兼容完整包 `public/shroom-sdk.zip`（含单文件 bundle，且保留 `start.sh` 的可执行位）
 - `build:docs` 把 `sdk/*.md` 预渲染成 HTML 塞进产物 —— **文档站是构建期生成的**，
   运行时不读磁盘，所以服务器上没有 `sdk/` 目录也不影响 `/docs`
 
@@ -230,3 +230,21 @@ server {
 | macOS / Linux 上位机在哪 | 还没打 | 页面上是灰的「即将发布」，不要给人发 Windows 包让他去 Wine |
 | 下载到一半断了 | 100MB + 网络 | `curl -I` 看响应里有没有 `Accept-Ranges: bytes`。没有多半是这个 location 上开了 gzip 或套了别的代理，关掉即可续传 |
 | 网页测试台连不上设备 | 浏览器限制，不是站点问题 | 必须 https 或 localhost，且必须 Chrome / Edge。见 sdk/README.md |
+
+## 智谱知识问答配置（2026-10-09）
+
+问答页为 `/knowledge`，同站服务端接口为 `POST /api/knowledge`。从 `.env.example` 复制变量名，在本地被 Git 忽略的 `.env.local` 或生产进程环境 / 托管 Secrets 中填写：
+
+```dotenv
+ZAI_API_KEY=你的智谱_API_Key
+ZHIPU_KNOWLEDGE_ID=你的知识库_ID
+ZHIPU_MODEL=glm-4.7-flash
+```
+
+不要添加 `NEXT_PUBLIC_` 前缀，不要把真实密钥提交到 Git、浏览器代码或 SDK 包。修改后重启服务；如果使用 PM2 注入进程变量，应以更新后的环境重新加载进程。无配置时接口返回 503，网站下载和文档不受影响。
+
+知识库需上传并处理当前 `sdk/README.md`、`sdk/AI-CONTEXT.md`、`sdk/python/README.md` 等资料。本地构建不会自动上传到智谱；旧分支的 Backend 文档与当前基础 SDK 能力不同，应更新知识库版本。
+
+接口为流式 SSE，反向代理应关闭该路由的响应缓冲并允许至少 60 秒读取。公网部署前配置网关限流、智谱用量预算和必要的访问控制，避免公开接口被滥用。本次恢复没有部署上线，也没有调用真实智谱凭据。
+
+SDK 构建现生成 `public/shroom-sdk-python.zip`、`public/shroom-sdk-node.zip` 与兼容旧链接的 `public/shroom-sdk.zip`，发布时应包含三个文件。

@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'dist.prev/**',
+    'work/**', // 本地测试环境与临时产物，包括 Python 虚拟环境的第三方代码。
     'next-env.d.ts',
     'sdk/**',
     'ecosystem.config.cjs',
