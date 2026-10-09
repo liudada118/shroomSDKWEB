@@ -92,8 +92,7 @@
           <option value="460800">460800</option>
           <option value="115200">115200</option>
         </select>
-        <select id="layout" title="点位排列：串口里的字节是采集板扫描顺序，不等于垫子上的位置">
-          <option value="mat32">32×32 垫子</option>
+        <select id="layout" title="选你手里那款产品。串口里的字节是采集板扫描顺序，不等于垫子上的位置，选对了画面才和实物对得上">
           <option value="raw">原始扫描顺序</option>
         </select>
         <select id="mode">
@@ -156,7 +155,21 @@
 
         // 连接参数整个对象传给 SDK，SDK 每帧都按这个对象解码 ——
         // 所以改 layout 直接改这里就生效，不用断开重连。
-        var opts = { rows: 32, cols: 32, layout: 'mat32' };
+        // 行列不用写：选了产品，产品自己知道这块垫子是几行几列
+        var opts = { layout: 'mat32' };
+
+        // 下拉里的选项直接从 SDK 里读，加了新产品这里不用跟着改。
+        // 列的是**产品**不是线序：好几款产品共用一条走线，
+        // 用户手里拿的是「宠物看护」，不是「通用压力垫」
+        // 下拉里只写产品名，跟桌面端菜单一样，不带行列——行列是解码的事，
+        // 用户挑的是手里那台设备
+        Shroom.listProducts().forEach(function (p) {
+          var o = document.createElement('option');
+          o.value = p.name;
+          o.textContent = p.label;
+          $('layout').appendChild(o);
+        });
+        $('layout').value = 'hand';
         var device = null;
         var frames = 0;
         var lastTick = performance.now();
@@ -223,7 +236,19 @@
 
         $('stop').onclick = stop;
         $('layout').onchange = function (e) {
-          opts.layout = e.target.value;
+          // 下拉里的 value 是产品名，解码要的是线序名，这里换一道。
+          // 「高速」那几款不需要换线序，产品表里记的就是 'raw'
+          var p = Shroom.getProduct(e.target.value);
+          opts.layout = p ? p.layout : 'raw';
+          // 走线序的产品，行列由线序自己决定，这里给了也会被忽略；
+          // 'raw' 的没有线序可问，不给就只能按点数猜，所以把产品表里的行列带上
+          if (p && p.layout === 'raw') {
+            opts.rows = p.rows;
+            opts.cols = p.cols;
+          } else {
+            delete opts.rows;
+            delete opts.cols;
+          }
         };
         $('colormap').onchange = function (e) {
           heatmap.setOptions({ colormap: e.target.value });

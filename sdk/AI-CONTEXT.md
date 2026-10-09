@@ -48,6 +48,7 @@ Shroom SDK 把一块压力传感器阵列接进 JS：**连上串口 → 每秒�
 | 没硬件也能开发 | ✅ 有 | `Shroom.mock()`，接口完全一样 |
 | 画成热力图 / 点阵 | ✅ 有 | `Shroom.createHeatmap()` |
 | 压力重心、受力面积、最大值 | ✅ 有 | 每帧算好了，直接读 `frame.center` / `frame.area` / `frame.max` |
+| 让画面位置和垫子对上 | ✅ 有 | 按产品选点位排列：`connect({ layout: 'mat32' })`，见 §3 的「点位排列」 |
 | 换算成 kPa / 牛顿 | ❌ 没有 | **做不到**，见 §3 的警告 |
 | 曲线图 / 折线图 | ❌ 没有 | 你自己攒 `frame.max` 进数组，用 Chart.js / canvas 画 |
 | 录制与回放 | ❌ 没有 | 你自己把 `frame.raw` 存下来，回放时再 `decodeFrame()` |
@@ -165,6 +166,58 @@ const row = Math.min(N - 1, Math.floor(frame.center.y * N));
 > ```
 >
 > 单点触发类应用（按格子、打地鼠）用峰值点通常比用重心准。
+
+### 点位排列（画面位置对不上时看这里）
+
+串口里的字节是**采集板的扫描顺序**，不等于垫子上的位置。不转换直接铺成方阵，
+按垫子最上面一行，画面上亮的可能是中间那一行——数值是对的，位置是错的。
+
+每种产品走线不同，猜不出来，按产品选一个：
+
+```js
+await Shroom.connect({ layout: 'carSeat' });
+decodeFrame(payload, { layout: 'carSeat' });   // 自己接数据源时
+Shroom.listLayouts();  // [{ name, label, rows, cols }, ...] 按「走线」列的
+```
+
+**给用户看的下拉框用 `listProducts()`，不要用 `listLayouts()`。** 前者列的是产品
+（手部检测、宠物看护、温度全床系统…，和公司桌面端菜单一字不差），后者列的是走线名
+（`mat32`、`carSeat`…）。好几款产品共用一条走线，写走线名用户对不上自己那台设备。
+下拉里**只写产品名，别加「（32×32）」这种行列后缀**，桌面端菜单里没有这些：
+
+```js
+Shroom.listProducts();
+// [{ name: 'hand', label: '手部检测', layout: 'mat32', rows: 32, cols: 32 }, ...]
+
+// 下拉里的 value 是产品名，解码要的是线序名，中间换一道
+const p = Shroom.getProduct(select.value);
+await Shroom.connect({ layout: p.layout });
+// 'raw' 的产品（几款「高速」和「正常测试」）没有线序可问，行列要显式带上，
+// 否则只能按帧长猜：1024 字节会被猜成 32×32，而 16*16高速 其实是 16×16
+if (p.layout === 'raw') Object.assign(opts, { rows: p.rows, cols: p.cols });
+```
+
+**选了 `layout` 就不要再传 `rows` / `cols`**——排列自己知道这块垫子是几行几列，
+比如 `car10` 是从 1024 个扫描点里取 10×10，`frame.rows / cols` 就是 10。
+
+可选值：`raw`（不转换，默认）、`mat32`（32×32 压力垫，床垫 / 手部垫 / 眠枕 / 宠物垫都是它）、
+`sit`、`bed1`、`carSeat`、`carBack`、`car10`、`car10Back`、`sit10`、`yanfeng10`、
+`yanfeng10Back`、`volvo`、`volvoBack`、`volvoHead`、`smallM`、`rect`、`short`、
+`matCol`、`sitCol`、`xiyue`、`carCol`、`sit100`、`endiSit`、`sofa`、`handSinglePoint`、
+`wholeChair`（整椅坐垫）、`wholeChairBack`、`wholeChairHead`、`tempFullBed`、
+`smallSample`、`footInsole`。
+
+几点注意：
+
+- 排列**只搬位置，不改数值**。正式上位机在某些产品上还会做坏点插值、空行填补、高斯柔化、
+  压力换算，那些不在这个 SDK 里，所以同一帧的数字可能和正式上位机对不上，位置是对的。
+- 有的产品有**没装传感器的空位**（如 `carCol` 中间那一列），这些位置固定是 0。
+- 大多数产品一帧 1024 个点，`smallSample` / `footInsole` 是 256 个。排列自己知道要几个点，
+  但**选了帧长对不上的排列，画面会大片空白**——用户说「一大半是黑的」先怀疑这里。
+- `tempFullBed` 只给压力矩阵（12×15），那三个温度点不在排列里；用户要温度得自己从原始帧取。
+- **手套类产品的线序不在 SDK 里**，让用户找官方技术人员要。
+
+不知道用户手里是哪一款时**别猜**：让他打开网页测试台挨个换，按下去的位置和画面对上就是那个。
 
 ### 典型数值量级（写阈值时的依据）
 
@@ -312,7 +365,8 @@ button.onclick = async () => {
 await Shroom.connect({
   baudRate: 1000000,                    // 默认 1000000
   delimiter: [0xAA, 0x55, 0x03, 0x99],  // 帧分隔符，默认就是这个
-  rows: 32, cols: 32,                   // 不填按方阵推断：1024 个点 → 32×32
+  layout: 'mat32',                      // 点位排列，按产品选，见 §3；不填就是 'raw' 不转换
+  rows: 32, cols: 32,                   // 不填按方阵推断：1024 个点 → 32×32；给了 layout 就不用填
   fullScale: 255,                       // 满量程，默认 255
   threshold: 0.02,                      // 算 area / center 的有效点阈值
   lockLength: true,                     // 锁定帧长，默认开，见 §6
@@ -367,12 +421,16 @@ import { createFramer, decodeFrame } from './sdk/web/index.js';
 
 const framer = createFramer();                    // 字节流 → 一帧一帧
 for (const payload of framer.push(someBytes)) {   // push 返回本次切出的所有帧
-  const frame = decodeFrame(payload, { rows: 32, cols: 32 });
+  const frame = decodeFrame(payload, { layout: 'mat32' });  // 或 { rows: 32, cols: 32 }
   heatmap.render(frame);
 }
 ```
 
 `createFramer()` 返回 `{ push(chunk), reset(), droppedCount, frameLength }`。
+
+`getLayout(name)` / `listLayouts()` 也在这一层，需要自己排布点位时用得上：
+`getLayout('mat32').perm[显示位置]` 就是这个位置在扫描顺序里的下标，`-1` 表示这里没有传感器。
+`getProduct(name)` / `listProducts()` 是它上面一层的**产品**表，给界面下拉框用。
 
 ---
 
@@ -469,6 +527,7 @@ recorded.push(frame);
 | 字节在涨但 `frameCount === 0` | 波特率或分隔符不对 | 依次试 `1000000`（默认）、`921600`、`1500000`、`3000000`、`115200` |
 | 帧在涨但画面是一条横线 | 帧长不是完全平方数，推不出方阵 | 显式传 `rows` / `cols`；`device.frameLength` 就是实际帧长 |
 | 帧在涨但画面花 | 矩阵尺寸猜错了 | 同上，显式传 `rows` / `cols` |
+| 帧在涨、画面也正常，但按下去的位置不对 | 没选点位排列，画的是采集板扫描顺序 | 按产品传 `layout`，见 §3 |
 | `droppedCount` 缓慢增长 | 假分隔符被帧长锁定挡掉了 | 正常，不用管 |
 | `droppedCount` 猛涨 | 波特率不稳 | 换一档波特率 |
 | 点阵按下面却是上面鼓起来 | 传感器行序和默认相反 | `heatmap.setOptions({ flipY: false })` |
@@ -632,5 +691,8 @@ sdk/
 - 连接按钮的文案和禁用状态要处理好：先 `Shroom.isSupported()` 判断，
   不支持就禁用按钮并说明原因（是 `file://`？还是浏览器不对？），别让用户点了没反应。
 - 数值一律按 0~1 显示，或者显示成百分比，**不要编造物理单位**。
+- 做位置相关的功能时，先问用户手里是哪款产品并传上对应的 `layout`；问不出来就给个下拉框
+  （`Shroom.listProducts()`，列的是产品名不是走线名）让他自己挑，
+  别默认 `raw` 然后当位置是对的。
 - `onFrame` 里只做计算和 `heatmap.render()`，DOM 更新降频到 10Hz 左右。
 - 需要本地起服务时提醒用户：不能双击 html 文件，要 `node start.mjs`（SDK 里自带）。

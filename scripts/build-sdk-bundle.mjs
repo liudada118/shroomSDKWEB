@@ -106,7 +106,11 @@ ${body
     decodeFrame: decodeFrame,
     resolveShape: resolveShape,
     getLayout: getLayout,
+    listLayouts: listLayouts,
     LAYOUTS: LAYOUTS,
+    getProduct: getProduct,
+    listProducts: listProducts,
+    PRODUCTS: PRODUCTS,
     getColormap: getColormap,
     DEFAULT_DELIMITER: DEFAULT_DELIMITER,
   };

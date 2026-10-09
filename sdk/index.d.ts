@@ -25,8 +25,45 @@ export interface Frame {
   timestamp: number;
 }
 
+/**
+ * 点位排列（线序）名。串口里的字节是采集板的扫描顺序，不等于垫子上的位置，
+ * 按产品选一个就能对上。'raw' 是不转换，原样铺。
+ */
+export type LayoutName =
+  | 'raw'
+  | 'mat32'
+  | 'sit'
+  | 'bed1'
+  | 'carSeat'
+  | 'carBack'
+  | 'car10'
+  | 'car10Back'
+  | 'sit10'
+  | 'yanfeng10'
+  | 'yanfeng10Back'
+  | 'volvo'
+  | 'volvoBack'
+  | 'volvoHead'
+  | 'smallM'
+  | 'rect'
+  | 'short'
+  | 'matCol'
+  | 'sitCol'
+  | 'xiyue'
+  | 'carCol'
+  | 'sit100'
+  | 'endiSit'
+  | 'sofa'
+  | 'handSinglePoint'
+  | 'wholeChair'
+  | 'wholeChairBack'
+  | 'wholeChairHead'
+  | 'tempFullBed'
+  | 'smallSample'
+  | 'footInsole';
+
 export interface DecodeOptions {
-  /** 指定行数，不填按方阵推断 */
+  /** 指定行数，不填按方阵推断；给了 layout 就以 layout 的行数为准 */
   rows?: number;
   /** 指定列数 */
   cols?: number;
@@ -36,6 +73,8 @@ export interface DecodeOptions {
   fullScale?: number;
   /** 有效点阈值（归一化后），默认 0.02 */
   threshold?: number;
+  /** 点位排列，默认 'raw'。选了它就不用再传 rows / cols */
+  layout?: LayoutName;
 }
 
 export interface FramerOptions {
@@ -78,16 +117,18 @@ export interface Device {
   close(): Promise<void>;
 }
 
-export type ColormapName = 'jet' | 'jetWhite' | 'grey';
+export type ColormapName = 'shroom' | 'jet' | 'jetWhite' | 'grey';
 export type ColormapFn = (t: number) => [number, number, number];
 
 export interface HeatmapOptions {
   /** 画法：'dots' 透视点阵（默认）、'heat' 热力圆斑、'grid' 方格 */
   mode?: 'dots' | 'heat' | 'grid';
-  /** 配色，默认 'jet' */
+  /** 配色，默认 'jet'。'shroom' 是公司桌面端那一套 */
   colormap?: ColormapName | ColormapFn;
   /** 是否平滑，默认 true。只对 'heat' / 'grid' 有效 */
   smooth?: boolean;
+  /** 画之前先铺一层底色，如 '#666'。默认透明。热力圆斑带透明度，垫了底色才像桌面端 */
+  background?: string | null;
   /** 显示增益，默认 1 */
   gain?: number;
   /** 点 / 圆斑的大小倍数，默认 1 */
@@ -162,6 +203,59 @@ export function createFramer(options?: FramerOptions): {
 };
 export const DEFAULT_DELIMITER: number[];
 export function createMockDevice(options?: MockOptions): Device;
+
+export interface LayoutInfo {
+  name: LayoutName;
+  /** 中文名，给下拉框用 */
+  label: string;
+  rows: number;
+  cols: number;
+}
+
+/**
+ * 取排列表。perm[显示位置] = 这个位置在扫描顺序里的下标，-1 表示这里没有传感器。
+ * 'raw' 或名字不认识时返回 null，也就是不转换。
+ */
+export function getLayout(name?: LayoutName): {
+  rows: number;
+  cols: number;
+  perm: Int32Array;
+} | null;
+
+/** 列出所有排列。这是按线序列的，界面下拉框请用 listProducts() */
+export function listLayouts(): LayoutInfo[];
+
+/** 产品名，和公司桌面端「请选择传感器」菜单里的 value 一致 */
+export type ProductName =
+  | 'hand'
+  | 'smallSample'
+  | 'footVideo'
+  | 'jqbed'
+  | 'smallBedNoAlg'
+  | 'tempFullBed'
+  | 'petCare'
+  | 'petCareMini'
+  | 'fast256'
+  | 'fast1024'
+  | 'handSinglePoint'
+  | 'normal'
+  | 'humanBody';
+
+export interface ProductInfo {
+  name: ProductName;
+  /** 产品名，和桌面端菜单一字不差 */
+  label: string;
+  /** 这款产品该用哪条线序；'raw' 表示不用换，按扫描顺序原样铺 */
+  layout: LayoutName | 'raw';
+  rows: number;
+  cols: number;
+}
+
+/** 按产品名取一项，名字不认识返回 null */
+export function getProduct(name?: ProductName): ProductInfo | null;
+
+/** 列出所有产品，界面下拉框用这个。顺序是桌面端菜单的顺序 */
+export function listProducts(): ProductInfo[];
 
 export const jet: ColormapFn;
 export const jetWhite: ColormapFn;

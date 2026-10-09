@@ -41,14 +41,18 @@ export function resolveShape(points, options = {}) {
  * @param {number} [options.points]    只取前 N 个字节，默认取全部
  * @param {number} [options.fullScale] 满量程，默认 255
  * @param {number} [options.threshold] 有效点阈值（归一化后），默认 0.02
- * @param {string} [options.layout]    点位排列，'raw'（默认）或 'mat32'
+ * @param {string} [options.layout]    点位排列，'raw'（默认）或产品名，见 core/layout.js
  * @returns {object} Frame
  */
 export function decodeFrame(payload, options = {}) {
   const fullScale = options.fullScale ?? 255;
   const threshold = options.threshold ?? 0.02;
   const points = Math.min(options.points ?? payload.length, payload.length);
-  const { rows, cols } = resolveShape(points, options);
+
+  // 选了排列就以排列的行列为准：它知道这块垫子实际是几行几列，
+  // 比如 car10 是从 1024 个扫描点里取 10×10，输出就是 10×10 而不是 32×32
+  const layout = getLayout(options.layout);
+  const { rows, cols } = layout ?? resolveShape(points, options);
   const size = rows * cols;
 
   const raw = payload.subarray(0, points);
@@ -63,12 +67,13 @@ export function decodeFrame(payload, options = {}) {
   let cy = 0;
 
   // perm 为 null 时按扫描顺序原样铺；给了排列就按排列取，
-  // 这样 center / area 这些也是按垫子实际位置算的，不用调用方再修一遍
-  const perm = getLayout(options.layout, rows, cols);
+  // 这样 center / area 这些也是按垫子实际位置算的，不用调用方再修一遍。
+  // perm 里的 -1 表示这个位置没有传感器，固定给 0
+  const perm = layout ? layout.perm : null;
 
   for (let i = 0; i < size; i += 1) {
     const src = perm ? perm[i] : i;
-    const v = src < points ? raw[src] / fullScale : 0;
+    const v = src >= 0 && src < points ? raw[src] / fullScale : 0;
     values[i] = v;
     sum += v;
     if (v < min) min = v;
