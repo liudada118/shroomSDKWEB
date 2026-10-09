@@ -21,9 +21,45 @@ const GLOVE_LAB_URL = 'https://glove.jq-industries.io/';
 // 抽成环境变量是为了本地联调时能指到本地那套（NEXT_PUBLIC_SDK_REGISTRY_URL=http://localhost:3000/sdk-requests）
 const SDK_REGISTRY_URL =
   process.env.NEXT_PUBLIC_SDK_REGISTRY_URL ?? 'https://shroom.jq-industries.com/sdk-requests';
+
+// 国内手机号：1 开头，第二位 3~9，共 11 位。
+// 只挡明显填错的（位数不对、乱敲数字），不做真实性校验——那要发短信，见 todo。
+const PHONE_PATTERN = '1[3-9][0-9]{9}';
+// 从同一个串生成，免得哪天改了 pattern 忘了改校验，两边对不上
+const PHONE_RE = new RegExp(`^${PHONE_PATTERN}$`);
 // 留过一次就别再拦人家了，之后点按钮直接下载。
 // SDK 和上位机共用这一个标记：这是留联系方式，不是按产品逐个授权，没必要问两遍
 const REGISTERED_KEY = 'shroom-sdk-registered';
+
+// 登记弹窗的报错。浏览器原生那个气泡样式改不了、跟着系统走，所以表单上挂了 noValidate，
+// 校验自己做，错在哪就在哪个框下面显示一行。
+type GateErrors = { name?: string; phone?: string; email?: string; organization?: string };
+
+// 邮箱只看一眼有没有 @ 和域名，不搞 RFC 那套长正则——
+// 那玩意儿误杀正常地址比拦住错地址还多，反正真假得靠发信才知道
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const FIELD_BASE =
+  'h-11 rounded-lg border px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3]';
+const FIELD_OK = 'border-[#d0d5dd] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]';
+const FIELD_BAD = 'border-[#fda29b] focus:border-[#f04438] focus:ring-4 focus:ring-[#fee4e2]';
+
+function fieldClass(invalid?: string) {
+  return `${FIELD_BASE} ${invalid ? FIELD_BAD : FIELD_OK}`;
+}
+
+/** 输入框下面那行红字。没错就什么都不渲染，不占位（外层是 grid gap，空节点也会撑开间距） */
+function FieldError({ id, text }: { id: string; text?: string }) {
+  if (!text) return null;
+  return (
+    <span id={id} role="alert" className="flex items-center gap-1.5 text-xs font-medium text-[#d92d20]">
+      <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5 shrink-0 fill-current">
+        <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm-.75 3.25h1.5v4.5h-1.5v-4.5Zm0 5.75h1.5v1.5h-1.5v-1.5Z" />
+      </svg>
+      {text}
+    </span>
+  );
+}
 
 // SDK 和上位机共用同一个登记弹窗，只有下载地址、登记来源和文案不同
 type DownloadTarget = {
@@ -368,6 +404,7 @@ export default function Home() {
   // gateTarget 记住是谁触发的，SDK 和上位机走同一个弹窗但登记来源不同
   const [gateOpen, setGateOpen] = useState(false);
   const [gateTarget, setGateTarget] = useState<DownloadTarget>(SDK_TARGET);
+  const [gateErrors, setGateErrors] = useState<GateErrors>({});
   const [submitting, setSubmitting] = useState(false);
   // 试用密钥表单暂时下线，SDK 点击即可下载
   // const [submitted, setSubmitted] = useState(false);
@@ -417,6 +454,8 @@ export default function Home() {
 
   function openGate(target: DownloadTarget) {
     setGateTarget(target);
+    // 上次没填完就关掉的，这次重新打开是干净的
+    setGateErrors({});
     // 填过一次的老用户直接放行，别每次下载都问一遍
     try {
       if (window.localStorage.getItem(REGISTERED_KEY)) {
@@ -431,7 +470,33 @@ export default function Home() {
 
   async function submitGate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const fd = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const fd = new FormData(form);
+
+    const name = String(fd.get('name') ?? '').trim();
+    // 只送数字：自动填充可能塞进来「+86 138-0000-0000」这种，onInput 不一定触发
+    const phone = String(fd.get('phone') ?? '').replace(/\D/g, '');
+
+    const email = String(fd.get('email') ?? '').trim();
+    const organization = String(fd.get('organization') ?? '').trim();
+
+    const errors: GateErrors = {};
+    if (!name) errors.name = '请填写您的姓名';
+    if (!phone) errors.phone = '请填写手机号';
+    else if (!PHONE_RE.test(phone)) errors.phone = '请填写正确的手机号';
+    if (!email) errors.email = '请填写邮箱';
+    else if (!EMAIL_RE.test(email)) errors.email = '请填写正确的邮箱地址';
+    if (!organization) errors.organization = '请填写所在公司 / 学校 / 机构';
+
+    // 光标停到第一个出错的框上，用户不用自己找
+    const firstBad = (['name', 'phone', 'email', 'organization'] as const).find((k) => errors[k]);
+    if (firstBad) {
+      setGateErrors(errors);
+      form.querySelector<HTMLInputElement>(`[name="${firstBad}"]`)?.focus();
+      return;
+    }
+    setGateErrors({});
+
     setSubmitting(true);
     try {
       await fetch(SDK_REGISTRY_URL, {
@@ -441,10 +506,10 @@ export default function Home() {
         // 用户以为在排队审批。给 8 秒上限，超时就当登记失败，直接放行下载
         signal: AbortSignal.timeout(8000),
         body: JSON.stringify({
-          name: String(fd.get('name') ?? '').trim(),
-          phone: String(fd.get('phone') ?? '').trim(),
-          email: String(fd.get('email') ?? '').trim(),
-          organization: String(fd.get('organization') ?? '').trim(),
+          name,
+          phone,
+          email,
+          organization,
           source: gateTarget.source,
           sdkVersion: gateTarget.source === 'desktop-win' ? desktopRelease.version : undefined,
         }),
@@ -1187,6 +1252,7 @@ export default function Home() {
           }}
         >
           <form
+            noValidate
             onSubmit={submitGate}
             className="relative w-full max-w-lg rounded-2xl bg-white p-6 text-[#101828] shadow-2xl sm:p-8"
           >
@@ -1209,19 +1275,77 @@ export default function Home() {
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
               <label className="grid gap-2 text-xs font-semibold text-[#344054]">
                 姓名
-                <input required name="name" autoComplete="name" placeholder="怎么称呼你" className="h-11 rounded-lg border border-[#d0d5dd] px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]" />
+                <input
+                  required
+                  name="name"
+                  autoComplete="name"
+                  placeholder="怎么称呼你"
+                  aria-invalid={Boolean(gateErrors.name)}
+                  aria-describedby={gateErrors.name ? 'gate-name-error' : undefined}
+                  // 一动手就把红字撤掉，别让人边改边看着报错
+                  onInput={() => setGateErrors((prev) => (prev.name ? { ...prev, name: undefined } : prev))}
+                  className={fieldClass(gateErrors.name)}
+                />
+                <FieldError id="gate-name-error" text={gateErrors.name} />
               </label>
               <label className="grid gap-2 text-xs font-semibold text-[#344054]">
                 手机号
-                <input required name="phone" autoComplete="tel" placeholder="用于接入沟通" className="h-11 rounded-lg border border-[#d0d5dd] px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]" />
+                <input
+                  required
+                  type="tel"
+                  name="phone"
+                  inputMode="numeric"
+                  pattern={PHONE_PATTERN}
+                  autoComplete="tel"
+                  placeholder="11 位手机号"
+                  aria-invalid={Boolean(gateErrors.phone)}
+                  aria-describedby={gateErrors.phone ? 'gate-phone-error' : undefined}
+                  // 边输边把非数字剔掉（粘贴通讯录、自动填充常带空格、横杠、+86）。
+                  // 这里不写 maxLength：它会先按字符数砍，「+86 138-0013-8000」会被砍成
+                  // 「+86 138-001」，剃完非数字只剩个国家码，反而更莫名其妙。
+                  onInput={(e) => {
+                    const el = e.currentTarget;
+                    let digits = el.value.replace(/\D/g, '');
+                    // 国内手机号第一位必是 1，开头是 86 的一定是国家码，剃掉不会误伤
+                    if (digits.startsWith('86')) digits = digits.slice(2);
+                    digits = digits.slice(0, 11);
+                    if (el.value !== digits) el.value = digits;
+                    setGateErrors((prev) => (prev.phone ? { ...prev, phone: undefined } : prev));
+                  }}
+                  className={fieldClass(gateErrors.phone)}
+                />
+                <FieldError id="gate-phone-error" text={gateErrors.phone} />
               </label>
               <label className="grid gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
-                邮箱 <span className="font-normal text-[#98a2b3]">（选填）</span>
-                <input type="email" name="email" autoComplete="email" placeholder="用于接收更新通知" className="h-11 rounded-lg border border-[#d0d5dd] px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]" />
+                邮箱
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  autoComplete="email"
+                  placeholder="用于接收更新通知"
+                  aria-invalid={Boolean(gateErrors.email)}
+                  aria-describedby={gateErrors.email ? 'gate-email-error' : undefined}
+                  onInput={() => setGateErrors((prev) => (prev.email ? { ...prev, email: undefined } : prev))}
+                  className={fieldClass(gateErrors.email)}
+                />
+                <FieldError id="gate-email-error" text={gateErrors.email} />
               </label>
               <label className="grid gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
-                所在公司 / 学校 / 机构 <span className="font-normal text-[#98a2b3]">（选填）</span>
-                <input name="organization" autoComplete="organization" placeholder="请输入机构名称" className="h-11 rounded-lg border border-[#d0d5dd] px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]" />
+                所在公司 / 学校 / 机构
+                <input
+                  required
+                  name="organization"
+                  autoComplete="organization"
+                  placeholder="请输入机构名称"
+                  aria-invalid={Boolean(gateErrors.organization)}
+                  aria-describedby={gateErrors.organization ? 'gate-org-error' : undefined}
+                  onInput={() =>
+                    setGateErrors((prev) => (prev.organization ? { ...prev, organization: undefined } : prev))
+                  }
+                  className={fieldClass(gateErrors.organization)}
+                />
+                <FieldError id="gate-org-error" text={gateErrors.organization} />
               </label>
             </div>
 
