@@ -2,13 +2,17 @@
 
 压力传感器最小 SDK。**只做三件事**：连接串口 → 拿到数据 → 画成图。
 
+提供 **浏览器 / Node.js / Python** 三种入口。Python 3.10+ 可独立安装，不需要 Node；详见 [Python SDK](python/README.md)。
+
+官网下载时可选择 **Python** 或 **Node.js（含浏览器）**，分别得到 `shroom-sdk-python.zip` / `shroom-sdk-node.zip`。Node.js 包不含 Python 源码；Python 包内的 `python/README.md` 和 `python/AI-CONTEXT.md` 提供专用说明。旧链接 `shroom-sdk.zip` 仍保留完整包，兼容已有使用方式。
+
 曲线、回放、报表、算法这些都不在里面，那是你（或者 AI）在这个基础上写的部分。
 
 > **不想自己写代码？** 看 [怎么用AI开发.md](怎么用AI开发.md)——把 [AI-CONTEXT.md](AI-CONTEXT.md)
 > 丢给 AI，然后说人话描述你要什么就行。
 
 **Windows / macOS / Linux 都支持**，SDK 是同一份，不分平台版本。
-差别只在两件事：启动脚本（`start-demo.bat` vs `sh start.sh`）和串口驱动/权限（见文末排错表）。
+浏览器示例的启动脚本（`start-demo.bat` vs `sh start.sh`）与串口驱动/权限随系统不同；Python 使用 pip 安装。
 浏览器方案要 Chrome 或 Edge —— Safari 和 Firefox 三个平台上都没有 Web Serial。
 
 ---
@@ -82,9 +86,35 @@ device.onFrame((frame) => {
 
 ---
 
+## Python 里用
+
+在解压后的 SDK 根目录执行（在本仓库根目录时将路径改为 `./sdk/python[serial]`）：
+
+```bash
+python -m pip install "./python[serial]"
+python -m shroom_sdk --frames 3   # 无硬件，先跑模拟数据
+python -m shroom_sdk --list       # 列出串口
+python -m shroom_sdk COM3         # 真实设备
+```
+
+```python
+from shroom_sdk import Shroom
+
+with Shroom.connect("COM3", rows=32, cols=32) as device:
+    for frame in device:
+        print(frame.max, frame.area, frame.center.x, frame.center.y)
+```
+
+没有硬件时用 `Shroom.mock(rows=32, cols=32)` 替换 `Shroom.connect(...)`。
+`with` 自动关闭连接；需要超时判断时用 `device.read_frame(timeout=2)`，无完整帧返回 `None`。
+Python 使用同步迭代和 snake_case 参数；字段语义、float32 数值和点位排列与 JS 一致。
+提供终端文字热力图、可选 Matplotlib 示例；完整 API、安装和排错见 [Python SDK](python/README.md)。
+
+---
+
 ## Frame：唯一的数据结构
 
-不管数据从哪来（浏览器串口、Node 串口、模拟），`onFrame` 拿到的都是同一个东西：
+不管数据从哪来（浏览器串口、Node 串口、Python、模拟），输出的字段含义一致。以下是 JavaScript 的 `onFrame` 对象；Python 使用 `Frame` 数据类，`raw` 为 bytes、`values` 为 array('f')：
 
 ```js
 {
@@ -383,16 +413,25 @@ sdk/
 │  ├─ ascii.js      终端里的彩色方块图
 │  ├─ demo.js       命令行示例
 │  └─ index.js      Node 入口
+├─ python/        Python 3.10+，独立 pip 包（无需 Node）
+│  ├─ pyproject.toml   本地安装与 wheel/sdist 构建配置
+│  ├─ src/shroom_sdk/  串口、Frame、拆帧、排列、Mock、CLI
+│  ├─ examples/        逐帧读取与 Matplotlib 热力图
+│  ├─ tests/           Python 测试、串口回环、JS 对照校验
+│  └─ README.md        Python 完整使用文档
 ├─ start.mjs      打开浏览器示例用的小服务器
 ├─ AI-CONTEXT.md  给 AI 看的说明，直接把这个文件丢给它
 ├─ 怎么用AI开发.md  给人看的：怎么把这个 SDK 交给 AI
 └─ index.d.ts     TypeScript 类型
 ```
 
-**串口连接在哪？** 就两个文件，上面打 ★ 的那两个：浏览器是 `web/serial.js`，
+**JavaScript 串口连接在哪？** 上面打 ★ 的那两个文件：浏览器是 `web/serial.js`，
 Node 是 `node/serial.js`。两者都是「读到字节 → `core/framer.js` 切帧 →
 `core/frame.js` 解码 → 通过 `core/device.js` 发给你的 `onFrame`」，
 所以两端拿到的 Frame 完全一样，业务代码可以直接搬。
+
+Python 串口入口在 `python/src/shroom_sdk/device.py`；调用 Python 的 `framer.py` 和 `frame.py`，
+通过同步迭代或 `read_frame()` 读取。它与 JS 使用相同协议，通过跨语言测试保持数值和拆帧一致。
 
 `core/` 不依赖任何环境 API，想接别的数据源（WebSocket、蓝牙、文件回放）
 自己调 `createFramer()` + `decodeFrame()` 就行，拿到的还是同一个 Frame。

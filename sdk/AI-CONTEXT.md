@@ -9,7 +9,27 @@
 
 ## 0. 一句话
 
-Shroom SDK 把一块压力传感器阵列接进 JS：**连上串口 → 每秒几十上百次拿到一个数值矩阵 → 画成图**。
+Shroom SDK 把一块压力传感器阵列接进 JavaScript 或 Python：**连上串口 → 拿到一个数值矩阵 → 画成图**。
+
+JavaScript 支持浏览器与 Node，本文后续 JS 示例适用这两个入口。Python 入口为 `sdk/python`，完整说明见 [Python SDK](python/README.md)。不要把 JS 的 Promise / `onFrame()` 写进 Python 程序。
+
+在本项目根目录安装 Python 版：`python -m pip install "./sdk/python[serial]"`；解压官网下载包后，在其根目录使用 `"./python[serial]"`。尚未发布 PyPI，不要让用户直接 `pip install shroom-sdk`。
+
+官网下载已按语言分包：Node.js 包包含浏览器入口及 Python 说明，但不包含 Python 源码。需要 Python 时选择 `shroom-sdk-python.zip`，先读其 `python/AI-CONTEXT.md` 与 `python/README.md`。旧的 `shroom-sdk.zip` 完整包仍可使用。
+
+```python
+from shroom_sdk import Shroom
+
+with Shroom.mock(rows=32, cols=32) as device:  # 实机换成 Shroom.connect("COM3", rows=32, cols=32)
+    for frame in device:
+        print(frame.max, frame.area, frame.center.x, frame.center.y)
+        break
+```
+
+Python 要点：`Shroom.list_ports()`、`device.read_frame(timeout=2)`、`frame.matrix()`、`frame.to_dict()`。
+使用 `baud_rate` / `full_scale` / `lock_length` 等 snake_case 参数；`values` 为 float32 数组，`raw` 为 bytes。
+同步迭代在无数据时继续等待，`read_frame` 超时返回 `None`；使用 `with` 释放串口。没有后台线程，不支持 `on_frame()`。
+Python 也支持 `raw` / `mat32` 点位排列、模拟设备、文本热力图和可选 Matplotlib 示例，不提供标定或手套专用协议。
 
 它**只做这三件事**。曲线、回放、报表、手势识别、算法、数据库——**一律不在 SDK 里**，
 那些正是你要帮用户写的部分。
@@ -670,11 +690,14 @@ sdk/
 │  └─ shroom.bundle.js  单文件版，<script> 直接引
 ├─ node/               Node / Electron
 │  └─ index.js          ← Node 入口，import 这个
+├─ python/             Python 独立包，pip 本地安装
+│  ├─ src/shroom_sdk/   ← from shroom_sdk import Shroom
+│  └─ README.md         Python API、同步读取与示例
 ├─ start.mjs          本地服务器（根目录 = sdk/，端口 5178 起，占用则顺延到 5182）
 └─ index.d.ts         TypeScript 类型定义
 ```
 
-**你只需要 import 两个入口之一**：`web/index.js` 或 `node/index.js`，
+**JavaScript 只需要 import 两个入口之一**：`web/index.js` 或 `node/index.js`，
 路径怎么写见 §0.5。其余文件不用读，本文已经涵盖了它们的全部对外行为。
 
 > 唯一的例外是 §4.6 的 `createFramer` / `decodeFrame`——接非串口数据源时才用，
@@ -687,7 +710,7 @@ sdk/
 除非用户另有要求，按这个来：
 
 - **先用 `Shroom.mock()` 把功能跑通**，最后再换成 `Shroom.connect()`。用户往往手边没设备。
-- 浏览器方案优先，除非用户明确说要 Electron / 后端 / 命令行。
+- 浏览器方案优先，除非用户明确说要 Electron / 后端 / 命令行；用户需要 Python 时使用 `shroom_sdk`，无需先安装 Node。
 - 连接按钮的文案和禁用状态要处理好：先 `Shroom.isSupported()` 判断，
   不支持就禁用按钮并说明原因（是 `file://`？还是浏览器不对？），别让用户点了没反应。
 - 数值一律按 0~1 显示，或者显示成百分比，**不要编造物理单位**。

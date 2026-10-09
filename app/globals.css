@@ -44,6 +44,45 @@ a {
   color: #102a56;
 }
 
+.sdk-navigation :is(a, button):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.sdk-download-dialog :is(a, button, input):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+/* 恢复的问答组件沿用语义 token，只在问答区域生效。 */
+.knowledge-ui {
+  --surface: #ffffff;
+  --surface-muted: #f9fafb;
+  --line: #e4e7ec;
+  --text-strong: #101828;
+  --text-muted: #475467;
+  --text-subtle: #667085;
+  --accent: #2563eb;
+  --accent-fill: #2563eb;
+  --accent-fill-hover: #175cd3;
+  --accent-strong: #175cd3;
+  --accent-soft: #eff4ff;
+  --accent-border: #84adff;
+  --on-accent: #ffffff;
+}
+
+.knowledge-ui :is(a, button, textarea):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 3px;
+}
+
+.knowledge-ui button:not(:disabled) { cursor: pointer; }
+.doc-locate-flash { background-color: #dbeafe; outline: 2px solid #84adff; outline-offset: 4px; }
+
+.sdk-content :is(a, button, input) {
+  scroll-margin-top: 96px;
+}
+
 .hero-grid {
   background-image:
     linear-gradient(to right, rgba(37, 99, 235, 0.045) 1px, transparent 1px),
@@ -82,6 +121,7 @@ a {
 /* 文档正文：Markdown 渲染出来的裸 HTML 没有 class，只能靠后代选择器统一上样式。
    没装 @tailwindcss/typography，就手写这一段，省一个依赖。 */
 .doc-body {
+  overflow-wrap: anywhere;
   color: #344054;
   font-size: 15px;
   line-height: 1.85;

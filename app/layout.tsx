@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import DownloadProvider from './DownloadProvider';
+import SiteShell from './SiteShell';
+import { docPages } from './docs/generated';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -51,7 +54,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <DownloadProvider>
+          <SiteShell pageTitles={{ '/': '开发概览', '/docs': '文档中心', '/knowledge': 'AI 知识问答', ...Object.fromEntries(docPages.map((doc) => [`/docs/${doc.slug}`, doc.label])) }}>
+            {children}
+          </SiteShell>
+        </DownloadProvider>
       </body>
     </html>
   );

@@ -28,11 +28,17 @@ yarn-error.log*
 
 # local environment
 .env*
+!.env.example
+
+# 本机工具配置，因人而异，不进仓库
+.claude/settings.local.json
 
 # deployment and generated files
 .vercel
 next-env.d.ts
 /dist/
+# deploy.sh 在构建前留的上一版产物，构建成功就删掉，失败时用来回滚
+/dist.prev/
 /.wrangler/
 /outputs/
 /work/
@@ -44,3 +50,16 @@ next-env.d.ts
 # （git 里删掉也不会变小）。线上让 Nginx alias 到磁盘目录去发，
 # 只有 app/desktop-release.json 那份元数据进仓库。
 /public/downloads/
+/sdk/node_modules
+
+# Python SDK local environments and build output
+__pycache__/
+*.py[cod]
+*.egg-info/
+/.venv/
+/sdk/python/.venv/
+/sdk/python/venv/
+/sdk/python/build/
+/sdk/python/dist/
+.pytest_cache/
+.ruff_cache/

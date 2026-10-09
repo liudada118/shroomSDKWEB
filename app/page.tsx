@@ -1,97 +1,14 @@
 'use client';
 
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useDownload } from './DownloadProvider';
+import { DESKTOP_TARGET, DESKTOP_WIN_URL, SDK_VARIANTS } from './downloads';
 
 import desktopRelease from './desktop-release.json';
 
-// SDK 压缩包由 scripts/pack-sdk.mjs 从 sdk/ 目录打包生成，构建时自动更新
-const SDK_DOWNLOAD = '/shroom-sdk.zip';
-
-// 上位机的包 100MB 上下，不进仓库也不走 Node 进程发。
-// 线上把 Nginx 的 /downloads/ alias 到磁盘目录，本地则落在 public/downloads/（已 gitignore）。
-// 换 CDN 或对象存储时只改这个环境变量，页面代码不动。
-const DESKTOP_BASE = process.env.NEXT_PUBLIC_DESKTOP_DOWNLOAD_BASE ?? '/downloads';
-const DESKTOP_WIN_URL = `${DESKTOP_BASE}/${desktopRelease.fileName}`;
-
-// 手套的浏览器体验站，独立部署，不在这个仓库里
+// 手套体验站独立部署，不属于当前站点布局。
 const GLOVE_LAB_URL = 'https://glove.jq-industries.io/';
-
-// 下载前留个联系方式，POST 到密钥系统的「SDK 获取」模块。
-// 抽成环境变量是为了本地联调时能指到本地那套（NEXT_PUBLIC_SDK_REGISTRY_URL=http://localhost:3000/sdk-requests）
-const SDK_REGISTRY_URL =
-  process.env.NEXT_PUBLIC_SDK_REGISTRY_URL ?? 'https://shroom.jq-industries.com/sdk-requests';
-
-// 国内手机号：1 开头，第二位 3~9，共 11 位。
-// 只挡明显填错的（位数不对、乱敲数字），不做真实性校验——那要发短信，见 todo。
-const PHONE_PATTERN = '1[3-9][0-9]{9}';
-// 从同一个串生成，免得哪天改了 pattern 忘了改校验，两边对不上
-const PHONE_RE = new RegExp(`^${PHONE_PATTERN}$`);
-// 留过一次就别再拦人家了，之后点按钮直接下载。
-// SDK 和上位机共用这一个标记：这是留联系方式，不是按产品逐个授权，没必要问两遍
-const REGISTERED_KEY = 'shroom-sdk-registered';
-
-// 登记弹窗的报错。浏览器原生那个气泡样式改不了、跟着系统走，所以表单上挂了 noValidate，
-// 校验自己做，错在哪就在哪个框下面显示一行。
-type GateErrors = { name?: string; phone?: string; email?: string; organization?: string };
-
-// 邮箱只看一眼有没有 @ 和域名，不搞 RFC 那套长正则——
-// 那玩意儿误杀正常地址比拦住错地址还多，反正真假得靠发信才知道
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const FIELD_BASE =
-  'h-11 rounded-lg border px-3.5 text-sm font-normal outline-none transition placeholder:text-[#98a2b3]';
-const FIELD_OK = 'border-[#d0d5dd] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]';
-const FIELD_BAD = 'border-[#fda29b] focus:border-[#f04438] focus:ring-4 focus:ring-[#fee4e2]';
-
-function fieldClass(invalid?: string) {
-  return `${FIELD_BASE} ${invalid ? FIELD_BAD : FIELD_OK}`;
-}
-
-/** 输入框下面那行红字。没错就什么都不渲染，不占位（外层是 grid gap，空节点也会撑开间距） */
-function FieldError({ id, text }: { id: string; text?: string }) {
-  if (!text) return null;
-  return (
-    <span id={id} role="alert" className="flex items-center gap-1.5 text-xs font-medium text-[#d92d20]">
-      <svg viewBox="0 0 16 16" aria-hidden className="h-3.5 w-3.5 shrink-0 fill-current">
-        <path d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm-.75 3.25h1.5v4.5h-1.5v-4.5Zm0 5.75h1.5v1.5h-1.5v-1.5Z" />
-      </svg>
-      {text}
-    </span>
-  );
-}
-
-// SDK 和上位机共用同一个登记弹窗，只有下载地址、登记来源和文案不同
-type DownloadTarget = {
-  url: string;
-  source: string;
-  title: string;
-  subtitle: string;
-};
-
-const SDK_TARGET: DownloadTarget = {
-  url: SDK_DOWNLOAD,
-  source: 'sdk-web',
-  title: '获取 Shroom SDK',
-  subtitle: '留个联系方式，方便后续技术支持。提交后立即开始下载。',
-};
-
-const DESKTOP_TARGET: DownloadTarget = {
-  url: DESKTOP_WIN_URL,
-  source: 'desktop-win',
-  title: `下载 Windows 上位机 ${desktopRelease.version}`,
-  subtitle: `免安装 zip，${desktopRelease.sizeLabel}，下载需要一点时间。留个联系方式，方便后续技术支持。`,
-};
-
-const navItems = [
-  { label: '选择产品', href: '#products' },
-  { label: '产品能力', href: '#capabilities' },
-  { label: 'SDK Skill', href: '#skill' },
-  { label: '资源下载', href: '#downloads' },
-  { label: '快速开始', href: '#quick-start' },
-  { label: '开发工具', href: '#tools' },
-  { label: '文档中心', href: '/docs' },
-];
 
 // resources 里每一项都得有真实去处。之前是按下标硬编码 href（0→#docs、1→#downloads…），
 // 结果「规格书」「Mapping JSON」这种还没有的东西也被指到一个页面上，点进去发现没有。
@@ -146,8 +63,8 @@ const capabilities = [
     index: '01',
     tag: 'DEVICE',
     title: '统一设备接入',
-    description: '浏览器用 Web Serial、Node 用 serialport，封装成同一个 connect()。业务代码在两端可以直接搬。',
-    meta: ['串口通信', '设备发现', '浏览器 / Node 同接口'],
+    description: '支持浏览器、Node 和 Python 接入串口，输出字段含义一致的数据帧。Python 可独立安装，适合数据分析与算法开发。',
+    meta: ['串口通信', '设备发现', '浏览器 / Node / Python'],
   },
   {
     index: '02',
@@ -256,7 +173,7 @@ const workflow = [
   {
     number: '01',
     title: '下载并解压 SDK',
-    description: '一个压缩包，包含浏览器和 Node 两套入口、示例页面与类型定义，无需选择操作系统版本。',
+    description: '在下载区直接获取 Python 或 Node.js SDK。Node.js 包也包含浏览器入口，两种版本都带示例和使用文档。',
   },
   {
     number: '02',
@@ -266,12 +183,12 @@ const workflow = [
   {
     number: '03',
     title: '连接设备',
-    description: '浏览器用 Web Serial，Node 用 serialport，同一个 connect() 接口。',
+    description: '浏览器用 Web Serial，Node 用 serialport，Python 用 pySerial；根据开发环境选择入口。',
   },
   {
     number: '04',
     title: '订阅数据并渲染',
-    description: 'onFrame 拿到统一的数据帧，交给内置热力图，或接入你自己的可视化与业务逻辑。',
+    description: 'JavaScript 用 onFrame 回调，Python 用逐帧迭代，把统一数据帧接入热力图或自己的业务逻辑。',
   },
 ];
 
@@ -395,19 +312,11 @@ function highlight(code: string): ReactNode[] {
 }
 
 export default function Home() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [activeProduct, setActiveProduct] = useState('matrix');
   const [activePlatform, setActivePlatform] = useState('windows');
   const [productQuery, setProductQuery] = useState('');
   const [copied, setCopied] = useState(false);
-  // 下载前的登记弹窗。注意这不是审批：填完当场就下载。
-  // gateTarget 记住是谁触发的，SDK 和上位机走同一个弹窗但登记来源不同
-  const [gateOpen, setGateOpen] = useState(false);
-  const [gateTarget, setGateTarget] = useState<DownloadTarget>(SDK_TARGET);
-  const [gateErrors, setGateErrors] = useState<GateErrors>({});
-  const [submitting, setSubmitting] = useState(false);
-  // 试用密钥表单暂时下线，SDK 点击即可下载
-  // const [submitted, setSubmitted] = useState(false);
+  const openGate = useDownload();
 
   const selectedPlatform = useMemo(
     () => upperComputerPlatforms.find((platform) => platform.id === activePlatform) ?? upperComputerPlatforms[0],
@@ -431,188 +340,21 @@ export default function Home() {
     window.setTimeout(() => setCopied(false), 1600);
   }
 
-  // 弹窗开着时按 Esc 关掉。提交中不给关，免得请求发出去一半界面就没了
-  useEffect(() => {
-    if (!gateOpen) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !submitting) setGateOpen(false);
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [gateOpen, submitting]);
-
-  // 程序化触发下载：造一个隐藏的 <a download> 点一下。
-  // 不用 location.href，那样在部分浏览器里会先跳走再回来，页面闪一下
-  function startDownload(target: DownloadTarget) {
-    const a = document.createElement('a');
-    a.href = target.url;
-    a.download = '';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-
-  function openGate(target: DownloadTarget) {
-    setGateTarget(target);
-    // 上次没填完就关掉的，这次重新打开是干净的
-    setGateErrors({});
-    // 填过一次的老用户直接放行，别每次下载都问一遍
-    try {
-      if (window.localStorage.getItem(REGISTERED_KEY)) {
-        startDownload(target);
-        return;
-      }
-    } catch {
-      // 隐私模式下 localStorage 会抛错，那就当没填过，弹一次也无妨
-    }
-    setGateOpen(true);
-  }
-
-  async function submitGate(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const fd = new FormData(form);
-
-    const name = String(fd.get('name') ?? '').trim();
-    // 只送数字：自动填充可能塞进来「+86 138-0000-0000」这种，onInput 不一定触发
-    const phone = String(fd.get('phone') ?? '').replace(/\D/g, '');
-
-    const email = String(fd.get('email') ?? '').trim();
-    const organization = String(fd.get('organization') ?? '').trim();
-
-    const errors: GateErrors = {};
-    if (!name) errors.name = '请填写您的姓名';
-    if (!phone) errors.phone = '请填写手机号';
-    else if (!PHONE_RE.test(phone)) errors.phone = '请填写正确的手机号';
-    if (!email) errors.email = '请填写邮箱';
-    else if (!EMAIL_RE.test(email)) errors.email = '请填写正确的邮箱地址';
-    if (!organization) errors.organization = '请填写所在公司 / 学校 / 机构';
-
-    // 光标停到第一个出错的框上，用户不用自己找
-    const firstBad = (['name', 'phone', 'email', 'organization'] as const).find((k) => errors[k]);
-    if (firstBad) {
-      setGateErrors(errors);
-      form.querySelector<HTMLInputElement>(`[name="${firstBad}"]`)?.focus();
-      return;
-    }
-    setGateErrors({});
-
-    setSubmitting(true);
-    try {
-      await fetch(SDK_REGISTRY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // 登记接口要是卡住（网络不通、服务没起来），按钮会一直停在「下载中…」，
-        // 用户以为在排队审批。给 8 秒上限，超时就当登记失败，直接放行下载
-        signal: AbortSignal.timeout(8000),
-        body: JSON.stringify({
-          name,
-          phone,
-          email,
-          organization,
-          source: gateTarget.source,
-          sdkVersion: gateTarget.source === 'desktop-win' ? desktopRelease.version : undefined,
-        }),
-      });
-    } catch {
-      // 登记失败不挡下载——这本来就不是审批，密钥系统挂了也不能让人拿不到 SDK
-    }
-    try {
-      window.localStorage.setItem(REGISTERED_KEY, '1');
-    } catch {
-      // 同上，存不下就下次再填一遍
-    }
-    setSubmitting(false);
-    setGateOpen(false);
-    startDownload(gateTarget);
-  }
-
-  // function submitTrial(event: FormEvent<HTMLFormElement>) {
-  //   event.preventDefault();
-  //   setSubmitted(true);
-  // }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-white text-[#101828]">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-[#eaecf0] bg-white/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
-          <a href="#top" className="flex items-center gap-3" aria-label="Shroom Developer 首页">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#2563eb] text-sm font-black text-white shadow-[0_8px_22px_rgba(37,99,235,0.28)]">
-              S
-            </span>
-            <span className="text-[15px] font-bold tracking-[-0.02em]">
-              Shroom <span className="font-medium text-[#667085]">Developer</span>
-            </span>
-          </a>
-
-          <nav className="hidden items-center gap-7 text-sm font-medium text-[#475467] lg:flex" aria-label="主导航">
-            {navItems.map((item) => (
-              <a key={item.label} className="transition hover:text-[#175cd3]" href={item.href}>
-                {item.label}
-              </a>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-2.5">
-            <Link
-              href="/docs"
-              className="hidden rounded-lg border border-[#d0d5dd] bg-white px-4 py-2 text-sm font-semibold text-[#344054] shadow-sm transition hover:border-[#84adff] hover:text-[#175cd3] sm:inline-flex"
-            >
-              查看文档
-            </Link>
-            <button
-              type="button"
-              onClick={() => openGate(SDK_TARGET)}
-              className="hidden rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3] sm:inline-flex"
-            >
-              获取 SDK
-            </button>
-            <button
-              type="button"
-              aria-label="打开导航"
-              aria-expanded={mobileOpen}
-              onClick={() => setMobileOpen((open) => !open)}
-              className="grid h-10 w-10 place-items-center rounded-lg border border-[#d0d5dd] lg:hidden"
-            >
-              <span className="flex w-4 flex-col gap-1.5" aria-hidden="true">
-                <span className="h-px w-full bg-[#344054]" />
-                <span className="h-px w-full bg-[#344054]" />
-                <span className="h-px w-full bg-[#344054]" />
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {mobileOpen && (
-          <nav className="border-t border-[#eaecf0] bg-white px-5 py-4 shadow-lg lg:hidden" aria-label="移动端导航">
-            <div className="mx-auto grid max-w-7xl gap-1">
-              {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="rounded-lg px-3 py-3 text-sm font-medium text-[#344054] hover:bg-[#f2f4f7]"
-                >
-                  {item.label}
-                </a>
-              ))}
-            </div>
-          </nav>
-        )}
-      </header>
-
-      <section id="top" className="relative scroll-mt-24 overflow-hidden bg-white pt-[72px]">
+    <>
+      <section id="top" className="relative scroll-mt-24 overflow-hidden bg-white">
         <div className="hero-grid pointer-events-none absolute inset-0 opacity-70" />
         <div className="pointer-events-none absolute left-1/2 top-[-420px] h-[760px] w-[1100px] -translate-x-1/2 rounded-full bg-[#e9f2ff] blur-3xl" />
-        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-20 pt-20 sm:px-8 sm:pt-24 lg:grid-cols-[1.08fr_0.92fr] lg:px-10 lg:pb-28 lg:pt-28">
+        <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 pb-20 pt-20 sm:px-8 sm:pt-24 lg:px-10 lg:pb-24 lg:pt-20 xl:grid-cols-[1.08fr_0.92fr]">
           <div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#b2ccff] bg-[#eff4ff] px-3 py-1.5 text-xs font-semibold text-[#175cd3]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#2e90fa] shadow-[0_0_0_4px_rgba(46,144,250,0.12)]" />
               统一 SDK · Skill 推荐接入
             </div>
-            <h1 className="max-w-3xl text-[clamp(2.75rem,6vw,5rem)] font-semibold leading-[1.02] tracking-[-0.06em] text-[#101828]">
+            <h1 className="max-w-3xl text-[clamp(2.75rem,4vw,4.5rem)] font-semibold leading-[1.12] tracking-[-0.06em] text-[#101828]">
               让硬件数据，
-              <span className="text-[#2563eb]">更快抵达应用。</span>
+              <span className="block text-[#2563eb]">更快抵达应用。</span>
             </h1>
             <p className="mt-7 max-w-xl text-base leading-8 text-[#667085] sm:text-lg">
               一套统一 SDK，不区分操作系统；配合 Shroom Skill，让 AI 理解设备协议、Mapping 与接口，直接辅助完成接入代码。
@@ -624,13 +366,12 @@ export default function Home() {
               >
                 用 Skill 快速接入 <span aria-hidden="true" className="ml-2">→</span>
               </a>
-              <button
-                type="button"
-                onClick={() => openGate(SDK_TARGET)}
+              <a
+                href="#desktop-downloads"
                 className="inline-flex items-center justify-center rounded-xl border border-[#d0d5dd] bg-white px-5 py-3 text-sm font-semibold text-[#344054] shadow-sm transition hover:-translate-y-0.5 hover:bg-[#f9fafb]"
               >
-                获取通用 SDK
-              </button>
+                获取上位机
+              </a>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-xs font-medium text-[#667085]">
               <span className="flex items-center gap-2"><span className="text-[#12b76a]">●</span> SDK 不区分操作系统</span>
@@ -886,40 +627,35 @@ export default function Home() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold text-[#2563eb]">SDK 与软件资源</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">SDK 保持统一，上位机按平台下载。</h2>
-              <p className="mt-5 leading-7 text-[#667085]">开发者使用同一套 SDK 接口；只有用于设备调试和数据查看的 Shroom 上位机与驱动需要选择操作系统。</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">SDK 按语言选择，上位机按平台下载。</h2>
+              <p className="mt-5 leading-7 text-[#667085]">SDK 提供浏览器、Node 和 Python 入口，使用统一的数据字段；用于设备调试和数据查看的 Shroom 上位机与驱动按操作系统提供。</p>
             </div>
             <p className="text-xs text-[#98a2b3]">
               SDK 与 Windows 上位机均可直接下载；macOS / Linux 上位机尚未发布
             </p>
           </div>
 
-          <article className="relative mt-10 overflow-hidden rounded-2xl border border-[#84adff] bg-white p-7 shadow-[0_16px_46px_rgba(37,99,235,0.09)] sm:p-9">
-            <div className="download-grid pointer-events-none absolute inset-y-0 right-0 w-1/2 opacity-60" />
-            <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div>
-                <div className="flex items-center gap-3">
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-[#2563eb] text-sm font-black text-white">S</span>
-                  <div>
-                    <p className="font-mono text-[9px] font-semibold tracking-[0.15em] text-[#2563eb]">UNIFIED SDK</p>
-                    <h3 className="mt-1 text-2xl font-semibold tracking-[-0.03em]">统一 Shroom SDK</h3>
-                  </div>
+          <div className="mt-10 grid gap-5 md:grid-cols-2">
+            {SDK_VARIANTS.map((variant) => (
+              <article key={variant.source} aria-labelledby={`${variant.source}-title`} className="flex min-w-0 flex-col rounded-2xl border border-[#d0d5dd] bg-white p-6 sm:p-8">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#eff4ff] font-mono text-base font-bold text-[#175cd3]" aria-hidden="true">{variant.sdkLanguage === 'python' ? 'PY' : 'JS'}</span>
+                  <span className="rounded-md border border-[#e4e7ec] px-2.5 py-1 font-mono text-xs text-[#667085]">v{variant.sdkVersion} · ZIP</span>
                 </div>
-                <p className="mt-5 max-w-2xl text-sm leading-7 text-[#667085]">当前版本只做三件事：连接串口、拿到统一格式的数据帧、把它画成热力图。浏览器（Web Serial）和 Node（serialport）共用同一套接口和同一个数据结构，不区分操作系统。曲线、回放、算法这些由你在它之上自行实现。</p>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {['连接串口', '统一数据帧', '热力图渲染', '浏览器 / Node'].map((item) => (
-                    <span key={item} className="rounded-md bg-[#eff4ff] px-2.5 py-1.5 text-[11px] font-semibold text-[#175cd3]">{item}</span>
-                  ))}
+                <h3 id={`${variant.source}-title`} className="mt-5 text-2xl font-semibold tracking-tight">{variant.label} SDK</h3>
+                <p className="mt-2 text-sm font-medium leading-6 text-[#344054]">{variant.description}</p>
+                <p className="mt-4 flex-1 text-sm leading-7 text-[#667085]">{variant.details}</p>
+                <p className="mt-5 border-t border-[#eaecf0] pt-4 text-xs leading-6 text-[#667085]">{variant.contents}</p>
+                <div className="mt-5 flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
+                  <button type="button" onClick={() => openGate(variant)} className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-lg bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#175cd3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">下载 {variant.label} SDK</button>
+                  <Link href={variant.guideHref} className="inline-flex min-h-11 items-center justify-center rounded-lg px-2 text-sm font-semibold text-[#175cd3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">{variant.label} 使用指南 <span aria-hidden="true" className="ml-1">→</span></Link>
                 </div>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
-                <button type="button" onClick={() => openGate(SDK_TARGET)} className="rounded-lg bg-[#2563eb] px-5 py-3 text-center text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3]">获取统一 SDK</button>
-                <a href="#quick-start" className="rounded-lg border border-[#d0d5dd] bg-white px-5 py-3 text-center text-sm font-semibold text-[#344054] transition hover:bg-[#f9fafb]">查看接入示例</a>
-              </div>
-            </div>
-          </article>
+              </article>
+            ))}
+          </div>
+          <p className="mt-4 text-sm leading-7 text-[#667085]">两种 SDK 均支持 Windows、macOS 和 Linux，使用统一的数据字段；下载包包含源码、示例和 AI 接入指南，不包含上位机。</p>
 
-          <div className="mt-12">
+          <div id="desktop-downloads" className="mt-12 scroll-mt-24">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="font-mono text-[10px] font-semibold tracking-[0.15em] text-[#2563eb]">SHROOM DESKTOP</p>
@@ -1239,149 +975,6 @@ export default function Home() {
       </section>
       */}
 
-      {/* 获取 SDK 前的登记弹窗。不是审批：提交完当场就开始下载，登记失败也照下不误 */}
-      {gateOpen && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#101828]/60 p-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="sdk-gate-title"
-          onClick={(e) => {
-            // 只有点在遮罩本身（不是卡片）上才关
-            if (e.target === e.currentTarget && !submitting) setGateOpen(false);
-          }}
-        >
-          <form
-            noValidate
-            onSubmit={submitGate}
-            className="relative w-full max-w-lg rounded-2xl bg-white p-6 text-[#101828] shadow-2xl sm:p-8"
-          >
-            <button
-              type="button"
-              aria-label="关闭"
-              disabled={submitting}
-              onClick={() => setGateOpen(false)}
-              className="absolute right-4 top-4 grid h-8 w-8 place-items-center rounded-lg text-lg text-[#98a2b3] transition hover:bg-[#f2f4f7] hover:text-[#344054] disabled:opacity-40"
-            >
-              ×
-            </button>
-
-            <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">
-              {gateTarget.source === 'desktop-win' ? 'DESKTOP DOWNLOAD' : 'SDK DOWNLOAD'}
-            </p>
-            <h3 id="sdk-gate-title" className="mt-2 text-xl font-semibold">{gateTarget.title}</h3>
-            <p className="mt-2 text-sm leading-6 text-[#667085]">{gateTarget.subtitle}</p>
-
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <label className="grid gap-2 text-xs font-semibold text-[#344054]">
-                姓名
-                <input
-                  required
-                  name="name"
-                  autoComplete="name"
-                  placeholder="怎么称呼你"
-                  aria-invalid={Boolean(gateErrors.name)}
-                  aria-describedby={gateErrors.name ? 'gate-name-error' : undefined}
-                  // 一动手就把红字撤掉，别让人边改边看着报错
-                  onInput={() => setGateErrors((prev) => (prev.name ? { ...prev, name: undefined } : prev))}
-                  className={fieldClass(gateErrors.name)}
-                />
-                <FieldError id="gate-name-error" text={gateErrors.name} />
-              </label>
-              <label className="grid gap-2 text-xs font-semibold text-[#344054]">
-                手机号
-                <input
-                  required
-                  type="tel"
-                  name="phone"
-                  inputMode="numeric"
-                  pattern={PHONE_PATTERN}
-                  autoComplete="tel"
-                  placeholder="11 位手机号"
-                  aria-invalid={Boolean(gateErrors.phone)}
-                  aria-describedby={gateErrors.phone ? 'gate-phone-error' : undefined}
-                  // 边输边把非数字剔掉（粘贴通讯录、自动填充常带空格、横杠、+86）。
-                  // 这里不写 maxLength：它会先按字符数砍，「+86 138-0013-8000」会被砍成
-                  // 「+86 138-001」，剃完非数字只剩个国家码，反而更莫名其妙。
-                  onInput={(e) => {
-                    const el = e.currentTarget;
-                    let digits = el.value.replace(/\D/g, '');
-                    // 国内手机号第一位必是 1，开头是 86 的一定是国家码，剃掉不会误伤
-                    if (digits.startsWith('86')) digits = digits.slice(2);
-                    digits = digits.slice(0, 11);
-                    if (el.value !== digits) el.value = digits;
-                    setGateErrors((prev) => (prev.phone ? { ...prev, phone: undefined } : prev));
-                  }}
-                  className={fieldClass(gateErrors.phone)}
-                />
-                <FieldError id="gate-phone-error" text={gateErrors.phone} />
-              </label>
-              <label className="grid gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
-                邮箱
-                <input
-                  required
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  placeholder="用于接收更新通知"
-                  aria-invalid={Boolean(gateErrors.email)}
-                  aria-describedby={gateErrors.email ? 'gate-email-error' : undefined}
-                  onInput={() => setGateErrors((prev) => (prev.email ? { ...prev, email: undefined } : prev))}
-                  className={fieldClass(gateErrors.email)}
-                />
-                <FieldError id="gate-email-error" text={gateErrors.email} />
-              </label>
-              <label className="grid gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
-                所在公司 / 学校 / 机构
-                <input
-                  required
-                  name="organization"
-                  autoComplete="organization"
-                  placeholder="请输入机构名称"
-                  aria-invalid={Boolean(gateErrors.organization)}
-                  aria-describedby={gateErrors.organization ? 'gate-org-error' : undefined}
-                  onInput={() =>
-                    setGateErrors((prev) => (prev.organization ? { ...prev, organization: undefined } : prev))
-                  }
-                  className={fieldClass(gateErrors.organization)}
-                />
-                <FieldError id="gate-org-error" text={gateErrors.organization} />
-              </label>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="mt-6 w-full rounded-lg bg-[#2563eb] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3] disabled:opacity-60"
-            >
-              {submitting ? '下载中…' : '提交并下载'}
-            </button>
-            <p className="mt-3 text-center text-[11px] leading-5 text-[#98a2b3]">
-              提交即表示你同意我们仅将信息用于产品相关的技术支持联系。
-            </p>
-          </form>
-        </div>
-      )}
-
-      <footer className="border-t border-[#e4e7ec] bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 py-10 sm:px-8 md:flex-row md:items-center md:justify-between lg:px-10">
-          <div className="flex items-center gap-3">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#2563eb] text-xs font-black text-white">S</span>
-            <div>
-              <p className="text-sm font-bold">Shroom Developer</p>
-              <p className="mt-0.5 text-[11px] text-[#98a2b3]">Build with sensor data.</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-[#667085]">
-            <a href="#capabilities" className="hover:text-[#175cd3]">产品能力</a>
-            <a href="#downloads" className="hover:text-[#175cd3]">SDK 与上位机</a>
-            <Link href="/docs" className="hover:text-[#175cd3]">文档中心</Link>
-            <a href="/lab.html" target="_blank" rel="noreferrer" className="hover:text-[#175cd3]">网页测试台</a>
-            <Link href="/docs/readme" className="hover:text-[#175cd3]">排错与支持</Link>
-          </div>
-          <p className="text-[11px] text-[#98a2b3]">© 2026 Shroom. All rights reserved.</p>
-        </div>
-      </footer>
-    </main>
+    </>
   );
 }

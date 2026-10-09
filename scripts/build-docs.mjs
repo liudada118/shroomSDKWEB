@@ -1,5 +1,5 @@
 /**
- * 把 sdk/ 里的三份 Markdown 预渲染成 app/docs/generated.ts。
+ * 把 sdk/ 中配置的 Markdown 预渲染成 app/docs/generated.ts。
  *
  *   npm run build:docs
  *
@@ -39,6 +39,13 @@ const DOCS = [
     file: 'README.md',
     label: 'SDK 说明与排错',
     summary: 'SDK 完整说明、API 一览和排错对照表。连不上设备时先查这份。',
+    forAi: false,
+  },
+  {
+    slug: 'python',
+    file: 'python/README.md',
+    label: 'Python SDK',
+    summary: 'Python 安装、串口读取、模拟设备、点位排列与图形示例，无需 Node.js。',
     forAi: false,
   },
 ];
@@ -137,4 +144,15 @@ export function getDoc(slug: string): DocPage | undefined {
 
 await mkdir(dirname(OUT), { recursive: true });
 await writeFile(OUT, banner, 'utf8');
+// 只把轻量章节目录交给问答客户端，避免携带整份 Markdown / HTML。
+const catalog = pages.flatMap((page) => page.toc.map((section) => ({
+  anchor: `${page.slug}--${section.id}`,
+  label: section.text,
+  href: `/docs/${page.slug}#${section.id}`,
+  page: page.slug,
+  description: page.label,
+  keywords: `${page.slug} ${section.text}`,
+})));
+await writeFile(join(ROOT, 'app', 'docs', 'catalog.generated.ts'),
+  `// 由 scripts/build-docs.mjs 自动生成，供问答章节定位使用。\nexport const sectionCatalog = ${JSON.stringify(catalog, null, 2)} as const;\n`, 'utf8');
 console.log(`已生成 app/docs/generated.ts（${pages.length} 篇，${banner.length} 字节）`);
