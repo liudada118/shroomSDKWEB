@@ -44,7 +44,7 @@ export default function KnowledgePage() {
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {suggestedQuestions.map((question) => <button key={question} type="button" onClick={() => void ask(question)} className="min-h-[72px] rounded-xl border border-[#d0d5dd] px-4 py-3 text-left text-sm leading-6 transition-colors hover:border-[#84adff] hover:bg-[#eff4ff]">{question}<span aria-hidden="true" className="ml-2 text-[#2563eb]">→</span></button>)}
               </div>
-              <Link href="/docs/python" className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-[#175cd3] hover:underline">查看 Python 接入指南 →</Link>
+              <Link href="/docs/backend?language=python" className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-[#175cd3] hover:underline">查看 Python 接入指南 →</Link>
             </div>
           ) : <div className="mx-auto max-w-3xl space-y-6">{messages.map((message) => <KnowledgeMessage key={message.id} message={message} />)}</div>}
         </div>

@@ -10,7 +10,7 @@
  * 顺带把原始 Markdown 也带上：文档站上「复制给 AI」按钮要发的是原文，不是渲染后的 HTML。
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 
@@ -19,43 +19,18 @@ const SDK = join(ROOT, 'sdk');
 const OUT = join(ROOT, 'app', 'docs', 'generated.ts');
 
 // slug 是 URL 的一部分，必须是 ASCII —— 文件名有中文的那份尤其不能直接拿来用
-const DOCS = [
-  {
-    slug: 'ai-context',
-    file: 'AI-CONTEXT.md',
-    label: '给 AI 的上下文',
-    summary: '把这份整个发给 AI，它就掌握了 SDK 的全部能力边界和正确用法，不必再翻源码。',
-    forAi: true,
-  },
-  {
-    slug: 'ai-guide',
-    file: '怎么用AI开发.md',
-    label: '怎么用 AI 来开发',
-    summary: '写给不写代码的人：怎么把 SDK 交给 AI，怎么描述需求，出问题了怎么跟它说。',
-    forAi: false,
-  },
-  {
-    slug: 'readme',
-    file: 'README.md',
-    label: 'SDK 说明与排错',
-    summary: 'SDK 完整说明、API 一览和排错对照表。连不上设备时先查这份。',
-    forAi: false,
-  },
-  {
-    slug: 'python',
-    file: 'python/README.md',
-    label: 'Python SDK',
-    summary: 'Python 安装、串口读取、模拟设备、点位排列与图形示例，无需 Node.js。',
-    forAi: false,
-  },
-  {
-    slug: 'backend',
-    file: 'BACKEND.md',
-    label: '后端连接 SDK',
-    summary: 'Node.js / 浏览器通过 HTTP 与 WebSocket 连接已有后端，查询状态、订阅实时帧及调用控制接口。',
-    forAi: false,
-  },
-];
+const DOCS = JSON.parse(await readFile(join(SDK, 'docs', 'catalog.json'), 'utf8'));
+const slugs = new Set();
+for (const doc of DOCS) {
+  if (!/^[a-z][a-z0-9-]*$/.test(doc.slug) || slugs.has(doc.slug)) {
+    throw new Error(`文档 slug 无效或重复：${doc.slug}`);
+  }
+  slugs.add(doc.slug);
+  if (!['backend', 'frontend', 'guides'].includes(doc.area)
+    || !['languages', 'features', 'guides'].includes(doc.group)) {
+    throw new Error(`文档分类无效：${doc.slug}`);
+  }
+}
 
 /** 取第一个 # 标题当页面标题，并把它从正文里去掉（页面自己会渲染标题） */
 function splitTitle(markdown) {
@@ -73,11 +48,12 @@ function splitTitle(markdown) {
  */
 const FILE_TO_SLUG = new Map(DOCS.map((doc) => [doc.file, doc.slug]));
 
-function rewriteLocalLinks(html) {
+function rewriteLocalLinks(html, sourceFile) {
   return html.replace(/<a href="(?!https?:|\/|#)([^"]+)">([\s\S]*?)<\/a>/g, (_all, href, text) => {
-    const file = decodeURIComponent(href.replace(/^\.\//, '').split(/[#?]/)[0]);
+    const sourcePath = href.split(/[#?]/)[0];
+    const file = posix.normalize(posix.join(posix.dirname(sourceFile), decodeURIComponent(sourcePath)));
     const slug = FILE_TO_SLUG.get(file);
-    return slug ? `<a href="/docs/${slug}">${text}</a>` : `<code>${text}</code>`;
+    return slug ? `<a href="/docs/${slug}${href.slice(sourcePath.length)}">${text}</a>` : `<code>${text}</code>`;
   });
 }
 
@@ -89,12 +65,22 @@ function rewriteLocalLinks(html) {
  */
 function addAnchors(html) {
   const toc = [];
+  const ids = new Set();
+  const languageBlocks = [...html.matchAll(/<div data-sdk-language="(node|python)">[\s\S]*?<\/div>/g)]
+    .map((match) => ({ start: match.index, end: match.index + match[0].length, language: match[1] }));
   let index = 0;
-  const withIds = html.replace(/<h([23])>([\s\S]*?)<\/h\1>/g, (_all, level, inner) => {
-    const id = `s${(index += 1)}`;
-    const text = inner.replace(/<[^>]+>/g, '').trim();
-    toc.push({ id, text, level: Number(level) });
-    return `<h${level} id="${id}">${inner}</h${level}>`;
+  const withIds = html.replace(/<h([23])>([\s\S]*?)<\/h\1>/g, (_all, level, inner, offset) => {
+    // Optional {#id} suffix keeps primary chapter links stable when subheadings change.
+    const explicit = inner.match(/\s+\{#([a-z][a-z0-9-]*)\}$/);
+    index += 1;
+    const id = explicit?.[1] ?? `s${index}`;
+    const content = explicit ? inner.slice(0, explicit.index) : inner;
+    if (ids.has(id)) throw new Error(`文档章节 id 重复：${id}`);
+    ids.add(id);
+    const text = content.replace(/<[^>]+>/g, '').trim();
+    const language = languageBlocks.find((block) => offset >= block.start && offset < block.end)?.language;
+    toc.push({ id, text, level: Number(level), ...(language ? { language } : {}) });
+    return `<h${level} id="${id}">${content}</h${level}>`;
   });
   return { html: withIds, toc };
 }
@@ -104,7 +90,20 @@ for (const doc of DOCS) {
   const source = await readFile(join(SDK, doc.file), 'utf8');
   const { title, body } = splitTitle(source);
   const parsed = await marked.parse(body, { gfm: true, breaks: false });
-  const { html, toc } = addAnchors(rewriteLocalLinks(parsed));
+  const { html, toc } = addAnchors(rewriteLocalLinks(parsed, doc.file));
+  // Human-readable function descriptions only affect navigation, not API headings or anchors.
+  for (const [id, description] of Object.entries(doc.tocDescriptions ?? {})) {
+    const heading = toc.find((item) => item.id === id);
+    if (!heading || typeof description !== 'string' || !description.trim()) {
+      throw new Error(`目录功能描述无效：${doc.slug}#${id}`);
+    }
+    heading.description = description.trim();
+  }
+  for (const chapter of doc.chapters ?? []) {
+    if (!toc.some((item) => item.id === chapter.id && item.level === 2 && item.text === chapter.label)) {
+      throw new Error(`导航章节与正文不一致：${doc.slug}#${chapter.id}`);
+    }
+  }
   pages.push({
     slug: doc.slug,
     label: doc.label,
@@ -128,6 +127,8 @@ export interface DocToc {
   id: string;
   text: string;
   level: number;
+  language?: 'node' | 'python';
+  description?: string;
 }
 
 export interface DocPage {
@@ -155,10 +156,10 @@ await writeFile(OUT, banner, 'utf8');
 const catalog = pages.flatMap((page) => page.toc.map((section) => ({
   anchor: `${page.slug}--${section.id}`,
   label: section.text,
-  href: `/docs/${page.slug}#${section.id}`,
+  href: `/docs/${page.slug}${section.language ? `?language=${section.language}` : ''}#${section.id}`,
   page: page.slug,
   description: page.label,
-  keywords: `${page.slug} ${section.text}`,
+  keywords: `${page.slug} ${section.language ?? ''} ${section.text} ${section.description ?? ''}`.replace(/\s+/g, ' ').trim(),
 })));
 await writeFile(join(ROOT, 'app', 'docs', 'catalog.generated.ts'),
   `// 由 scripts/build-docs.mjs 自动生成，供问答章节定位使用。\nexport const sectionCatalog = ${JSON.stringify(catalog, null, 2)} as const;\n`, 'utf8');

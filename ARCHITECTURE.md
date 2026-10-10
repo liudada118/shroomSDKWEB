@@ -16,10 +16,9 @@ Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示�
   免安装 zip，工程在同级独立目录 `../shroom-monitor`。
   版本 / 体积 / SHA-256 来自 `app/desktop-release.json`，
   由 `scripts/sync-desktop-release.mjs` 从包本身算出。macOS / Linux 尚未打包，页面上是灰态「即将发布」。
-- **文档中心** —— `/docs` 与 `/docs/:slug` 在构建期由 `scripts/build-docs.mjs` 把 `sdk/*.md` 和 `sdk/python/README.md`
-  预渲染成 HTML，运行时不读磁盘。
+- **文档中心** —— `/docs` 是独立的二级文档目录。后端统一在 `/docs/backend`，通过下拉框切换 Node.js / Python，串口、通讯、存储是正文二级标题，各自包含三级接口小节；前端按通讯 / 渲染分类，另设辅助指南。核心文档按 API 参考列出用途、参数/默认值、返回值、示例与注意事项，正文和本页目录同步切换语言。文档区使用专用分类侧栏；首页只保留文档中心入口。`sdk/docs/catalog.json` 统一维护十一篇文档的分类、来源、导航可见性和章节名称，构建期由 `scripts/build-docs.mjs` 预渲染成 HTML，运行时不读磁盘。
 - **网页测试台** —— `public/lab.html`，浏览器直连串口看数据。
-- **后端连接 SDK** —— Node.js / 浏览器新增 `BackendSdkClient`，通过 HTTP/WS 查询和控制已运行的主项目后端，接收原始实时 JSON 帧；不是内置采集服务器，也不要求 Shroom Monitor 提供 HTTP 接口。下载包内包含源码、类型、只读示例与 `BACKEND.md`，文档站入口为 `/docs/backend`；Python 包本次不变。
+- **后端连接 SDK** —— Node.js / 浏览器新增 `BackendSdkClient`，通过 HTTP/WS 查询和控制已运行的主项目后端，接收原始实时 JSON 帧；不是内置采集服务器，也不要求 Shroom Monitor 提供 HTTP 接口。下载包内包含源码、类型、只读示例与 `BACKEND.md`，API 参考入口为 `/docs/backend-api`，后端统一指南为 `/docs/backend`；Python 包本次不变。
 - **手套体验站** —— 外链到独立部署的 <https://glove.jq-industries.io/>。
 - **获取登记** —— 下载前弹窗收集姓名/手机，POST 到密钥系统的 `/sdk-requests`；
   **登记失败不挡下载**，这不是审批流程。
@@ -65,7 +64,7 @@ shroomSDKWEB/
 │  ├─ components/knowledge-* # 会话、悬浮面板、消息引用与文档定位
 │  ├─ docs-data.ts         # 当前文档章节类型、查找与关键词匹配
 │  ├─ desktop-release.json  # 上位机版本/体积/SHA-256，由脚本生成，禁止手改
-│  └─ docs/                 # 文档中心路由（内容构建期生成）
+│  └─ docs/                 # 文档概览/详情、DocsNavigation 侧栏、BackendGuide 语言切换与元数据
 ├─ scripts/
 │  ├─ build-sdk-bundle.mjs  # 生成 sdk/web/shroom.bundle.js 单文件版
 │  ├─ pack-sdk.mjs          # sdk/ → Python、Node.js 和兼容完整包（保留 start.sh 可执行位）
@@ -76,7 +75,10 @@ shroomSDKWEB/
 │  ├─ node/backend.js       # Node 适配器：原生 WebSocket / 按需加载 ws
 │  ├─ node/backend-demo.js  # 只读示例，不自动开串口或采集
 │  ├─ tests/               # HTTP/WS 回归、真实本地网络、经典脚本及类型测试
-│  ├─ BACKEND.md            # 后端连接指南，生成 /docs/backend
+│  ├─ BACKEND.md            # 后端通讯 API 参考，生成 /docs/backend-api
+│  ├─ docs/                 # 后端统一指南及 Node、串口、存储、前端通讯、渲染参考
+│  │  ├─ BACKEND-GUIDE.md   # 双语言串口/通讯/存储 API 参考，生成 /docs/backend
+│  │  └─ catalog.json       # 构建与页面侧栏共用的轻量文档元数据
 │  └─ python/               # Python 独立包：pyproject.toml、src/shroom_sdk、examples、tests、README
 ├─ public/
 │  ├─ favicon.svg           # 站点图标
@@ -177,9 +179,9 @@ flowchart TD
      标题、副标题、登记来源 `source` 随触发方切换。
    - 提交后 POST 到密钥系统的 `/sdk-requests`，来源为 `sdk-python` / `sdk-node` / `desktop-win`。**登记成功失败均放行下载**（8 秒超时），写入 `localStorage` 后下次点击具体版本直接下载。原生 dialog 约束焦点、阻止背景交互，支持 Esc / 关闭；关闭后可在下载区选另一版本，并保留本次表单草稿。
 6. **全站导航与响应式布局**
-   - `SiteNavigation` 按“了解 SDK / 接入与下载 / 工具与文档”组织入口，所有页面共用同一菜单顺序：首页按概览 → 产品 → 能力 → Skill → SDK 下载 → 上位机 → 快速开始 → 工具 → 文档与示例的正文顺序滚动高亮；文档页根据路由标记当前位置，首页区域链接解析为 `/#区域`，文档入口指向 `/docs`，Python 指南指向 `/docs/python`。
+   - 首页与问答页的 `SiteNavigation` 按“了解 SDK / 接入与下载 / 工具与文档”组织入口，首页概览 → 产品 → 能力 → Skill → SDK 下载 → 上位机 → 快速开始 → 工具按正文位置滚动高亮；文档中心是直接进入 `/docs` 的路由链接，不混入页内滚动目录。`/docs` 和所有详情页切换到 `DocsNavigation` 的后端/前端分类树，保持共用顶栏、侧栏尺寸、正文外框与移动端目录交互。
    - >=1024px 显示固定 240px 侧栏，正文使用同宽左外边距；顶栏仅保留品牌、当前区域与主要操作。Hero 双栏在 >=1280px 启用，避免侧栏挤压内容。
-   - 原生锚点保留深链接和浏览器前进/后退；通过 requestAnimationFrame 合并滚动更新，按区域位置设置 `aria-current`，不在滚动时改写历史。点击锚点不提前选中目标项，平滑滚动途中的高亮也始终跟随实际位置；页尾不足一屏时仍激活最后的文档区域。
+   - 原生锚点保留深链接和浏览器前进/后退；通过 requestAnimationFrame 合并滚动更新，按区域位置设置 `aria-current`，不在滚动时改写历史。点击锚点不提前选中目标项，平滑滚动途中的高亮也始终跟随实际位置；页尾不足一屏时仍激活最后的页内导航项。
    - 移动端目录支持展开/收起、Esc 关闭并返回按钮焦点、选中后聚焦目标内容、失焦与外部点击关闭；展开期间禁止背景滚动。保留跳过导航入口、键盘焦点样式和 reduced-motion 行为。
    - `layout.tsx` 只向客户端传入文档路径/标题映射，不导入整篇文档到导航客户端模块；文档仍由服务端页面渲染。每页仅有一个顶栏、主内容区和页脚，旧的 `DocHeader` 已由共享组件替代。
    - 文档详情的本页目录在 >=1280px 右侧 sticky 展示，较窄屏幕使用原生 details 折叠；文章、代码块和表格保留独立溢出处理，文章锚点与跨页入口预留顶栏偏移。
@@ -190,7 +192,7 @@ flowchart TD
 - 采用同步 `read_frame(timeout)` / `frames()` / 迭代器读取和 `with` 管理生命周期，无后台采集线程。核心导入与 Mock 不要求 pySerial，依赖在真实串口调用时加载。
 - `Frame` 使用 bytes 原始快照、array('f') 数值、点数/重心/统计和 Unix 毫秒时间戳，支持 raw/mat32/自定义排列。跨语言测试调用现有 JS 实现验证数值与拆帧一致。
 - `python -m shroom_sdk` 提供串口枚举、模拟/实机运行、有限帧数和 JSON 输出；`examples/heatmap.py` 是可选 Matplotlib 图形示例。
-- 通过 pip 本地安装或构建 wheel/sdist，尚未发布 PyPI。官网 `/docs/python` 展示专门指南；Python ZIP 和兼容完整 ZIP 携带源码、配置、示例和测试，排除虚拟环境、字节码、egg-info 与构建产物。独立 Python 包不含 JS 事实源，其跨语言对照测试自动跳过；在完整仓库仍执行。
+- 通过 pip 本地安装或构建 wheel/sdist，尚未发布 PyPI。官网主入口 `/docs/backend?language=python` 展示统一后端指南的 Python 示例，`/docs/python` 保留完整 API 参考；Python ZIP 和兼容完整 ZIP 携带源码、配置、示例和测试，排除虚拟环境、字节码、egg-info 与构建产物。独立 Python 包不含 JS 事实源，其跨语言对照测试自动跳过；在完整仓库仍执行。
 
 ### 4.4 智谱知识问答
 
@@ -210,6 +212,17 @@ flowchart TD
 - 实时连接完成后订阅通道，JSON 批量帧逐条分发，数据不截断、不归一化、不重新排列。后端帧不等于串口 `Frame`，图形接入需按实际后端协议显式适配。断开清理监听与握手定时器，丢弃过时连接事件；可复用客户端，但不自动重连或重放控制命令。
 - Node 只读示例 `node node/backend-demo.js` 读取契约/串口状态并订阅，结束时释放连接，不触发设备或采集控制。`npm run test:sdk` 构建经典脚本并运行测试；真实网络测试只使用临时回环 HTTP/WS 服务，不操作实际设备。未验证生产后端、跨域代理与真机链路。
 - 构建将本模块和指南打入 Node ZIP 与兼容完整 ZIP，Python ZIP 不增加任何 JS 文件或依赖。浏览器需由后端允许 CORS/Origin，HTTPS 页面配置 HTTPS/WSS；公网鉴权、授权和设备权限由后端负责，本客户端不实现付费许可。
+
+### 4.6 文档分类与生成
+
+- `sdk/docs/catalog.json` 是文档 slug、源文件、摘要、分类、导航名称和可见性的事实源；`app/docs/structure.ts` 只读取轻量元数据，供概览、侧栏、面包屑和同类推荐共用。整篇 HTML/Markdown 不进入分类侧栏的客户端依赖。
+- 后端主入口只有 `/docs/backend`，来源为 `sdk/docs/BACKEND-GUIDE.md`。左侧后端下的串口、通讯、存储链接直接定位同一篇的稳定锚点；`/docs/python`、`/docs/node`、`/docs/serial`、`/docs/storage` 保留为详细参考，不重复出现在主目录。原 HTTP/WS 原文 `BACKEND.md` 改由 `/docs/backend-api` 提供，站内源文件引用自动改写至此。
+- `BackendGuide` 接收服务端渲染的正文和 Markdown，下拉框控制 `data-sdk-language` 代码块、说明和本页目录条目的显隐；公共标题保持共享。`?language=python|node` 支持下载区指南直达所选语言与刷新保留，切换时更新当前 URL 并保留 hash；复制按钮只复制当前语言和共享内容。Python 通讯章节明确未交付 HTTP/WS 客户端，不虚构 Python SDK 接口。
+- 前端保持通讯 / 渲染分类，辅助指南保持原入口。详情通过面包屑显示分类，底部最多展示三篇可见同类文档；没有推荐时不显示空区块。本页目录和问答浮窗继续复用。
+- 四篇核心文档（后端主指南、BackendSdkClient、前端通讯、渲染）改为逐接口参考，覆盖串口、Mock、拆帧、解码、点位/产品配置、HTTP/WS、Frame 转换及 Canvas/色图接口。存储区明确 JSONL 为应用侧示例，不声称 SDK 自带数据库或录制回放。文档版本标识读取 SDK package.json，不新增或改写 SDK 运行接口。
+- 清单的 `tocDescriptions` 按稳定锚点维护中文功能说明，构建校验目标标题和描述并生成 `DocToc.description`。右侧/移动端本页目录以中文功能为主、英文 API 名为辅，正文标题、复制原文和跳转锚点保持不变；问答章节关键词包含功能说明，方便用中文查找接口。
+- 构建从清单读取源文件，校验 slug 与分类，按源文件目录解析 Markdown 相对链接并保留 query/hash。h2 / h3 支持 `{#id}` 稳定锚点并校验唯一性，清单章节必须匹配正文 h2；目录条目记录语言，问答链接自动携带语言参数。回归测试覆盖导航单入口、标题层级、正文/目录语言隔离、有效锚点以及 BackendSdkClient 全部声明方法的文档覆盖。
+- 新指南随 Node 与兼容完整 ZIP 交付，Python 独立 ZIP 的内容保持原有范围。首页产品、Skill、模拟体验、下载登记与上位机流程沿用现有实现。
 
 ## 5. API 端点
 
@@ -304,6 +317,10 @@ SDK 后端连接是调用方到**外部主项目后端**的请求，不是新增
 | 2026-10-09 | 智谱问答接回当前布局 | 恢复完整问答页、全站问文档面板和服务端检索/SSE，接入当前 Python/JS 文档目录，添加配置示例和 14 项回归测试；真实云端待配置凭据 |
 | 2026-10-09 | SDK 双语言入口直接展示 | Python 与 Node.js 卡片在下载区常驻展示，各自下载与查看指南；移除语言选择弹窗，顶栏获取 SDK 改为跨页锚点，保留登记和上位机流程 |
 | 2026-10-10 | JS 后端连接 SDK 集成 | 适配 E 盘 BackendSdkClient 的 HTTP/WS 契约，加入 Node/浏览器/经典脚本入口、类型、只读示例与后端指南；提供超时与连接清理，保持 Python 和直连串口能力不变 |
+| 2026-10-10 | 文档中心分类整理 | 文档独立为后端语言/功能、前端通讯/渲染目录；补齐五篇分类指南、专用侧栏、面包屑与同类阅读，统一文档元数据，保留快速接入和下载登记流程 |
+| 2026-10-10 | 后端文档统一与语言切换 | 后端合并为一篇指南，下拉选择 Node.js / Python；串口、通讯、存储设二级标题与三级小节，支持语言直达、选择性复制与稳定章节定位，保留完整 API 参考 |
+| 2026-10-10 | SDK API 参考文档细化 | 按具体接口补齐用途、参数/默认值、返回值、示例与注意事项；覆盖双语言串口、HTTP/WS、前端通讯和渲染，语言目录与问答链接同步，保留 SDK 功能和首页流程 |
+| 2026-10-10 | API 目录中文功能说明 | 后端与前端核心文档的本页目录增加中文功能名称、保留英文接口副标题；同步手机目录和中文检索，保留语言切换与稳定锚点 |
 
 ## 9. 更新日志
 
@@ -331,6 +348,10 @@ SDK 后端连接是调用方到**外部主项目后端**的请求，不是新增
 | 2026-10-09 | 新增功能 | 从 ld 恢复智谱问答并适配共享布局与当前文档锚点；新增服务端变量示例、实际请求体上限、超时及回归测试，未配置时明确提示 |
 | 2026-10-09 | 优化重构 | SDK 语言选项从弹窗移到首页双卡片；删除通用 SDK 弹窗目标，顶栏链接定位下载区，同步 Python 安装指引与生成产物 |
 | 2026-10-10 | 新增功能 | Node.js / 浏览器新增已有后端 HTTP/WebSocket 客户端、测试与 /docs/backend；同步下载包、AI 上下文和问答能力边界，未搬入存储、算法或授权模块 |
+| 2026-10-10 | 优化重构 | 按后端/前端重新组织独立文档中心，新增语言与功能指南；统一分类清单、站内相对链接解析、文档侧栏及面包屑，首页文档区收敛为入口 |
+| 2026-10-10 | 优化重构 | 将后端主目录收敛为 /docs/backend，增加双语言下拉框与章节层级；构建校验稳定锚点，语言指南统一指向所选语言，复制内容与当前示例一致 |
+| 2026-10-10 | 文档更新 | 逐接口重写四篇 SDK 核心参考，区分 Node/Python 实际能力与应用存储示例；生成语言目录与有效深链接，补齐接口覆盖和锚点回归，同步 API 标识与阅读样式 |
+| 2026-10-10 | 优化重构 | 为 API 目录增加按锚点配置的中文功能说明，采用中文主标题/英文函数副标题；生成并校验描述，补齐目录覆盖回归，不改 SDK 接口和正文标题 |
 
 ---
 

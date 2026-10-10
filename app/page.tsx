@@ -239,27 +239,6 @@ const tools = [
   },
 ];
 
-const resources = [
-  {
-    type: 'FOR AI',
-    title: '给 AI 的上下文',
-    description: '整篇复制给 AI，它就掌握了全部接口和能力边界，不必再翻源码。',
-    href: '/docs/ai-context',
-  },
-  {
-    type: 'GUIDE',
-    title: '怎么用 AI 来开发',
-    description: '写给不写代码的人：怎么描述需求，出了问题怎么跟 AI 说。',
-    href: '/docs/ai-guide',
-  },
-  {
-    type: 'REFERENCE',
-    title: 'SDK 说明与排错',
-    description: '完整 API 一览和排错对照表。连不上设备时先查这份。',
-    href: '/docs/readme',
-  },
-];
-
 const heroCode = `import { Shroom } from './sdk/web/index.js'
 
 const heatmap = Shroom.createHeatmap('#view')
@@ -890,26 +869,10 @@ export default function Home() {
 
       <section id="docs" className="scroll-mt-24 bg-white py-24 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-sm font-semibold text-[#2563eb]">文档与示例</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">从第一个 Demo 到完整应用。</h2>
-              <p className="mt-5 leading-7 text-[#667085]">用清晰的入门路径、API 说明和示例代码，帮助团队快速形成可交付成果。</p>
-            </div>
-            <Link href="/docs" className="text-sm font-semibold text-[#175cd3] hover:underline">进入完整文档中心 →</Link>
-          </div>
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            {resources.map((resource, index) => (
-              <a key={resource.title} href={resource.href} className="group rounded-2xl border border-[#e4e7ec] p-7 transition hover:border-[#84adff] hover:shadow-[0_14px_40px_rgba(16,24,40,0.06)]">
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">{resource.type}</span>
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-[#f2f4f7] text-sm text-[#667085] transition group-hover:bg-[#eff4ff] group-hover:text-[#175cd3]">↗</span>
-                </div>
-                <p className="mt-12 font-mono text-xs text-[#98a2b3]">0{index + 1}</p>
-                <h3 className="mt-3 text-lg font-semibold">{resource.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#667085]">{resource.description}</p>
-              </a>
-            ))}
+          <div className="max-w-2xl">
+            <h2 className="text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">文档中心</h2>
+            <p className="mt-5 leading-7 text-[#667085]">后端文档支持切换 Python / Node.js，按串口、通讯、存储展开；前端按通讯和渲染分类。接入后需要的 API、示例和排错说明，都可以在独立文档目录里找到。</p>
+            <Link href="/docs" className="mt-7 inline-flex min-h-11 items-center rounded-lg bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#175cd3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">进入文档中心 <span aria-hidden="true" className="ml-2">→</span></Link>
           </div>
         </div>
       </section>

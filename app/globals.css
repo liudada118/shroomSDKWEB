@@ -127,6 +127,12 @@ a {
   line-height: 1.85;
 }
 
+/* Both variants are server-rendered; the page-level select only reveals one language. */
+.backend-guide[data-language="node"] [data-sdk-language="python"],
+.backend-guide[data-language="python"] [data-sdk-language="node"] {
+  display: none;
+}
+
 .doc-body > *:first-child {
   margin-top: 0;
 }
@@ -148,6 +154,18 @@ a {
   font-size: 1.125rem;
   font-weight: 600;
   scroll-margin-top: 96px;
+}
+
+.doc-body h4 {
+  margin: 1.5rem 0 0.5rem;
+  color: #344054;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.doc-body :is(h2, h3) code {
+  color: inherit;
+  font-size: 0.9em;
 }
 
 .doc-body p {

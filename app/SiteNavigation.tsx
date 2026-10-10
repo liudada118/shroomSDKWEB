@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import DocsNavigation from './docs/DocsNavigation';
 
 // 页内目录严格按正文的 DOM 顺序排列；分组不改变阅读顺序。
 const navigationGroups = [
@@ -26,8 +27,7 @@ const navigationGroups = [
     label: '工具与文档',
     items: [
       { label: '开发工具', href: '#tools' },
-      { label: '文档与示例', href: '#docs' },
-      { label: 'Python SDK', href: '/docs/python' },
+      { label: '文档中心', href: '/docs' },
       { label: 'AI 知识问答', href: '/knowledge' },
     ],
   },
@@ -40,6 +40,7 @@ export default function SiteNavigation({ pathname, pageTitle }: {
   pageTitle: string;
 }) {
   const isHome = pathname === '/';
+  const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeHref, setActiveHref] = useState('#top');
   const navigationRef = useRef<HTMLDivElement>(null);
@@ -134,8 +135,10 @@ export default function SiteNavigation({ pathname, pageTitle }: {
     }
   }
 
-  const selectedHref = isHome ? activeHref : pathname === '/docs/python' || pathname === '/knowledge' ? pathname : pathname.startsWith('/docs') ? '#docs' : undefined;
-  const activeLabel = isHome ? sectionLinks.find((item) => item.href === activeHref)?.label ?? '开发概览' : pageTitle;
+  const selectedHref = isHome ? activeHref : pathname;
+  const activeLabel = isHome
+    ? sectionLinks.find((item) => item.href === activeHref)?.label ?? '开发概览'
+    : pathname === '/docs' ? '文档概览' : pageTitle;
 
   return (
     <div
@@ -157,7 +160,7 @@ export default function SiteNavigation({ pathname, pageTitle }: {
             </span>
           </Link>
           <div className="hidden min-w-0 items-center gap-3 text-sm lg:flex">
-            <span className="shrink-0 text-[#667085]">SDK 开发中心</span>
+            <Link href={isDocs ? '/docs' : '/'} className="shrink-0 text-[#667085] hover:text-[#175cd3]">{isDocs ? '文档中心' : 'SDK 开发中心'}</Link>
             <span aria-hidden="true" className="text-[#d0d5dd]">/</span>
             <span title={activeLabel} className="truncate font-medium text-[#344054]">{activeLabel}</span>
           </div>
@@ -191,6 +194,7 @@ export default function SiteNavigation({ pathname, pageTitle }: {
         aria-label="SDK 导航目录"
         className={`fixed bottom-0 left-0 top-[72px] z-40 w-full flex-col overflow-y-auto overscroll-contain border-r border-[#eaecf0] bg-[#f9fafb] px-4 pb-6 pt-6 shadow-xl lg:flex lg:w-60 lg:shadow-none ${mobileOpen ? 'flex' : 'hidden'}`}
       >
+        {isDocs ? <DocsNavigation pathname={pathname} onNavigate={() => setMobileOpen(false)} /> : (
         <nav aria-label="SDK 主导航" className="space-y-6">
           {navigationGroups.map((group) => (
             <div key={group.label}>
@@ -198,7 +202,7 @@ export default function SiteNavigation({ pathname, pageTitle }: {
               <ul className="space-y-1">
                 {group.items.map((item) => {
                   const active = selectedHref === item.href;
-                  const href = item.href.startsWith('#') && !isHome ? item.href === '#docs' ? '/docs' : `/${item.href}` : item.href;
+                  const href = item.href.startsWith('#') && !isHome ? `/${item.href}` : item.href;
                   const className = `relative flex min-h-11 items-center justify-between gap-2 rounded-lg px-3 text-sm transition-colors ${active ? 'bg-[#eaf1ff] font-semibold text-[#175cd3]' : 'font-medium text-[#475467] hover:bg-[#eef0f3] hover:text-[#101828]'}`;
                   const content = <><span>{item.label}</span>{active && <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#2563eb]" />}{item.href === '#skill' && !active && <span className="rounded border border-[#d0d5dd] px-1.5 py-0.5 text-[11px] text-[#475467]">推荐</span>}</>;
                   return (
@@ -215,6 +219,7 @@ export default function SiteNavigation({ pathname, pageTitle }: {
             </div>
           ))}
         </nav>
+        )}
         <div className="mt-auto pt-8">
           <a href="/lab.html" target="_blank" rel="noreferrer" className="flex min-h-11 items-center justify-between rounded-lg border border-[#e4e7ec] bg-white px-3 text-sm font-medium text-[#344054] transition-colors hover:border-[#84adff] hover:text-[#175cd3]">
             网页测试台 <span aria-hidden="true">↗</span><span className="sr-only">（新标签页打开）</span>
