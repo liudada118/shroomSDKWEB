@@ -1,12 +1,14 @@
 # Shroom SDK
 
-压力传感器最小 SDK。**只做三件事**：连接串口 → 拿到数据 → 画成图。
+压力传感器基础 SDK：连接串口 → 拿到数据 → 画成图。Node.js / 浏览器还可通过 `BackendSdkClient` 连接已运行的 Shroom 后端。
 
 提供 **浏览器 / Node.js / Python** 三种入口。Python 3.10+ 可独立安装，不需要 Node；详见 [Python SDK](python/README.md)。
 
 官网下载时可选择 **Python** 或 **Node.js（含浏览器）**，分别得到 `shroom-sdk-python.zip` / `shroom-sdk-node.zip`。Node.js 包不含 Python 源码；Python 包内的 `python/README.md` 和 `python/AI-CONTEXT.md` 提供专用说明。旧链接 `shroom-sdk.zip` 仍保留完整包，兼容已有使用方式。
 
 曲线、回放、报表、算法这些都不在里面，那是你（或者 AI）在这个基础上写的部分。
+
+已有主项目后端时，可读取状态、订阅实时帧，并显式调用后端的串口／采集控制接口，见 [后端连接指南](BACKEND.md)。这是客户端，不包含后端服务，也不等于 Shroom Monitor；Python 本次未增加后端客户端。
 
 > **不想自己写代码？** 看 [怎么用AI开发.md](怎么用AI开发.md)——把 [AI-CONTEXT.md](AI-CONTEXT.md)
 > 丢给 AI，然后说人话描述你要什么就行。
@@ -113,6 +115,8 @@ Python 使用同步迭代和 snake_case 参数；字段语义、float32 数值�
 ---
 
 ## Frame：唯一的数据结构
+
+本节指直连串口和 Mock 的 `Frame`。`BackendSdkClient` 的 `frame` 事件保留后端原始结构，不能直接当成这里的 `Frame` 使用。
 
 不管数据从哪来（浏览器串口、Node 串口、Python、模拟），输出的字段含义一致。以下是 JavaScript 的 `onFrame` 对象；Python 使用 `Frame` 数据类，`raw` 为 bytes、`values` 为 array('f')：
 
@@ -396,6 +400,7 @@ device.frameLength     // 锁定下来的帧长（字节）
 
 ```
 sdk/
+├─ backend/       浏览器通用 HTTP / WebSocket 客户端与类型定义
 ├─ core/          纯逻辑，浏览器和 Node 共用，不碰任何设备 API
 │  ├─ framer.js     字节流 → 一帧一帧
 │  ├─ frame.js      一帧字节 → Frame 对象
@@ -412,6 +417,8 @@ sdk/
 │  ├─ serial.js     ★ 串口连接就在这里（serialport）
 │  ├─ ascii.js      终端里的彩色方块图
 │  ├─ demo.js       命令行示例
+│  ├─ backend.js    Node 后端客户端（原生 WebSocket / 可选 ws）
+│  ├─ backend-demo.js  后端只读连接示例
 │  └─ index.js      Node 入口
 ├─ python/        Python 3.10+，独立 pip 包（无需 Node）
 │  ├─ pyproject.toml   本地安装与 wheel/sdist 构建配置
@@ -421,6 +428,7 @@ sdk/
 │  └─ README.md        Python 完整使用文档
 ├─ start.mjs      打开浏览器示例用的小服务器
 ├─ AI-CONTEXT.md  给 AI 看的说明，直接把这个文件丢给它
+├─ BACKEND.md     已有后端的连接、订阅、控制与安全说明
 ├─ 怎么用AI开发.md  给人看的：怎么把这个 SDK 交给 AI
 └─ index.d.ts     TypeScript 类型
 ```
@@ -433,8 +441,7 @@ Node 是 `node/serial.js`。两者都是「读到字节 → `core/framer.js` 切
 Python 串口入口在 `python/src/shroom_sdk/device.py`；调用 Python 的 `framer.py` 和 `frame.py`，
 通过同步迭代或 `read_frame()` 读取。它与 JS 使用相同协议，通过跨语言测试保持数值和拆帧一致。
 
-`core/` 不依赖任何环境 API，想接别的数据源（WebSocket、蓝牙、文件回放）
-自己调 `createFramer()` + `decodeFrame()` 就行，拿到的还是同一个 Frame。
+`core/` 不依赖任何环境 API。自定义字节流可用 `createFramer()` + `decodeFrame()`；已有 Shroom 后端的 JSON 实时帧应使用 `BackendSdkClient`，不要二次拆帧或解码。
 
 ---
 

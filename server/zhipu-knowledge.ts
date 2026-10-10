@@ -436,6 +436,7 @@ async function startChatCompletion(
             '资料不足时明确回答“当前知识库没有足够信息”，不要使用外部知识补全。',
             '优先使用简洁中文；涉及代码时保留准确的 API 名称和参数。',
             '当前公开基础 SDK 支持浏览器、Node.js 和 Python；不内置录制回放、CSV 导出、数据库、力学标定、手套专用协议或手势识别。旧知识片段若涉及这些能力，须说明版本差异，不能声称当前基础包已经提供。',
+            'Node.js/浏览器现有 BackendSdkClient HTTP/WebSocket 后端客户端，可查询契约、串口和展示系统、订阅实时帧、显式调用后端开关串口与启停采集；不是内置后端或采集引擎，Shroom Monitor 也不是此后端。后端 frame 保留原始 JSON，不等于直连串口 Frame，不能直接 decodeFrame 或 heatmap.render。Python 暂无后端客户端；参考 backend 文档页。',
             'Python 使用同步逐帧读取和 snake_case 参数，不支持 JavaScript 的 onFrame 回调；Python 资料不足时引导用户查看 Python SDK 文档，不得把 JavaScript 示例改名后当成 Python API。',
             '',
             buildSectionCatalogPrompt(input.page),

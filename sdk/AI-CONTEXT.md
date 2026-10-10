@@ -31,7 +31,11 @@ Python 要点：`Shroom.list_ports()`、`device.read_frame(timeout=2)`、`frame.
 同步迭代在无数据时继续等待，`read_frame` 超时返回 `None`；使用 `with` 释放串口。没有后台线程，不支持 `on_frame()`。
 Python 也支持 `raw` / `mat32` 点位排列、模拟设备、文本热力图和可选 Matplotlib 示例，不提供标定或手套专用协议。
 
-它**只做这三件事**。曲线、回放、报表、手势识别、算法、数据库——**一律不在 SDK 里**，
+另外提供 **Node.js / 浏览器后端连接客户端** `BackendSdkClient`，详见 [后端连接指南](BACKEND.md)。它查询已有主项目后端的契约、串口、展示系统状态，订阅 WebSocket 实时帧，并支持显式请求后端打开串口或启停采集。不会启动后端；Shroom Monitor 不是此后端；Python 暂无此入口。
+
+模块用具名导入 `import { BackendSdkClient } from './sdk/node/index.js'`（浏览器换 `web/index.js`）；经典脚本用 `new Shroom.BackendSdkClient()`。`client.on('frame', handler)` 保留后端 JSON，不是本 SDK 的 `Frame`，不能直接 `heatmap.render`、`decodeFrame` 或再次换线序。HTTP/WS 默认分别为 19245 / 19999 端口。使用后务必 `disconnectRealtime()`，不自动重连或重放控制命令。
+
+曲线、回放、报表、手势识别、算法、数据库实现——**不在 SDK 里**，
 那些正是你要帮用户写的部分。
 
 **不要**去 SDK 里找这些东西，它们不存在：
@@ -65,6 +69,7 @@ Python 也支持 `raw` / `mat32` 点位排列、模拟设备、文本热力图�
 | 你想要的 | SDK 里有吗 | 怎么办 |
 | --- | --- | --- |
 | 连接串口拿数据 | ✅ 有 | `Shroom.connect()` |
+| 连接已有后端 | ✅ JS 有 | `BackendSdkClient` 的 HTTP/WS 客户端；不能把后端拥有的能力当成 SDK 内置能力 |
 | 没硬件也能开发 | ✅ 有 | `Shroom.mock()`，接口完全一样 |
 | 画成热力图 / 点阵 | ✅ 有 | `Shroom.createHeatmap()` |
 | 压力重心、受力面积、最大值 | ✅ 有 | 每帧算好了，直接读 `frame.center` / `frame.area` / `frame.max` |
@@ -434,7 +439,7 @@ heatmap.canvas;                 // 拿到底层 <canvas>
 
 ### 4.6 底层件（自己接数据源时用）
 
-想接 WebSocket、蓝牙、文件回放等 SDK 没提供的数据源，用这两个就能拿到同样的 Frame：
+想接自定义 WebSocket、蓝牙、文件回放中的原始字节流，用这两个就能拿到同样的 Frame；已有 Shroom 后端的 JSON 帧请用 `BackendSdkClient`，不要送进这两个函数：
 
 ```js
 import { createFramer, decodeFrame } from './sdk/web/index.js';

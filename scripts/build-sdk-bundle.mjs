@@ -38,6 +38,7 @@ const FILES = [
   'core/frame.js',
   'core/device.js',
   'core/mock.js',
+  'backend/client.js',
   'web/heatmap.js',
   'web/serial.js',
 ];
@@ -50,7 +51,7 @@ const EXPORT_OTHER = /^export\s/;
 
 function strip(source, file) {
   return source
-    .split('\n')
+    .split(/\r?\n/)
     .map((line) => {
       if (IMPORT_LINE.test(line)) return null;
       if (EXPORT_DECL.test(line)) return line.replace(EXPORT_DECL, '');
@@ -96,6 +97,7 @@ ${body
 
   // ---------- 对外入口 ----------
   var Shroom = {
+    BackendSdkClient: BackendSdkClient,
     connect: connectSerial,
     mock: createMockDevice,
     createHeatmap: createHeatmap,

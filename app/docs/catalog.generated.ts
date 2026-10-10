@@ -543,5 +543,61 @@ export const sectionCatalog = [
     "page": "python",
     "description": "Python SDK",
     "keywords": "python 测试与构建"
+  },
+  {
+    "anchor": "backend--s1",
+    "label": "先选对连接方式",
+    "href": "/docs/backend#s1",
+    "page": "backend",
+    "description": "后端连接 SDK",
+    "keywords": "backend 先选对连接方式"
+  },
+  {
+    "anchor": "backend--s2",
+    "label": "后端与运行环境",
+    "href": "/docs/backend#s2",
+    "page": "backend",
+    "description": "后端连接 SDK",
+    "keywords": "backend 后端与运行环境"
+  },
+  {
+    "anchor": "backend--s3",
+    "label": "Node.js 最小例子",
+    "href": "/docs/backend#s3",
+    "page": "backend",
+    "description": "后端连接 SDK",
+    "keywords": "backend Node.js 最小例子"
+  },
+  {
+    "anchor": "backend--s4",
+    "label": "浏览器最小例子",
+    "href": "/docs/backend#s4",
+    "page": "backend",
+    "description": "后端连接 SDK",
+    "keywords": "backend 浏览器最小例子"
+  },
+  {
+    "anchor": "backend--s5",
+    "label": "HTTP 能力与返回值",
+    "href": "/docs/backend#s5",
+    "page": "backend",
+    "description": "后端连接 SDK",
+    "keywords": "backend HTTP 能力与返回值"
+  },
+  {
+    "anchor": "backend--s6",
+    "label": "实时帧与生命周期",
+    "href": "/docs/backend#s6",
+    "page": "backend",
+    "description": "后端连接 SDK",
+    "keywords": "backend 实时帧与生命周期"
+  },
+  {
+    "anchor": "backend--s7",
+    "label": "连接失败与安全边界",
+    "href": "/docs/backend#s7",
+    "page": "backend",
+    "description": "后端连接 SDK",
+    "keywords": "backend 连接失败与安全边界"
   }
 ] as const;

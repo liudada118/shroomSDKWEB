@@ -18,6 +18,7 @@ export { createFramer, DEFAULT_DELIMITER } from '../core/framer.js';
 export { decodeFrame, resolveShape } from '../core/frame.js';
 export { shroom, jet, jetWhite, grey, COLORMAPS, getColormap } from '../core/colormap.js';
 export { LAYOUTS, getLayout, listLayouts, PRODUCTS, getProduct, listProducts } from '../core/layout.js';
+export { BackendSdkClient } from '../backend/client.js';
 
 import { connectSerial, isSerialSupported } from './serial.js';
 import { createHeatmap } from './heatmap.js';

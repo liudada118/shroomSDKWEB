@@ -1,7 +1,10 @@
 /**
  * Shroom SDK 类型定义。
- * 整个 SDK 只有三件事：连接串口、拿到 Frame、画成图。
+ * 直连串口、基础可视化，以及已有后端的 HTTP/WebSocket 客户端。
  */
+
+export { BackendSdkClient } from './backend/client.js';
+export type { BackendClientOptions, BackendFrame, BackendContract, BackendRequestOptions } from './backend/client.js';
 
 /** 一帧数据。所有数据源（真实串口 / 模拟）产出的结构都是这个 */
 export interface Frame {

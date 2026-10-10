@@ -15,6 +15,7 @@ export { createFramer, DEFAULT_DELIMITER } from '../core/framer.js';
 export { decodeFrame, resolveShape } from '../core/frame.js';
 export { shroom, jet, jetWhite, grey, COLORMAPS, getColormap } from '../core/colormap.js';
 export { LAYOUTS, getLayout, listLayouts, PRODUCTS, getProduct, listProducts } from '../core/layout.js';
+export { BackendSdkClient } from './backend.js';
 
 import { connectSerial, listPorts } from './serial.js';
 import { renderAscii } from './ascii.js';

@@ -48,6 +48,13 @@ const DOCS = [
     summary: 'Python 安装、串口读取、模拟设备、点位排列与图形示例，无需 Node.js。',
     forAi: false,
   },
+  {
+    slug: 'backend',
+    file: 'BACKEND.md',
+    label: '后端连接 SDK',
+    summary: 'Node.js / 浏览器通过 HTTP 与 WebSocket 连接已有后端，查询状态、订阅实时帧及调用控制接口。',
+    forAi: false,
+  },
 ];
 
 /** 取第一个 # 标题当页面标题，并把它从正文里去掉（页面自己会渲染标题） */

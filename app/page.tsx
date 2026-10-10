@@ -63,8 +63,8 @@ const capabilities = [
     index: '01',
     tag: 'DEVICE',
     title: '统一设备接入',
-    description: '支持浏览器、Node 和 Python 接入串口，输出字段含义一致的数据帧。Python 可独立安装，适合数据分析与算法开发。',
-    meta: ['串口通信', '设备发现', '浏览器 / Node / Python'],
+    description: '浏览器、Node 和 Python 支持串口直连；Node / 浏览器还可通过 HTTP 与 WebSocket 连接已有后端、查询状态和订阅实时帧。',
+    meta: ['串口直连', 'HTTP / WebSocket', '浏览器 / Node / Python'],
   },
   {
     index: '02',

@@ -1,6 +1,6 @@
 # 架构文档
 
-> 本文档由 Codex 自动生成和维护。最后更新于：2026-10-09
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-10-10
 
 ## 1. 项目概述
 
@@ -19,6 +19,7 @@ Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示�
 - **文档中心** —— `/docs` 与 `/docs/:slug` 在构建期由 `scripts/build-docs.mjs` 把 `sdk/*.md` 和 `sdk/python/README.md`
   预渲染成 HTML，运行时不读磁盘。
 - **网页测试台** —— `public/lab.html`，浏览器直连串口看数据。
+- **后端连接 SDK** —— Node.js / 浏览器新增 `BackendSdkClient`，通过 HTTP/WS 查询和控制已运行的主项目后端，接收原始实时 JSON 帧；不是内置采集服务器，也不要求 Shroom Monitor 提供 HTTP 接口。下载包内包含源码、类型、只读示例与 `BACKEND.md`，文档站入口为 `/docs/backend`；Python 包本次不变。
 - **手套体验站** —— 外链到独立部署的 <https://glove.jq-industries.io/>。
 - **获取登记** —— 下载前弹窗收集姓名/手机，POST 到密钥系统的 `/sdk-requests`；
   **登记失败不挡下载**，这不是审批流程。
@@ -26,7 +27,7 @@ Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示�
 
 仍为占位的只有两处：「点位映射生成器」与「工程验证工具（含力学标定）」，页面上明确标注为灰态「规划中」。
 
-页面 **不提供、也不会提供** kPa / 牛顿等物理单位换算 —— SDK 给到的是 0~1 相对值，
+页面 **不提供、也不会提供** kPa / 牛顿等物理单位换算 —— SDK 直连串口给到的是 0~1 相对值，后端客户端则保留后端的原始 JSON 与单位语义，
 标定曲线逐台设备不同，不在公开 SDK 范围内。`#capabilities` 里有一块「SDK 里没有这些」把边界写死。
 
 ## 2. 技术栈
@@ -40,6 +41,7 @@ Shroom Developer 是一个面向传感器与硬件开发者的单页 SDK 展示�
 | **数据库** | 无 | `.openai/hosting.json` 未启用 D1 / R2 |
 | **编程语言** | TypeScript / TSX / CSS | TypeScript 5.9.3，严格模式 |
 | **Python SDK** | Python 3.10+ / setuptools | 核心无第三方运行依赖；串口可选 pySerial >=3.5,<4，图形示例可选 Matplotlib >=3.7,<4 |
+| **JS 后端客户端** | 原生 fetch / WebSocket | 浏览器无 Node 依赖；Node 18+，缺少全局 WebSocket 时按需使用 SDK 可选依赖 ws ^8.14.2 |
 | **包管理器** | npm | 使用 `package-lock.json` 固定依赖 |
 | **部署环境** | OpenAI Sites / Cloudflare Workers | 通过 `@openai/sites-vite-plugin` 与 Cloudflare Vite 插件构建，已配置生产站点基址 |
 | **其他关键库** | next/font | Geist 与 Geist Mono 字体 |
@@ -70,6 +72,11 @@ shroomSDKWEB/
 │  ├─ build-docs.mjs        # SDK Markdown（含 Python README）→ 预渲染 HTML，供 /docs 使用
 │  └─ sync-desktop-release.mjs  # 上位机包 → public/downloads/ + desktop-release.json
 ├─ sdk/                     # SDK 源码与文档的事实源，打包进 zip 并生成文档站
+│  ├─ backend/              # 环境无关 HTTP/WS 客户端、TypeScript 契约
+│  ├─ node/backend.js       # Node 适配器：原生 WebSocket / 按需加载 ws
+│  ├─ node/backend-demo.js  # 只读示例，不自动开串口或采集
+│  ├─ tests/               # HTTP/WS 回归、真实本地网络、经典脚本及类型测试
+│  ├─ BACKEND.md            # 后端连接指南，生成 /docs/backend
 │  └─ python/               # Python 独立包：pyproject.toml、src/shroom_sdk、examples、tests、README
 ├─ public/
 │  ├─ favicon.svg           # 站点图标
@@ -192,7 +199,17 @@ flowchart TD
 - API 拒绝跨 Origin 请求，限制实际请求体 64 KiB，智谱请求 60 秒超时；API Key 不进入浏览器或 SDK 下载包。缺少 Key / Knowledge ID 返回 `KNOWLEDGE_NOT_CONFIGURED`，不提供模拟答案。
 - `build-docs.mjs` 同时生成轻量 `app/docs/catalog.generated.ts`，只把章节元数据交给客户端。模型章节标识使用 `slug--sN` 避免跨文档重名，实际链接为 `/docs/:slug#sN`；服务端和客户端均校验目录，不沿用旧分支的 Backend 链接。
 - 本地文档构建不会自动同步到智谱知识库。管理员仍需上传当前 README、AI 上下文和 Python README；系统提示明确基础 SDK 不含旧版本可能提及的录制回放、CSV、数据库和标定，避免版本混淆。
+- 增加 `BACKEND.md` 后，目录自动包含 backend 页面和章节；问答提示区分 JS 的后端客户端、后端服务本身与 Python 能力。知识库需另行上传新文档，构建不会自动上传。
 - `npm run test:knowledge` 使用模拟上游测试检索、SSE、来源、安全错误及全部章节链接；未配置凭据时无法验证真实云端问答。公网部署前还需配置入口限流与用量保护，当前接口不是付费授权系统。
+
+### 4.5 已有后端连接客户端
+
+- 从 `E:/ShroomSDK/src/backend/BackendSdkClient.js` 的 HTTP/WS 契约适配为 `sdk/backend/client.js` ES 模块。浏览器使用原生 fetch/WebSocket 和轻量事件监听器，不引入 Node EventEmitter；`sdk/node/backend.js` 为旧版 Node 按需选择可选 `ws`。`sdk/web/index.js`、`sdk/node/index.js` 具名导出，包子路径为 `shroom-sdk/backend`，经典脚本入口为 `Shroom.BackendSdkClient`。
+- HTTP 默认 `http://127.0.0.1:19245`，WS 默认 `ws://127.0.0.1:19999`，分别由调用方显式配置；不读取网站环境变量或智谱密钥，也不自动启动后端。Monitor 和开发者网站本身不提供这组设备接口。
+- `getContract()` 缓存后端契约并加载接口路径；显式 routes 覆盖不会在刷新时丢失。支持状态查询、设备与展示系统元数据、开关串口和启停采集，控制方法仅显式调用时发送。HTTP 支持 JSON 业务错误、AbortSignal 和默认 10 秒超时；写操作不自动重试。
+- 实时连接完成后订阅通道，JSON 批量帧逐条分发，数据不截断、不归一化、不重新排列。后端帧不等于串口 `Frame`，图形接入需按实际后端协议显式适配。断开清理监听与握手定时器，丢弃过时连接事件；可复用客户端，但不自动重连或重放控制命令。
+- Node 只读示例 `node node/backend-demo.js` 读取契约/串口状态并订阅，结束时释放连接，不触发设备或采集控制。`npm run test:sdk` 构建经典脚本并运行测试；真实网络测试只使用临时回环 HTTP/WS 服务，不操作实际设备。未验证生产后端、跨域代理与真机链路。
+- 构建将本模块和指南打入 Node ZIP 与兼容完整 ZIP，Python ZIP 不增加任何 JS 文件或依赖。浏览器需由后端允许 CORS/Origin，HTTPS 页面配置 HTTPS/WSS；公网鉴权、授权和设备权限由后端负责，本客户端不实现付费许可。
 
 ## 5. API 端点
 
@@ -205,6 +222,8 @@ flowchart TD
 
 下载登记不参与鉴权，也不阻塞下载。问答的上游鉴权密钥仅在服务端使用。
 
+SDK 后端连接是调用方到**外部主项目后端**的请求，不是新增的网站 API。默认读取 `/api/sdk/contract`、`/api/channels`、`/api/ws/status`、`/api/display-systems`、`/api/serial/ports`、`/api/serial/status`、`/api/sensor/current`；显式控制请求使用 `/api/sensor/type`、`/api/serial/open`、`/api/serial/close`、`/api/collection/start`、`/api/collection/stop`。路径可由后端契约或调用方覆盖。
+
 ## 6. 外部依赖与集成
 
 | 服务/库 | 用途 | 集成方式 |
@@ -216,6 +235,8 @@ flowchart TD
 | 智谱 BigModel | 知识库检索与 GLM 回答 | 服务端 Bearer Key，使用知识库 retrieve 与 chat/completions，SSE 代理 |
 
 当前没有数据库、用户认证或付费权益鉴权；外部业务调用为下载登记和智谱问答。
+
+下载的 JS SDK 另提供可选的主项目后端连接能力；网站不会代替用户发起设备控制，也没有开放式转发代理。
 
 ## 7. 环境变量
 
@@ -282,6 +303,7 @@ flowchart TD
 | 2026-10-09 | SDK 下载语言选择 | 所有获取 SDK 入口先选择 Python / Node.js，交付独立 ZIP，保留完整包旧链接、下载登记与上位机流程；验证解压安装与模拟帧 |
 | 2026-10-09 | 智谱问答接回当前布局 | 恢复完整问答页、全站问文档面板和服务端检索/SSE，接入当前 Python/JS 文档目录，添加配置示例和 14 项回归测试；真实云端待配置凭据 |
 | 2026-10-09 | SDK 双语言入口直接展示 | Python 与 Node.js 卡片在下载区常驻展示，各自下载与查看指南；移除语言选择弹窗，顶栏获取 SDK 改为跨页锚点，保留登记和上位机流程 |
+| 2026-10-10 | JS 后端连接 SDK 集成 | 适配 E 盘 BackendSdkClient 的 HTTP/WS 契约，加入 Node/浏览器/经典脚本入口、类型、只读示例与后端指南；提供超时与连接清理，保持 Python 和直连串口能力不变 |
 
 ## 9. 更新日志
 
@@ -308,6 +330,7 @@ flowchart TD
 | 2026-10-09 | 新增功能 | 下载弹窗增加语言选择与独立 Python / Node.js ZIP，支持返回重选、键盘焦点与移动视口；更新打包脚本和 SDK 安装说明 |
 | 2026-10-09 | 新增功能 | 从 ld 恢复智谱问答并适配共享布局与当前文档锚点；新增服务端变量示例、实际请求体上限、超时及回归测试，未配置时明确提示 |
 | 2026-10-09 | 优化重构 | SDK 语言选项从弹窗移到首页双卡片；删除通用 SDK 弹窗目标，顶栏链接定位下载区，同步 Python 安装指引与生成产物 |
+| 2026-10-10 | 新增功能 | Node.js / 浏览器新增已有后端 HTTP/WebSocket 客户端、测试与 /docs/backend；同步下载包、AI 上下文和问答能力边界，未搬入存储、算法或授权模块 |
 
 ---
 

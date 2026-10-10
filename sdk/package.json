@@ -5,18 +5,27 @@
   "type": "module",
   "types": "index.d.ts",
   "exports": {
-    ".": "./web/index.js",
-    "./web": "./web/index.js",
-    "./node": "./node/index.js",
+    ".": { "types": "./index.d.ts", "default": "./web/index.js" },
+    "./web": { "types": "./index.d.ts", "default": "./web/index.js" },
+    "./node": { "types": "./node/index.d.ts", "default": "./node/index.js" },
+    "./backend": {
+      "types": "./backend/client.d.ts",
+      "browser": "./backend/client.js",
+      "node": "./node/backend.js",
+      "default": "./backend/client.js"
+    },
     "./core": "./core/frame.js"
   },
   "scripts": {
     "start": "node start.mjs",
     "demo": "node node/demo.js",
-    "ports": "node node/demo.js --list"
+    "ports": "node node/demo.js --list",
+    "demo:backend": "node node/backend-demo.js",
+    "test:backend": "node --test tests/backend-client.test.mjs"
   },
   "optionalDependencies": {
-    "serialport": "^12.0.0"
+    "serialport": "^12.0.0",
+    "ws": "^8.14.2"
   },
   "engines": {
     "node": ">=18"
