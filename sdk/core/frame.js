@@ -22,9 +22,15 @@
  */
 
 import { getLayout } from './layout.js';
+import { ShroomError } from './errors.js';
+import { validateDecodeOptions, MAX_MATRIX_POINTS } from './serial-config.js';
 
 /** 由点数推断矩阵行列；不是完全平方数就退化成单行 */
 export function resolveShape(points, options = {}) {
+  validateDecodeOptions(options);
+  if (!Number.isSafeInteger(points) || points < 0 || points > MAX_MATRIX_POINTS) {
+    throw new ShroomError('INVALID_CONFIG', '点数必须是有效范围内的非负整数', { stage: 'configure', details: { field: 'points' } });
+  }
   if (options.rows && options.cols) {
     return { rows: options.rows, cols: options.cols };
   }
@@ -45,6 +51,9 @@ export function resolveShape(points, options = {}) {
  * @returns {object} Frame
  */
 export function decodeFrame(payload, options = {}) {
+  options = validateDecodeOptions(options);
+  if (!(payload instanceof Uint8Array)) throw new ShroomError('PARSE_FAILED', '解码输入必须是 Uint8Array 字节数据', { stage: 'parse' });
+  if (payload.length > MAX_MATRIX_POINTS) throw new ShroomError('PARSE_FAILED', '输入帧超过最大点数限制', { stage: 'parse' });
   const fullScale = options.fullScale ?? 255;
   const threshold = options.threshold ?? 0.02;
   const points = Math.min(options.points ?? payload.length, payload.length);

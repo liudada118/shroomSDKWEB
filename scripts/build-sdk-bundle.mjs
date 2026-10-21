@@ -28,19 +28,31 @@ const OUT = join(SDK, 'web', 'shroom.bundle.js');
 const PAGE_TEMPLATE = join(SDK, 'web', 'index.template.html');
 const PAGE_OUT = join(SDK, 'web', 'index.html');
 const LAB_OUT = join(ROOT, 'public', 'lab.html');
+const PUBLIC_BUNDLE_OUT = join(ROOT, 'public', 'shroom.bundle.js');
+const QUICK_OUT = join(ROOT, 'public', 'quick-start.html');
 const PLACEHOLDER = '<!--@INLINE_BUNDLE@-->';
 
 // 依赖在前，被依赖的先出现。改动 sdk 结构时记得同步这张表。
 const FILES = [
   'core/colormap.js',
   'core/layout.js',
+  'core/errors.js',
+  'core/license.js',
+  'core/serial-config.js',
+  'core/serial-diagnostics.js',
   'core/framer.js',
   'core/frame.js',
+  'core/stream-codec.js',
+  'core/glove-regions.js',
+  'core/glove.js',
+  'core/product.js',
   'core/device.js',
   'core/mock.js',
   'backend/client.js',
   'web/heatmap.js',
   'web/serial.js',
+  'web/stream.js',
+  'web/product-view.js',
 ];
 
 // 顶层 import 整行删掉；export 关键字去掉，声明本身留下。
@@ -97,10 +109,26 @@ ${body
 
   // ---------- 对外入口 ----------
   var Shroom = {
+    activateLicense: activateLicense,
+    getLicenseStatus: getLicenseStatus,
+    clearLicense: clearLicense,
+    SDK_PRODUCT_TYPE: SDK_PRODUCT_TYPE,
+    connectProduct: connectProduct,
+    connectGlove: connectGlove,
+    connectHandPad: connectHandPad,
+    listDeviceProducts: listDeviceProducts,
+    ShroomError: ShroomError,
+    ERROR_CODES: ERROR_CODES,
+    asShroomError: asShroomError,
     BackendSdkClient: BackendSdkClient,
     connect: connectSerial,
     mock: createMockDevice,
     createHeatmap: createHeatmap,
+    connectStream: connectStream,
+    createProductView: createProductView,
+    encodeStreamFrame: encodeStreamFrame,
+    decodeStreamFrame: decodeStreamFrame,
+    STREAM_SCHEMA: STREAM_SCHEMA,
     isSupported: isSerialSupported,
     version: ${JSON.stringify(pkg.version)},
     // 想自己接数据源（WebSocket、蓝牙、录制回放）就用这几个
@@ -162,3 +190,6 @@ console.log(`  已生成 sdk/web/index.html（自包含，${page.length} 字节�
 // 用 .html 后缀而不是 /lab/index.html：静态托管下 /lab 不一定会自动补 index.html。
 await writeFile(LAB_OUT, page);
 console.log(`  已同步 public/lab.html（站点网页测试台，与上面同一份）`);
+await writeFile(PUBLIC_BUNDLE_OUT, bundle);
+await writeFile(QUICK_OUT, await readFile(join(SDK, 'web', 'quick-start.html'), 'utf8'));
+console.log('  已同步 public/quick-start.html 和 shroom.bundle.js（完整快速接入测试页）');

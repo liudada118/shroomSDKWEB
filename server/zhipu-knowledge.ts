@@ -435,7 +435,7 @@ async function startChatCompletion(
             '每个事实结论后标注对应来源编号，如 [1]；不要引用不存在的编号。',
             '资料不足时明确回答“当前知识库没有足够信息”，不要使用外部知识补全。',
             '优先使用简洁中文；涉及代码时保留准确的 API 名称和参数。',
-            '当前公开基础 SDK 支持浏览器、Node.js 和 Python；不内置录制回放、CSV 导出、数据库、力学标定、手套专用协议或手势识别。旧知识片段若涉及这些能力，须说明版本差异，不能声称当前基础包已经提供。',
+            '当前 SDK 的 Node.js/浏览器支持整包手套与手部检测垫的产品取数，手套含五指、指腹和手掌。快速方案为 Node serveDevice 启动独立 WS 服务，浏览器 connectStream 接收标准帧、createProductView 二维分区渲染，并控制服务端带标签会话录制及 CSV/JSONL 下载；不是三维模型或手势识别。Python 当前只有基础串口、解析、Mock 与显示，不具备这些快速接口。SDK 不内置数据库、历史回放或力学标定，不把 ADC/归一化值当作 kPa/N。具体用法必须以提供的当前文档片段为依据，旧片段须区分版本。',
             'Node.js/浏览器现有 BackendSdkClient HTTP/WebSocket 后端客户端，可查询契约、串口和展示系统、订阅实时帧、显式调用后端开关串口与启停采集；不是内置后端或采集引擎，Shroom Monitor 也不是此后端。后端 frame 保留原始 JSON，不等于直连串口 Frame，不能直接 decodeFrame 或 heatmap.render。Python 暂无后端客户端；参考 backend 文档页。',
             'Python 使用同步逐帧读取和 snake_case 参数，不支持 JavaScript 的 onFrame 回调；Python 资料不足时引导用户查看 Python SDK 文档，不得把 JavaScript 示例改名后当成 Python API。',
             '',

@@ -1,6 +1,246 @@
 // 由 scripts/build-docs.mjs 自动生成，供问答章节定位使用。
 export const sectionCatalog = [
   {
+    "anchor": "drivers--s1",
+    "label": "下载对应系统的驱动",
+    "href": "/docs/drivers#s1",
+    "page": "drivers",
+    "description": "安装串口驱动",
+    "keywords": "drivers 下载对应系统的驱动"
+  },
+  {
+    "anchor": "drivers--s2",
+    "label": "安装并确认系统串口",
+    "href": "/docs/drivers#s2",
+    "page": "drivers",
+    "description": "安装串口驱动",
+    "keywords": "drivers 安装并确认系统串口"
+  },
+  {
+    "anchor": "drivers--s3",
+    "label": "使用 SDK 再查一次",
+    "href": "/docs/drivers#s3",
+    "page": "drivers",
+    "description": "安装串口驱动",
+    "keywords": "drivers 使用 SDK 再查一次"
+  },
+  {
+    "anchor": "drivers--s4",
+    "label": "找不到或打不开串口",
+    "href": "/docs/drivers#s4",
+    "page": "drivers",
+    "description": "安装串口驱动",
+    "keywords": "drivers 找不到或打不开串口"
+  },
+  {
+    "anchor": "license--s1",
+    "label": "签发什么密钥",
+    "href": "/docs/license#s1",
+    "page": "license",
+    "description": "SDK 授权",
+    "keywords": "license 签发什么密钥"
+  },
+  {
+    "anchor": "license--s2",
+    "label": "Node.js 激活",
+    "href": "/docs/license#s2",
+    "page": "license",
+    "description": "SDK 授权",
+    "keywords": "license Node.js 激活"
+  },
+  {
+    "anchor": "license--s3",
+    "label": "浏览器激活",
+    "href": "/docs/license#s3",
+    "page": "license",
+    "description": "SDK 授权",
+    "keywords": "license 浏览器激活"
+  },
+  {
+    "anchor": "license--s4",
+    "label": "RSA 离线码",
+    "href": "/docs/license#s4",
+    "page": "license",
+    "description": "SDK 授权",
+    "keywords": "license RSA 离线码"
+  },
+  {
+    "anchor": "license--s5",
+    "label": "有效期与失效行为",
+    "href": "/docs/license#s5",
+    "page": "license",
+    "description": "SDK 授权",
+    "keywords": "license 有效期与失效行为"
+  },
+  {
+    "anchor": "quick-start--guide-prepare",
+    "label": "准备环境与 SDK 密钥",
+    "href": "/docs/quick-start#guide-prepare",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 准备环境与 SDK 密钥"
+  },
+  {
+    "anchor": "quick-start--guide-config",
+    "label": "确认产品与运行参数",
+    "href": "/docs/quick-start#guide-config",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 确认产品与运行参数"
+  },
+  {
+    "anchor": "quick-start--guide-run",
+    "label": "下载并运行完整示例",
+    "href": "/docs/quick-start#guide-run",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 下载并运行完整示例"
+  },
+  {
+    "anchor": "quick-start--guide-connect",
+    "label": "激活 SDK 授权，再连接设备",
+    "href": "/docs/quick-start#guide-connect",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 激活 SDK 授权，再连接设备"
+  },
+  {
+    "anchor": "quick-start--guide-verify",
+    "label": "验收真实数据，安全结束采集",
+    "href": "/docs/quick-start#guide-verify",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 验收真实数据，安全结束采集"
+  },
+  {
+    "anchor": "quick-start--guide-code",
+    "label": "阅读代码，接入自己的项目",
+    "href": "/docs/quick-start#guide-code",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 阅读代码，接入自己的项目"
+  },
+  {
+    "anchor": "quick-start--extensions",
+    "label": "可选扩展：网页展示、采集与下载",
+    "href": "/docs/quick-start#extensions",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 可选扩展：网页展示、采集与下载"
+  },
+  {
+    "anchor": "quick-start--device",
+    "label": "可选：设备与网页数据服务",
+    "href": "/docs/quick-start#device",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 可选：设备与网页数据服务"
+  },
+  {
+    "anchor": "quick-start--demo",
+    "label": "可选：展示与采集完整示例",
+    "href": "/docs/quick-start#demo",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 可选：展示与采集完整示例"
+  },
+  {
+    "anchor": "quick-start--view",
+    "label": "可选：前端连接与二维展示",
+    "href": "/docs/quick-start#view",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 可选：前端连接与二维展示"
+  },
+  {
+    "anchor": "quick-start--record",
+    "label": "可选：数据采集",
+    "href": "/docs/quick-start#record",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 可选：数据采集"
+  },
+  {
+    "anchor": "quick-start--start-recording",
+    "label": "输入标签，开始录制",
+    "href": "/docs/quick-start#start-recording",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 输入标签，开始录制"
+  },
+  {
+    "anchor": "quick-start--stop-recording",
+    "label": "停止录制，确认采集结果",
+    "href": "/docs/quick-start#stop-recording",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 停止录制，确认采集结果"
+  },
+  {
+    "anchor": "quick-start--download",
+    "label": "可选：按记录 ID 下载",
+    "href": "/docs/quick-start#download",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 可选：按记录 ID 下载"
+  },
+  {
+    "anchor": "quick-start--troubleshooting",
+    "label": "地址、安全与排错",
+    "href": "/docs/quick-start#troubleshooting",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 地址、安全与排错"
+  },
+  {
+    "anchor": "custom--route",
+    "label": "开发路线",
+    "href": "/docs/custom#route",
+    "page": "custom",
+    "description": "基础文档",
+    "keywords": "custom 开发路线"
+  },
+  {
+    "anchor": "custom--backend",
+    "label": "后端：串口、解析和通讯",
+    "href": "/docs/custom#backend",
+    "page": "custom",
+    "description": "基础文档",
+    "keywords": "custom 后端：串口、解析和通讯"
+  },
+  {
+    "anchor": "custom--frontend",
+    "label": "前端：接收数据与自定义显示",
+    "href": "/docs/custom#frontend",
+    "page": "custom",
+    "description": "基础文档",
+    "keywords": "custom 前端：接收数据与自定义显示"
+  },
+  {
+    "anchor": "custom--recording",
+    "label": "录制、标签与下载",
+    "href": "/docs/custom#recording",
+    "page": "custom",
+    "description": "基础文档",
+    "keywords": "custom 录制、标签与下载"
+  },
+  {
+    "anchor": "custom--compatibility",
+    "label": "兼容已有系统",
+    "href": "/docs/custom#compatibility",
+    "page": "custom",
+    "description": "基础文档",
+    "keywords": "custom 兼容已有系统"
+  },
+  {
+    "anchor": "custom--guides",
+    "label": "辅助指南",
+    "href": "/docs/custom#guides",
+    "page": "custom",
+    "description": "基础文档",
+    "keywords": "custom 辅助指南"
+  },
+  {
     "anchor": "python--s1",
     "label": "安装",
     "href": "/docs/python#s1",
@@ -10,64 +250,80 @@ export const sectionCatalog = [
   },
   {
     "anchor": "python--s2",
-    "label": "30 秒运行",
+    "label": "实机必备：先安装串口驱动",
     "href": "/docs/python#s2",
+    "page": "python",
+    "description": "Python SDK",
+    "keywords": "python 实机必备：先安装串口驱动"
+  },
+  {
+    "anchor": "python--s3",
+    "label": "SDK 授权",
+    "href": "/docs/python#s3",
+    "page": "python",
+    "description": "Python SDK",
+    "keywords": "python SDK 授权"
+  },
+  {
+    "anchor": "python--s4",
+    "label": "30 秒运行",
+    "href": "/docs/python#s4",
     "page": "python",
     "description": "Python SDK",
     "keywords": "python 30 秒运行"
   },
   {
-    "anchor": "python--s3",
+    "anchor": "python--s5",
     "label": "在 Python 程序中使用",
-    "href": "/docs/python#s3",
+    "href": "/docs/python#s5",
     "page": "python",
     "description": "Python SDK",
     "keywords": "python 在 Python 程序中使用"
   },
   {
-    "anchor": "python--s4",
+    "anchor": "python--s6",
     "label": "Frame 字段",
-    "href": "/docs/python#s4",
+    "href": "/docs/python#s6",
     "page": "python",
     "description": "Python SDK",
     "keywords": "python Frame 字段"
   },
   {
-    "anchor": "python--s5",
+    "anchor": "python--s7",
     "label": "API 与 JavaScript 对照",
-    "href": "/docs/python#s5",
+    "href": "/docs/python#s7",
     "page": "python",
     "description": "Python SDK",
     "keywords": "python API 与 JavaScript 对照"
   },
   {
-    "anchor": "python--s6",
+    "anchor": "python--s8",
     "label": "协议和点位配置",
-    "href": "/docs/python#s6",
+    "href": "/docs/python#s8",
     "page": "python",
     "description": "Python SDK",
     "keywords": "python 协议和点位配置"
   },
   {
-    "anchor": "python--s7",
+    "anchor": "python--s9",
     "label": "自己提供原始数据",
-    "href": "/docs/python#s7",
+    "href": "/docs/python#s9",
     "page": "python",
     "description": "Python SDK",
     "keywords": "python 自己提供原始数据"
   },
   {
-    "anchor": "python--s8",
+    "anchor": "python--s10",
     "label": "图形示例",
-    "href": "/docs/python#s8",
+    "href": "/docs/python#s10",
     "page": "python",
     "description": "Python SDK",
     "keywords": "python 图形示例"
   },
   {
-    "anchor": "python--s9",
+    "anchor": "python--s11",
     "label": "测试与构建",
-    "href": "/docs/python#s9",
+    "href": "/docs/python#s11",
     "page": "python",
     "description": "Python SDK",
     "keywords": "python 测试与构建"
@@ -185,6 +441,54 @@ export const sectionCatalog = [
     "keywords": "backend 串口"
   },
   {
+    "anchor": "backend--node-connect-glove",
+    "label": "Shroom.connectGlove(options)",
+    "href": "/docs/backend?language=node#node-connect-glove",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node Shroom.connectGlove(options) 连接整包手套并选择左右手"
+  },
+  {
+    "anchor": "backend--node-connect-hand-pad",
+    "label": "Shroom.connectHandPad(options)",
+    "href": "/docs/backend?language=node#node-connect-hand-pad",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node Shroom.connectHandPad(options) 连接手部检测垫"
+  },
+  {
+    "anchor": "backend--node-connect-product",
+    "label": "Shroom.connectProduct(options)",
+    "href": "/docs/backend?language=node#node-connect-product",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node Shroom.connectProduct(options) 按产品类型连接设备"
+  },
+  {
+    "anchor": "backend--node-device-products",
+    "label": "Shroom.listDeviceProducts()",
+    "href": "/docs/backend?language=node#node-device-products",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node Shroom.listDeviceProducts() 列出已封装的设备产品"
+  },
+  {
+    "anchor": "backend--node-on-data",
+    "label": "device.onData(handler)",
+    "href": "/docs/backend?language=node#node-on-data",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node device.onData(handler) 订阅高层产品数据"
+  },
+  {
+    "anchor": "backend--node-product-data",
+    "label": "产品帧与整包手套数据",
+    "href": "/docs/backend?language=node#node-product-data",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node 产品帧与整包手套数据 读取产品压力矩阵与手套整包字段"
+  },
+  {
     "anchor": "backend--node-list-ports",
     "label": "Shroom.listPorts()",
     "href": "/docs/backend?language=node#node-list-ports",
@@ -215,6 +519,30 @@ export const sectionCatalog = [
     "page": "backend",
     "description": "后端文档",
     "keywords": "backend node device.onFrame(handler) 订阅每一帧数据"
+  },
+  {
+    "anchor": "backend--node-on-error",
+    "label": "device.onError(handler)",
+    "href": "/docs/backend?language=node#node-on-error",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node device.onError(handler) 订阅设备运行错误"
+  },
+  {
+    "anchor": "backend--node-diagnostics",
+    "label": "device.state / getDiagnostics()",
+    "href": "/docs/backend?language=node#node-diagnostics",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node device.state / getDiagnostics() 读取设备状态与诊断快照"
+  },
+  {
+    "anchor": "backend--node-errors",
+    "label": "ShroomError / asShroomError / ERROR_CODES",
+    "href": "/docs/backend?language=node#node-errors",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node ShroomError / asShroomError / ERROR_CODES 识别与处理结构化错误"
   },
   {
     "anchor": "backend--node-close",
@@ -335,6 +663,22 @@ export const sectionCatalog = [
     "page": "backend",
     "description": "后端文档",
     "keywords": "backend python device.close() / with 关闭设备与自动释放资源"
+  },
+  {
+    "anchor": "backend--python-diagnostics",
+    "label": "device.state / get_diagnostics()",
+    "href": "/docs/backend?language=python#python-diagnostics",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend python device.state / get_diagnostics() 读取设备状态与诊断快照"
+  },
+  {
+    "anchor": "backend--python-errors",
+    "label": "ShroomError",
+    "href": "/docs/backend?language=python#python-errors",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend python ShroomError 捕获同步结构化错误"
   },
   {
     "anchor": "backend--python-framer",
@@ -825,6 +1169,30 @@ export const sectionCatalog = [
     "keywords": "backend-api 安全与生命周期"
   },
   {
+    "anchor": "storage--recording",
+    "label": "带标签会话录制",
+    "href": "/docs/storage#recording",
+    "page": "storage",
+    "description": "数据存储",
+    "keywords": "storage 带标签会话录制"
+  },
+  {
+    "anchor": "storage--export",
+    "label": "记录查询与文件下载",
+    "href": "/docs/storage#export",
+    "page": "storage",
+    "description": "数据存储",
+    "keywords": "storage 记录查询与文件下载"
+  },
+  {
+    "anchor": "storage--services",
+    "label": "独立服务与已有后端",
+    "href": "/docs/storage#services",
+    "page": "storage",
+    "description": "数据存储",
+    "keywords": "storage 独立服务与已有后端"
+  },
+  {
     "anchor": "storage--s1",
     "label": "选择保存内容",
     "href": "/docs/storage#s1",
@@ -881,6 +1249,38 @@ export const sectionCatalog = [
     "keywords": "frontend-communication Web Serial 浏览器串口通讯"
   },
   {
+    "anchor": "frontend-communication--connect-glove",
+    "label": "Shroom.connectGlove(options)",
+    "href": "/docs/frontend-communication#connect-glove",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication Shroom.connectGlove(options) 连接整包手套并选择左右手"
+  },
+  {
+    "anchor": "frontend-communication--connect-hand-pad",
+    "label": "Shroom.connectHandPad(options)",
+    "href": "/docs/frontend-communication#connect-hand-pad",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication Shroom.connectHandPad(options) 连接手部检测垫"
+  },
+  {
+    "anchor": "frontend-communication--connect-product",
+    "label": "Shroom.connectProduct(options) / listDeviceProducts()",
+    "href": "/docs/frontend-communication#connect-product",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication Shroom.connectProduct(options) / listDeviceProducts() 按产品连接与查询支持清单"
+  },
+  {
+    "anchor": "frontend-communication--product-data",
+    "label": "产品数据与 device.onData(handler)",
+    "href": "/docs/frontend-communication#product-data",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication 产品数据与 device.onData(handler) 读取产品数据与订阅数据回调"
+  },
+  {
     "anchor": "frontend-communication--supported",
     "label": "Shroom.isSupported() / isSerialSupported()",
     "href": "/docs/frontend-communication#supported",
@@ -903,6 +1303,14 @@ export const sectionCatalog = [
     "page": "frontend-communication",
     "description": "前端通讯",
     "keywords": "frontend-communication device.onFrame(handler) 订阅每一帧数据"
+  },
+  {
+    "anchor": "frontend-communication--on-error",
+    "label": "device.onError(handler)",
+    "href": "/docs/frontend-communication#on-error",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication device.onError(handler) 订阅设备运行错误"
   },
   {
     "anchor": "frontend-communication--close",
@@ -1138,11 +1546,11 @@ export const sectionCatalog = [
   },
   {
     "anchor": "ai-context--s6",
-    "label": "3. Frame：唯一的数据结构",
+    "label": "3. 通用 Frame 与产品数据",
     "href": "/docs/ai-context#s6",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 3. Frame：唯一的数据结构"
+    "keywords": "ai-context 3. 通用 Frame 与产品数据"
   },
   {
     "anchor": "ai-context--s7",
@@ -1457,6 +1865,14 @@ export const sectionCatalog = [
     "keywords": "ai-guide 八、想深入了解"
   },
   {
+    "anchor": "readme--routes",
+    "label": "两条文档路线",
+    "href": "/docs/readme#routes",
+    "page": "readme",
+    "description": "SDK 说明与排错",
+    "keywords": "readme 两条文档路线"
+  },
+  {
     "anchor": "readme--s1",
     "label": "30 秒跑起来",
     "href": "/docs/readme#s1",
@@ -1490,11 +1906,11 @@ export const sectionCatalog = [
   },
   {
     "anchor": "readme--s5",
-    "label": "Frame：唯一的数据结构",
+    "label": "通用 Frame 与产品分区数据",
     "href": "/docs/readme#s5",
     "page": "readme",
     "description": "SDK 说明与排错",
-    "keywords": "readme Frame：唯一的数据结构"
+    "keywords": "readme 通用 Frame 与产品分区数据"
   },
   {
     "anchor": "readme--s6",

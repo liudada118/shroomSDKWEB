@@ -10,6 +10,7 @@ from unittest.mock import Mock, patch
 
 from shroom_sdk import DEFAULT_DELIMITER, Shroom
 from shroom_sdk.device import PortInfo
+from license_fixture import LicensedTestCase
 
 
 class MockTests(unittest.TestCase):
@@ -47,7 +48,7 @@ class MockTests(unittest.TestCase):
         self.assertEqual(frames[0]["rows"], 2)
 
 
-class SerialErrorTests(unittest.TestCase):
+class SerialErrorTests(LicensedTestCase):
     def test_validation_before_open(self):
         with patch("shroom_sdk.device._serial_module") as loader:
             with self.assertRaises(ValueError):
@@ -83,7 +84,7 @@ class SerialErrorTests(unittest.TestCase):
 
 
 @unittest.skipUnless(importlib.util.find_spec("serial"), "Install the [serial] extra for loopback tests")
-class SerialLoopbackTests(unittest.TestCase):
+class SerialLoopbackTests(LicensedTestCase):
     def test_batched_frames_counters_and_close(self):
         payload = bytes(range(16))
         wire = DEFAULT_DELIMITER + (payload + DEFAULT_DELIMITER) * 3

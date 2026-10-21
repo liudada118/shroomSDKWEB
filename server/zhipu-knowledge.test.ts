@@ -257,7 +257,10 @@ test('the model is given the section catalog and the current page', async () => 
   const systemPrompt = modelRequest.messages[0]?.content || '';
   assert.match(systemPrompt, /python--s1 \| 安装/);
   assert.match(systemPrompt, /用户当前正在阅读「Python SDK」文档页/);
-  assert.match(systemPrompt, /不内置录制回放/);
+  assert.match(systemPrompt, /serveDevice/);
+  assert.match(systemPrompt, /带标签会话录制及 CSV\/JSONL 下载/);
+  assert.match(systemPrompt, /Python 当前只有基础串口/);
+  assert.match(systemPrompt, /不内置数据库、历史回放或力学标定/);
   assert.match(systemPrompt, /@@SECTIONS:/);
 });
 

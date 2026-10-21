@@ -9,7 +9,7 @@
     "dev": "vinext dev",
     "build": "npm run pack:sdk && npm run build:docs && vinext build",
     "start": "vinext start",
-    "pack:sdk": "npm run build:sdk-bundle && node scripts/pack-sdk.mjs",
+    "pack:sdk": "npm run build:sdk-bundle && node sdk/examples/generate-product-examples.mjs && node scripts/pack-sdk.mjs",
     "build:sdk-bundle": "node scripts/build-sdk-bundle.mjs",
     "build:docs": "node scripts/build-docs.mjs",
     "test:knowledge": "npm run build:docs && node --experimental-strip-types --test server/*.test.ts",

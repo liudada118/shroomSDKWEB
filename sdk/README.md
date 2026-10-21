@@ -1,12 +1,18 @@
 # Shroom SDK
 
-压力传感器基础 SDK：连接串口 → 拿到数据 → 画成图。Node.js / 浏览器还可通过 `BackendSdkClient` 连接已运行的 Shroom 后端。
+**先装驱动，再连接设备。** 使用 CH34x USB 串口的设备缺少可用驱动时，SDK 读取不到串口：[Windows 驱动 CH341SER.EXE](https://shroom.jq-industries.com/drive/CH341SER.EXE) · [macOS 驱动 CH34xVCPDriver.zip](https://shroom.jq-industries.com/drive/CH34xVCPDriver.zip)。安装后重插设备、重启采集应用并查询端口，见[驱动安装与排查](docs/DRIVERS.md)。
 
-提供 **浏览器 / Node.js / Python** 三种入口。Python 3.10+ 可独立安装，不需要 Node；详见 [Python SDK](python/README.md)。
+真实设备需先激活独立 **Shroom SDK** 产品密钥；SDK 授权不限制传感器型号，产品接口与通用串口均可使用。SDK 与上位机共用管理后台，两个产品的密钥互不通用；有效期和电脑名额仍需校验。连接前调用 `await Shroom.activateLicense(key, { deviceId })`，配置见[SDK 授权](docs/LICENSE.md)。模拟数据可直接使用，设备数据仍需匹配已适配的通信协议。
+
+压力传感器 SDK：现有产品先完成 **环境 → 参数 → 完整示例 → 授权连接 → 实机验收 → 项目集成** 六章，只读取设备数据不需要 WS 或录制。需要网页展示、带标签采集或文件下载时，再选择扩展流程；新设备走基础串口、解析与自定义展示。Node.js / 浏览器还可通过 `BackendSdkClient` 连接已运行的 Shroom 后端。
+
+Node.js / 浏览器连接**整包手套**或**手部检测垫**时，优先用 `Shroom.connectGlove()` / `Shroom.connectHandPad()`：选择端口、手套指定左右手，SDK 内置波特率、协议解析与点位映射，直接在 `onData` 里拿数据。通用 `Shroom.connect()` 保留为自定义串口协议的进阶入口。查询、配置、打开和运行期都可能失败，完整路线见[串口接入](docs/SERIAL.md)。
+
+提供 **浏览器 / Node.js / Python** 三种入口。以上产品封装仅在 Node.js / 浏览器提供；Python 仍使用通用串口与矩阵接口，不支持整包手套。Python 3.10+ 可独立安装，不需要 Node；详见 [Python SDK](python/README.md)。
 
 官网下载时可选择 **Python** 或 **Node.js（含浏览器）**，分别得到 `shroom-sdk-python.zip` / `shroom-sdk-node.zip`。Node.js 包不含 Python 源码；Python 包内的 `python/README.md` 和 `python/AI-CONTEXT.md` 提供专用说明。旧链接 `shroom-sdk.zip` 仍保留完整包，兼容已有使用方式。
 
-曲线、回放、报表、算法这些都不在里面，那是你（或者 AI）在这个基础上写的部分。
+Node.js 快速服务内置带标签会话录制、本地文件持久化与 CSV / JSONL 下载；曲线、回放、报表、算法和数据库仍由应用实现。Python 不提供产品级连接、WS 服务或本次快速录制接口。
 
 已有主项目后端时，可读取状态、订阅实时帧，并显式调用后端的串口／采集控制接口，见 [后端连接指南](BACKEND.md)。这是客户端，不包含后端服务，也不等于 Shroom Monitor；Python 本次未增加后端客户端。
 
@@ -19,7 +25,39 @@
 
 ---
 
-## 30 秒跑起来
+## 两条文档路线 {#routes}
+
+- **[快速接入六章](docs/QUICK-START.md#guide-prepare)**：现有整包手套、手部检测垫，按运行环境、产品参数、完整示例、授权连接、真实数据验收和项目集成逐章操作。
+- **[基础与自定义](docs/CUSTOM.md)**：新硬件、新协议和自定义展示，按需查串口、解析、通讯、存储和渲染；后端文档保留 Node.js / Python 语言切换。
+
+完整示例已经包含在 SDK 根目录，选择与实际产品一致的一组；文件内有中文注释，包含授权、取数、错误恢复和关闭逻辑。产品页默认展示完整可运行示例，已有项目可手动切换核心片段：
+
+| 产品 | 浏览器完整文件 | Node.js 完整文件 |
+| --- | --- | --- |
+| 左手整包手套 | `glove-left-example.html` | `glove-left-example.mjs` |
+| 右手整包手套 | `glove-right-example.html` | `glove-right-example.mjs` |
+| 手部检测垫 | `hand-pad-example.html` | `hand-pad-example.mjs` |
+
+先在 SDK 根目录执行 `npm install`。浏览器运行 `node start.mjs --no-open`，用终端显示的实际 origin 加 `/glove-left-example.html` 等文件名打开；不是双击文件，也不是访问通用示例的 `/web/` 路径。先激活，再由另一次点击连接，保留浏览器串口手势。完整页面会自动保留当前浏览器来源的安装标识。
+
+Node.js 设置 `SHROOM_LICENSE_KEY` 后执行 `node glove-left-example.mjs 实际串口`，例如端口确认是 COM3 时才用 `node glove-left-example.mjs COM3`；不传端口时显示用法。示例使用 `node/license-env.js` 的 `activateLicenseFromEnv()` 在用户目录保存并复用电脑标识，不要求用户手填 64 位标识。该辅助函数读取环境变量，SDK 核心不会自动读取；自建服务、离线模式和迁移名额见[SDK 授权](docs/LICENSE.md)。
+
+先确认持续收到有效帧、触按位置正确，再断开并验证重连。把回调里的处理替换为自己的业务逻辑，保留错误与资源清理；产品数据已经映射，不应再次套用线序。以下已有 API 片段作为集成参考，首次连接优先运行完整示例。
+
+需要 WS 展示、标签录制和下载时，使用[可选扩展](docs/QUICK-START.md#extensions)。没有硬件可先验证软件链路：
+
+```bash
+npm install
+node node/quick-demo.js --mock --port 19999
+```
+
+再打开第二个终端运行 `node start.mjs`，访问 `http://localhost:5178/web/quick-start.html`（网页端口以终端输出为准）。页面填写 WS 端口 `19999`，连接、输入标签、开始录制、停止并下载。两个终端都需保持运行；真实设备配置见快速文档。
+
+快速接口为 Node.js 的 `Shroom.serveDevice()`，浏览器的 `Shroom.connectStream()` / `Shroom.createProductView()`，以及数据流上的 `startRecording()` / `stopRecording()` / `listRecordings()` / `downloadRecording()`。默认服务只监听本机并校验网页来源；跨机需要显式地址与来源配置，不是仅填端口即可公网使用。
+
+---
+
+## 30 秒跑起来 {#s1}
 
 **想连真实设备 → 双击 `start-demo.bat`**（macOS / Linux 用 `sh start.sh`）。
 它会自己切到正确目录、检查 Node、起服务器并打开浏览器；出错也不会一闪就关，能看清报错。
@@ -45,7 +83,7 @@ macOS / Linux 可以用 `sh start.sh`。
 
 ---
 
-## 浏览器里用
+## 浏览器里用 {#s2}
 
 ```js
 import { Shroom } from './sdk/web/index.js';
@@ -53,25 +91,47 @@ import { Shroom } from './sdk/web/index.js';
 const heatmap = Shroom.createHeatmap('#view');   // #view 是一个 <canvas>
 
 document.querySelector('#btn').onclick = async () => {
-  const device = await Shroom.connect({ baudRate: 1000000 });
-  device.onFrame((frame) => heatmap.render(frame));
+  const device = await Shroom.connectHandPad({
+    onData: (data) => heatmap.render(data),
+    onError: (error) => console.error(error.code, error.suggestion),
+  });
+  window.addEventListener('pagehide', () => { void device.close().catch(console.error); }, { once: true });
 };
 ```
 
-三行就是全部。`Shroom.connect()` **必须写在点击回调里**——浏览器规定串口只能由用户手势触发。
+`connectHandPad()` 内置手部检测垫 `hand` 的 1000000 波特率、1024 点与 `mat32` 映射。所有浏览器连接入口**必须写在点击回调里**；连接前失败仍需在点击函数中用 `try / catch` 处理。
 
-没有硬件就把 `Shroom.connect()` 换成 `Shroom.mock()`，其余代码一个字不用改：
+整包手套改用下面的入口，`side` 必须由应用明确选择：
+
+```js
+document.querySelector('#glove').onclick = async () => {
+  const device = await Shroom.connectGlove({
+    side: 'left', // 或 'right'，不能根据包类型猜左右手
+    onData: (data) => {
+      console.log(data.fingers.thumb.raw);          // 大拇指主体的 12 个 ADC
+      console.log(data.fingers.index.pulp.raw[0]);  // 食指独立指腹点
+      console.log(data.palm.matrix);               // 手掌按实际行长排列的 ADC
+    },
+    onError: (error) => console.error(error.code, error.suggestion),
+  });
+  window.addEventListener('pagehide', () => { void device.close().catch(console.error); }, { once: true });
+};
+```
+
+没有硬件时用 `Shroom.mock()` 验证通用矩阵显示；它不模拟手套包序号、包类型或 IMU：
 
 ```js
 const device = Shroom.mock({ rows: 32, cols: 32, fps: 30 });
 ```
+
+JS / Python Mock 的 `fps` 必须是有限数值，范围为 `1000 / 2147483647` 至 `1000`（含边界，约 `4.657e-7` 至 `1000`）。
 
 **浏览器要求**：Chrome 或 Edge（Safari / Firefox 没有 Web Serial），页面是 https 或 localhost。
 用 `Shroom.isSupported()` 提前判断。
 
 ---
 
-## Node / Electron 里用
+## Node / Electron 里用 {#s3}
 
 ```bash
 npm i serialport
@@ -80,15 +140,19 @@ npm i serialport
 ```js
 import { Shroom } from './sdk/node/index.js';
 
-const device = await Shroom.connect({ path: 'COM3', baudRate: 1000000 });
-device.onFrame((frame) => {
-  console.log(Shroom.renderAscii(frame));   // 终端里的彩色热力图
+const device = await Shroom.connectHandPad({
+  path: 'COM3',
+  onData: (data) => console.log(Shroom.renderAscii(data)),
+  onError: (error) => console.error(error.code, error.suggestion),
 });
+process.once('SIGINT', () => { void device.close().catch(console.error); });
 ```
+
+手套使用 `Shroom.connectGlove({ path: 'COM3', side: 'left', onData: console.log })`。Node.js 产品入口省略 `path` 时，恰好一个端口才自动选择；零个端口报 `PORT_NOT_FOUND`，多个报 `PORT_AMBIGUOUS`。这不会自动识别硬件型号。产品入口不接受 `baudRate / delimiter / layout` 等协议覆盖，进阶配置使用原 `Shroom.connect()`。完整参数见[产品接入 API](docs/BACKEND-GUIDE.md#node-connect-product)。
 
 ---
 
-## Python 里用
+## Python 里用 {#s4}
 
 在解压后的 SDK 根目录执行（在本仓库根目录时将路径改为 `./sdk/python[serial]`）：
 
@@ -114,11 +178,11 @@ Python 使用同步迭代和 snake_case 参数；字段语义、float32 数值�
 
 ---
 
-## Frame：唯一的数据结构
+## 通用 Frame 与产品分区数据 {#s5}
 
-本节指直连串口和 Mock 的 `Frame`。`BackendSdkClient` 的 `frame` 事件保留后端原始结构，不能直接当成这里的 `Frame` 使用。
+本节先列通用串口、Mock 与检测垫使用的基础 `Frame` 字段，再说明产品数据。整包手套通过 `fingers / palm` 命名分区访问，不将整只手套当成规则矩阵。`BackendSdkClient` 的 `frame` 事件保留后端原始结构，不能直接当成这里的 `Frame` 使用。
 
-不管数据从哪来（浏览器串口、Node 串口、Python、模拟），输出的字段含义一致。以下是 JavaScript 的 `onFrame` 对象；Python 使用 `Frame` 数据类，`raw` 为 bytes、`values` 为 array('f')：
+以下是通用矩阵的 JavaScript `onFrame` 基础字段；Python 使用 `Frame` 数据类，`raw` 为 bytes、`values` 为 array('f')：
 
 ```js
 {
@@ -132,10 +196,23 @@ Python 使用同步迭代和 snake_case 参数；字段语义、float32 数值�
 }
 ```
 
-`values` 是 0~1 的**相对值**，不是物理单位。要换算成 kPa 需要每台设备的标定数据，
+| 产品入口 | 推荐产品数据 |
+| --- | --- |
+| `connectHandPad()` | `raw / pressure` 为原扫描顺序的 1024 个 ADC；`pressureMatrix` 为映射后的 1024 个 ADC，`values` 为映射并归一化的 32×32 矩阵 |
+| `connectGlove({ side })` | `raw / pressure` 为 256 个原始压力 ADC；`fingers.*.raw` 为五指主体，`fingers.*.pulp.raw` 为独立指腹，`palm.matrix` 为 72 点手掌；另有 `side / sequence / packetType / imu.raw` |
+
+整包手套使用 921600 波特率，274 字节 payload 为序号 1 字节、包类型 1 字节、压力 256 字节、IMU 16 字节，尾标记为 `AA 55 03 99`。`imu.raw` 仅保留 16 个原始字节，不承诺单位或姿态解算。手套按命名分区读取与展示；检测垫使用已映射的 `pressureMatrix / values`。产品解析和映射已完成，无需再次套用 `layout`。Python 不提供这些产品字段和入口。
+
+手套分区按最新左右手点位表直接从 256 个扫描 ADC 提取：`fingers.thumb / index / middle / ring / little` 分别为大拇指、食指、中指、无名指、小拇指，每指主体为 4×3、12 点；各指 `.pulp` 是独立 1×1 指腹点，不混入主体。`palm` 为 5 行、声明列宽 15，但首行只有 12 点，其余各 15 点，共 72 点，`rowLengths` 为 `[12, 15, 15, 15, 15]`，matrix 不补零。
+
+每个分区有 `name / rows / cols / rowLengths / sourceIndices / raw / values / matrix`：`sourceIndices` 为 `Uint16Array`，是用户表 1-based 点号减 1 后的扫描索引；raw 为 ADC，values 按父帧相同 fullScale 归一化，matrix 是按实际行长排列的 ADC 二维数组。五指、指腹和手掌合计 137 个映射位置，无需覆盖全部 256 通道。各分区直接按左右手点位表从原始扫描数据提取，统计由应用根据对应分区计算，不把基础 Frame 的矩阵统计当作五指和手掌的汇总。
+
+这些分区值不是力、物理压力或弯曲角度。点位表中的 `btPacketSize: 128` 只是元数据，不表示 SDK 新增蓝牙或双包传输；当前仍为上述整包串口协议。
+
+检测垫和通用矩阵的 `values`、手套各分区的 `values` 都是**相对值**，不是物理单位。默认满量程下为 0~1；要换算成 kPa 需要每台设备的标定数据，
 不在这个 SDK 里。
 
-要按行列取某个点：
+检测垫或通用矩阵按行列取点；手套则使用上面的命名分区：
 
 ```js
 const v = frame.values[y * frame.cols + x];
@@ -143,12 +220,12 @@ const v = frame.values[y * frame.cols + x];
 
 ---
 
-## 点位排列（线序）
+## 点位排列（线序） {#s6}
 
 串口里那一串字节是**采集板的扫描顺序**，不等于垫子上的位置。不做转换直接铺成方阵，
 按垫子最上面一行，画面上亮的可能是中间那一行——数值没问题，位置是错的。
 
-每种产品的走线不一样，猜不出来，得按产品选：
+`connectGlove()` / `connectHandPad()` 已按产品处理线序。下面是通用 `connect()` / `decodeFrame()` 的进阶配置；其他产品的走线不同，需要按产品选择：
 
 ```js
 await Shroom.connect({ layout: 'carSeat' });   // 连接时选
@@ -199,7 +276,7 @@ Shroom.listLayouts();  // [{ name: 'mat32', label: '32×32 压力垫', rows: 32,
 
 **但界面下拉框别用它**——上面这张表是按**走线**列的，用户手里拿的是**产品**。
 好几款产品共用一条走线（手部检测、小床监测、宠物看护走的都是 `mat32`），
-下拉框里写「32×32 压力垫」，用户对不上自己那台设备。下拉框用 `listProducts()`：
+下拉框里写「32×32 压力垫」，用户对不上自己那台设备。通用矩阵产品的旧下拉框用 `listProducts()`；高层可直连产品清单用 `Shroom.listDeviceProducts()`，目前为 `handGloveFullPacket / hand`，不要把两份清单混为一谈：
 
 ```js
 Shroom.listProducts();
@@ -244,45 +321,59 @@ await Shroom.connect({ layout: p.layout });   // 下拉里的 value 是产品名
 - 大多数产品一帧是 1024 个点，`smallSample` 和 `footInsole` 是 256 个。排列自己知道要几个点，
   不用你操心；但**排列选错了帧长，画面会大片是空的**——这是选错型号最明显的症状。
 - `tempFullBed` 只给压力矩阵，那三个温度点不在排列里，需要温度得自己从原始帧取。
-- **手套类产品的线序不在这里**，找官方技术人员要。
+- **整包手套 `handGloveFullPacket` 已通过 Node.js / 浏览器的 `connectGlove({ side })` 封装**；它不是这张通用线序表中的 layout。其他手套型号与 Python 手套接入仍需另行适配。
 
 拿不准手里是哪一款？打开网页测试台，挨个换着看，按下去的地方和画面上亮的地方对上了就是它。
 
 ---
 
-## API
+## API {#s7}
 
-### 浏览器（`web/index.js`）
+### 浏览器（`web/index.js`） {#s8}
 
 | 方法 | 说明 |
 | --- | --- |
+| `Shroom.connectGlove(options)` | 整包手套入口，必填 `side`，可传 `onData / onError` |
+| `Shroom.connectHandPad(options?)` | 手部检测垫入口，内置协议和映射 |
+| `Shroom.connectProduct(options)` | 通过 `product: 'handGloveFullPacket' \| 'hand'` 选择上述产品 |
+| `Shroom.listDeviceProducts()` | 列出已封装的可直连产品，不查询硬件 |
 | `Shroom.connect(options?)` | 连接串口，返回 `Promise<Device>`。必须在用户点击里调用 |
 | `Shroom.mock(options?)` | 模拟设备，接口与 `connect()` 完全一致 |
 | `Shroom.createHeatmap(canvas, options?)` | 在 canvas 上创建热力图 |
 | `Shroom.isSupported()` | 当前浏览器是否支持串口 |
 
-### Node（`node/index.js`）
+### Node（`node/index.js`） {#s9}
 
 | 方法 | 说明 |
 | --- | --- |
+| `Shroom.connectGlove(options)` / `connectHandPad(options?)` | 产品入口；省略 path 时仅单个端口可自动选择 |
+| `Shroom.connectProduct(options)` / `listDeviceProducts()` | 统一产品连接与产品清单 |
 | `Shroom.connect(options?)` | 连接串口，`options.path` 不填就自动挑第一个 |
 | `Shroom.listPorts()` | 列出可用串口 |
 | `Shroom.mock(options?)` | 模拟设备 |
 | `Shroom.renderAscii(frame, options?)` | 把一帧画成终端里的彩色方块 |
 
-### Device
+### Device {#s10}
 
 ```js
 device.info                    // { source, rows, cols, baudRate | path | fps }
 const off = device.onFrame(fn) // 订阅，返回取消订阅的函数
-device.bytesReceived           // 收到的原始字节数（串口设备才有）
-device.frameCount              // 成功切出的帧数（串口设备才有）
-device.droppedCount            // 丢掉的脏帧数，一直涨说明参数配错了
-device.frameLength             // 锁定下来的帧长（字节），还没锁上是 0
-await device.close()           // 断开
+// 产品设备也有 device.onData(fn)，与 onFrame 是别名
+const offError = device.onError((error) => console.error(error.code, error.suggestion))
+device.state                   // 'open' | 'closed' | 'error'
+device.getDiagnostics()        // 当前观测快照，见下方排错说明
+device.bytesReceived           // 串口收到的原始字节数；Mock 为生成的模拟字节数
+device.frameCount              // 串口成功切出的 payload 数；Mock 为生成的帧数
+device.droppedCount            // 丢掉的无效长度帧数，增长时结合设备协议排查
+device.frameLength             // 串口锁定帧长；Mock 首帧前 0、首帧后为模拟点数
+await device.close()           // 断开，可重复调用；不自动重连
 ```
 
-### Heatmap
+`onError(handler)` 的参数是 `ShroomError`，返回取消订阅函数；查询与连接失败则用 `try / catch` 捕获。可从 JS 入口具名导入 `ShroomError`、`asShroomError`、`ERROR_CODES`，通过 `code / stage / message / suggestion / details / cause` 展示或记录错误。Python 同步调用抛出 `ShroomError`，使用 `device.get_diagnostics()` 和 snake_case 字段，没有错误回调。详见[错误与诊断接口](docs/BACKEND-GUIDE.md#diagnostics)。
+
+Mock 的字节数与帧数反映模拟数据生成量，不是串口吞吐；其丢帧数为 0。浏览器取消选择使用 `error.code === ERROR_CODES.USER_CANCELLED` 判断。帧回调自身抛错会报告 `CALLBACK_FAILED`，不应据此认定设备断线。
+
+### Heatmap {#s11}
 
 ```js
 const heatmap = Shroom.createHeatmap('#view', { mode: 'dots' })
@@ -318,7 +409,9 @@ heatmap.clear()
 
 ---
 
-## 连接参数
+## 连接参数 {#s12}
+
+下面配置针对通用 `Shroom.connect()`。手套与手部检测垫优先使用产品入口，协议参数由 SDK 固定，不需要逐项填写或覆盖。
 
 ```js
 await Shroom.connect({
@@ -331,6 +424,8 @@ await Shroom.connect({
   lockLength: true,                       // 锁定帧长，默认开，见下
 });
 ```
+
+串口、拆帧与解码选项会在打开端口前校验。波特率和矩阵尺寸必须有效，`rows / cols` 成对提供；分隔符不能为空，长度范围、`fullScale`、`threshold` 与 `layout` 也需符合约束。SDK 不会根据端口或数据自动识别产品、波特率和线序。
 
 **关于 `lockLength`。** 分隔符只有 4 个字节，数据里迟早会撞出一模一样的一串
 `AA 55 03 99`，于是切出一个长度不对的短帧。这种长度多半不是完全平方数，
@@ -355,8 +450,8 @@ await Shroom.connect({
 
 | 系统 | 要做的事 |
 | --- | --- |
-| Windows | 装 CH341SER 通用驱动，然后在**设备管理器 → 端口 (COM 和 LPT)** 里确认出现了 COM 口 |
-| macOS | 较新的系统自带 CH34x 驱动，插上后应能看到 `/dev/tty.usbserial-*`（终端里 `ls /dev/tty.*` 查）。没有就装 CH34x 驱动，装完要在「系统设置 → 隐私与安全性」里放行 |
+| Windows | 安装 [CH341SER.EXE 驱动](https://shroom.jq-industries.com/drive/CH341SER.EXE)，重插设备，在**设备管理器 → 端口 (COM 和 LPT)** 中确认 COM 口 |
+| macOS | 下载 [CH34xVCPDriver.zip 驱动](https://shroom.jq-industries.com/drive/CH34xVCPDriver.zip)，解压并按指引安装；重插设备，用 `ls /dev/cu.*` 检查新增串口 |
 | Linux | 驱动通常在内核里，但**默认用户没有串口权限**：打开设备会报 `Permission denied`。执行 `sudo usermod -aG dialout $USER` 后**重新登录**（`newgrp dialout` 可临时生效）。设备名一般是 `/dev/ttyUSB0` 或 `/dev/ttyACM0` |
 
 > Linux 上还有一个坑：某些发行版的 `brltty` 服务会把 CH340 抢走当盲文设备。
@@ -378,12 +473,12 @@ await Shroom.connect({
 
 | 诊断 | 说明 | 怎么办 |
 | --- | --- | --- |
-| 字节 = 0 | 设备根本没往外发数据，和解析无关 | 确认选对了 COM 口；设备是否需要先发启动指令；换根数据线 |
-| 字节在涨，帧 = 0 | 数据来了但切不出帧 —— **波特率或分隔符不对** | 换波特率：`1000000`（默认）、`921600`（手套 / 机器人）、`1500000`、`3000000`、`115200` |
-| 帧在涨，画面花 | 帧切对了但矩阵尺寸不对 | 显式指定 `rows` / `cols`，别靠方阵推断 |
+| 字节 = 0 | 当前尚未收到字节 | 确认选对了 COM 口；设备是否需要先发启动指令；换根数据线 |
+| 字节在涨，帧 = 0 | 当前尚未切出完整帧 | 核对设备资料中的波特率、分隔符和长度限制；可用波特率包括 `1000000`（默认）、`921600`、`1500000`、`3000000`、`115200`，应按设备选择 |
+| 帧在涨，画面花 | 可切帧，仍需核对矩阵与协议 | 显式指定 `rows` / `cols`，别靠方阵推断 |
 | 帧在涨，按下去的位置不对 | 没选点位排列，画的是采集板的扫描顺序 | 按产品选 `layout`，见上面那张表 |
 | 画面变成一条横线 | 帧长不是完全平方数，推不出方阵 | 显式指定 `rows` / `cols`；`device.frameLength` 就是实际帧长 |
-| 帧在涨，丢弃也在涨 | 数据里撞出了假分隔符，被帧长锁定挡掉了 | 正常现象，画面稳就不用管；一直猛涨才是波特率不稳，换一档试试 |
+| 帧在涨，丢弃也在涨 | 有无效长度或与锁定长度不匹配的 payload | 结合设备协议核对分隔符、长度范围、波特率；不能只凭计数认定根因 |
 
 代码里对应的是这三个计数：
 
@@ -392,11 +487,14 @@ device.bytesReceived   // 串口收到的原始字节数
 device.frameCount      // 成功切出的帧数
 device.droppedCount    // 长度不合法被丢掉的帧数
 device.frameLength     // 锁定下来的帧长（字节）
+console.log(device.getDiagnostics()); // 包含 state、status、hint 和 lastError
 ```
+
+诊断快照的 `status` 为 `waiting-data / waiting-frame / streaming / closed / error`，`hint` 提供下一步检查建议。快照反映累计观测，不会自动判断根因；`streaming` 不证明设备仍在持续发送，也不代表尺寸、产品或线序选择正确。JS 串口读取、解析或断开错误会自动停止并尝试清理，应用可 `await device.close()` 确认清理结果；`CALLBACK_FAILED` 不会停止采集。Python 同步采集使用 `with` 或 `try / finally` 关闭设备。需要恢复时由应用重新连接。
 
 ---
 
-## 目录
+## 目录 {#s13}
 
 ```
 sdk/
@@ -445,7 +543,7 @@ Python 串口入口在 `python/src/shroom_sdk/device.py`；调用 Python 的 `fr
 
 ---
 
-## 拿去问 AI
+## 拿去问 AI {#s14}
 
 SDK 里有一份专门写给 AI 读的说明：**[AI-CONTEXT.md](AI-CONTEXT.md)**。
 把它整个丢给 AI（拖进对话框，或者复制粘贴），然后描述你想做的东西：

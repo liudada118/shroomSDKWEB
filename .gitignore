@@ -52,6 +52,10 @@ next-env.d.ts
 /public/downloads/
 /sdk/node_modules
 
+# SDK 用户采集记录不得随源码或下载包发布。
+.shroom-recordings/
+/sdk/recordings/
+
 # Python SDK local environments and build output
 __pycache__/
 *.py[cod]

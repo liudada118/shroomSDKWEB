@@ -1,10 +1,83 @@
 /**
  * Shroom SDK 类型定义。
- * 直连串口、基础可视化，以及已有后端的 HTTP/WebSocket 客户端。
+ * 串口产品取数、WS快速接入、产品展示与服务端标签录制，以及已有后端客户端。
  */
 
 export { BackendSdkClient } from './backend/client.js';
 export type { BackendClientOptions, BackendFrame, BackendContract, BackendRequestOptions } from './backend/client.js';
+
+/** 串口/模拟设备错误；已有后端客户端的错误约定不变。 */
+export type ErrorCode =
+  | 'INVALID_CONFIG' | 'DEPENDENCY_MISSING' | 'PORT_NOT_FOUND' | 'PORT_AMBIGUOUS'
+  | 'PERMISSION_DENIED' | 'PORT_BUSY' | 'CONNECTION_FAILED' | 'UNSUPPORTED_ENVIRONMENT'
+  | 'USER_CANCELLED' | 'DISCONNECTED' | 'READ_FAILED' | 'WRITE_FAILED' | 'CLOSE_FAILED'
+  | 'PARSE_FAILED' | 'CALLBACK_FAILED' | 'SERVER_CLOSED' | 'SERVER_ERROR' | 'SERVER_START_FAILED'
+  | 'INVALID_REQUEST' | 'ORIGIN_DENIED' | 'REQUEST_FAILED' | 'REQUEST_TIMEOUT'
+  | 'RECORDING_ACTIVE' | 'RECORDING_NOT_ACTIVE' | 'RECORDING_NOT_FOUND'
+  | 'RECORDING_INTERRUPTED' | 'RECORDING_OVERFLOW' | 'RECORDING_WRITE_FAILED'
+  | 'LICENSE_REQUIRED' | 'LICENSE_INVALID' | 'LICENSE_EXPIRED' | 'LICENSE_UNAVAILABLE'
+  | 'LICENSE_REJECTED' | 'LICENSE_PRODUCT_MISMATCH' | 'LICENSE_SCOPE_DENIED' | 'LICENSE_FEATURE_DENIED' | 'LICENSE_DEVICE_REQUIRED';
+export type ErrorStage = 'query' | 'configure' | 'connect' | 'read' | 'write' | 'parse' | 'close' | 'callback' | 'serve' | 'stream' | 'recording' | 'render' | 'license';
+export interface ShroomErrorOptions {
+  stage?: ErrorStage;
+  suggestion?: string;
+  details?: Record<string, unknown>;
+  cause?: unknown;
+}
+export interface SerialErrorInfo {
+  name: string;
+  code: ErrorCode;
+  stage: ErrorStage;
+  message: string;
+  suggestion: string;
+  details: Record<string, unknown>;
+}
+export class ShroomError extends Error {
+  constructor(code: ErrorCode, message: string, options?: ShroomErrorOptions);
+  code: ErrorCode;
+  stage: ErrorStage;
+  suggestion: string;
+  details: Record<string, unknown>;
+  cause?: unknown;
+  toJSON(): SerialErrorInfo;
+}
+export const ERROR_CODES: Readonly<{ [Code in ErrorCode]: Code }>;
+export function asShroomError(error: unknown, options?: ShroomErrorOptions & { code?: ErrorCode; message?: string }): ShroomError;
+export const SDK_PRODUCT_TYPE: 'shroom-sdk';
+export interface LicenseOptions {
+  mode?: 'online' | 'offline';
+  /** Defaults to https://shroom.jq-industries.com; only HTTPS or loopback HTTP is accepted. */
+  serverUrl?: string;
+  /** Stable SHA-256 identifier supplied by the host application; required for limited computer allowances. */
+  deviceId?: string;
+  /** Trusted issuer's RSA public PEM for offline codes. Never take this from an untrusted license. */
+  publicKey?: string;
+}
+export type LicenseStatus = {
+  valid: true; productType: 'shroom-sdk'; mode: 'online' | 'offline-local' | 'offline-device';
+  expiresAt: number; leaseExpiresAt: number;
+  /** Compatibility metadata: SDK licensing does not restrict sensor models, so this is empty. */
+  products: string[];
+  /** Always true for a valid SDK license; protocol support is independent of licensing. */
+  allProducts: boolean;
+  features: string[];
+} | { valid: false; productType: 'shroom-sdk'; code: ErrorCode; message: string };
+/** Activate before opening hardware; replacing or clearing a license closes existing licensed sessions. */
+export function activateLicense(key: string, options?: LicenseOptions): Promise<LicenseStatus>;
+export function getLicenseStatus(): LicenseStatus;
+export function clearLicense(): void;
+export type DeviceState = 'open' | 'closed' | 'error';
+export interface SerialDiagnostics {
+  source: DeviceInfo['source'];
+  state: DeviceState;
+  status: 'waiting-data' | 'waiting-frame' | 'streaming' | 'closed' | 'error';
+  bytesReceived: number;
+  frameCount: number;
+  droppedCount: number;
+  frameLength: number;
+  lastError: SerialErrorInfo | null;
+  hint: string;
+}
 
 /** 一帧数据。所有数据源（真实串口 / 模拟）产出的结构都是这个 */
 export interface Frame {
@@ -109,16 +182,193 @@ export interface Device {
   info: DeviceInfo;
   /** 订阅每一帧，返回取消订阅的函数 */
   onFrame(handler: (frame: Frame) => void): () => void;
-  /** 被丢弃的脏帧数（模拟设备没有这个字段） */
-  readonly droppedCount?: number;
-  /** 串口收到的原始字节数。为 0 说明设备没在发数据（只有串口设备有） */
-  readonly bytesReceived?: number;
-  /** 成功切出的帧数。字节在涨而它不涨 = 波特率或分隔符不对（只有串口设备有） */
-  readonly frameCount?: number;
+  /** 运行时错误订阅；连接前的错误由 connect() 拒绝。返回取消订阅函数。 */
+  onError(handler: (error: ShroomError) => void): () => void;
+  readonly state: DeviceState;
+  /** 诊断快照，不是实时采样率；lastError 保留最近一次错误。 */
+  getDiagnostics(): SerialDiagnostics;
+  /** 被丢弃的脏帧数；模拟设备为 0 */
+  readonly droppedCount: number;
+  /** 串口原始字节数；模拟设备为已生成的 payload 字节数 */
+  readonly bytesReceived: number;
+  /** 串口成功切出的帧数；模拟设备为成功生成的帧数 */
+  readonly frameCount: number;
   /** 锁定下来的帧长（字节），还没锁上是 0。不是完全平方数就得显式指定 rows / cols */
-  readonly frameLength?: number;
+  readonly frameLength: number;
   close(): Promise<void>;
 }
+
+/** 已核实并封装串口协议的产品；与旧 listProducts() 的展示线序清单不同。 */
+export type DeviceProductId = 'handGloveFullPacket' | 'hand';
+export interface DeviceProductInfo {
+  product: DeviceProductId;
+  label: string;
+  family: 'glove' | 'mat';
+  baudRate: number;
+  payloadLength: number;
+  sensorPoints: number;
+  rows: number;
+  cols: number;
+}
+export interface ProductFrame extends Frame {
+  product: DeviceProductId;
+  /** 原始扫描顺序 ADC；不是物理压力单位。与 raw 指向同一份帧内快照。 */
+  pressure: Uint8Array;
+  /** 按产品映射后的 ADC，长度 rows*cols；values 是对应的 0~1 相对值。 */
+  pressureMatrix: Uint8Array;
+}
+/** 用户点位表定义的区域；手掌首行仅12点，不能假定raw.length=rows*cols。 */
+export interface GloveRegion {
+  name: string;
+  rows: number;
+  /** 点位表声明的列宽；每行实际点数见rowLengths。 */
+  cols: number;
+  rowLengths: number[];
+  /** 按行展开的原始256点扫描索引，从0开始。 */
+  sourceIndices: Uint16Array;
+  /** 区域ADC值，0~255，不包含额外补零。 */
+  raw: Uint8Array;
+  /** 使用同父帧fullScale归一化的区域值。 */
+  values: Float32Array;
+  /** ADC按点位表逐行排列；手掌行长为12、15、15、15、15。 */
+  matrix: number[][];
+}
+export interface GloveFingerRegion extends GloveRegion {
+  /** 单独的指腹传感点，不混入手指12个主体点。 */
+  pulp: GloveRegion;
+}
+export interface GloveFingers {
+  thumb: GloveFingerRegion;
+  index: GloveFingerRegion;
+  middle: GloveFingerRegion;
+  ring: GloveFingerRegion;
+  little: GloveFingerRegion;
+}
+export interface GloveFrame extends ProductFrame {
+  product: 'handGloveFullPacket';
+  side: 'left' | 'right';
+  /** 设备单字节帧号，可回绕；不是毫秒时间戳。 */
+  sequence: number;
+  /** 原始包类型，不用于猜测左右手。 */
+  packetType: number;
+  /** 按用户最新左右手点位表提取，不是切分旧pressureMatrix。 */
+  fingers: GloveFingers;
+  palm: GloveRegion;
+  /** 只保留 16 字节 IMU，不承诺四元数分量、轴序或单位。 */
+  imu: { raw: Uint8Array };
+}
+export interface HandPadFrame extends ProductFrame { product: 'hand'; }
+
+/** 服务端持久化的一次标签录制；一个会话对应一个不可变标签。 */
+export interface RecordingSession {
+  id: string;
+  label: string;
+  startedAt: number;
+  endedAt: number | null;
+  frameCount: number;
+  status: 'recording' | 'stopped' | 'error';
+  product?: string;
+  source?: string;
+  side?: 'left' | 'right';
+  error?: { code: string; message: string };
+}
+export type RecordingFormat = 'csv' | 'jsonl';
+/** 只要求订阅能力，串口设备与自定义数据源可以复用同一快速链路。 */
+export interface FrameSource<T extends Frame = Frame> {
+  info?: { source?: string; product?: string; side?: string };
+  onFrame?(handler: (frame: T) => void): () => void;
+  onData?(handler: (frame: T) => void): () => void;
+  onError?(handler: (error: Error) => void): () => void;
+}
+export interface StreamOptions<T extends Frame = Frame> {
+  /** 同机只填端口；跨机还需主机与服务端的来源授权。 */
+  port?: number;
+  host?: string;
+  url?: string;
+  timeoutMs?: number;
+  onData?: (frame: T) => void;
+  onError?: (error: Error) => void;
+  WebSocketImpl?: typeof WebSocket;
+}
+export interface StreamDevice<T extends Frame = Frame> extends FrameSource<T> {
+  info: { source?: string; product?: string; side?: string };
+  readonly state: DeviceState;
+  onFrame(handler: (frame: T) => void): () => void;
+  onData(handler: (frame: T) => void): () => void;
+  onError(handler: (error: Error) => void): () => void;
+  onRecording(handler: (recording: RecordingSession | null) => void): () => void;
+  startRecording(options: { label: string }): Promise<RecordingSession>;
+  stopRecording(): Promise<RecordingSession | null>;
+  getRecordingStatus(): Promise<RecordingSession | null>;
+  listRecordings(): Promise<RecordingSession[]>;
+  /** recordingId 必填，使用服务端返回的采集记录 id，不是产品 ID、标签或端口。 */
+  getRecordingUrl(recordingId: string, options?: { format?: RecordingFormat }): string;
+  /** 在用户点击中按指定采集记录 ID 下载；不默认下载最近记录，不把文件堆入 JS 内存。 */
+  downloadRecording(recordingId: string, options?: { format?: RecordingFormat }): string;
+  /** 断开浏览器，不自动停止后端录制；重连后查询真实状态。 */
+  close(): Promise<void>;
+  readonly recording: RecordingSession | null;
+  readonly url: string;
+}
+export interface ProductViewOptions<T extends Frame = Frame> extends HeatmapOptions {
+  source?: FrameSource<T>;
+  product?: DeviceProductId;
+}
+export interface ProductView {
+  render(frame: Frame): void;
+  resize(): void;
+  destroy(): void;
+  readonly element: HTMLElement;
+  readonly product: DeviceProductId | null;
+}
+/** 接收产品帧的普通 JSON 快照；TypedArray 字段在传输中编码为普通数组。 */
+export type StreamFrame = Record<string, unknown>;
+export const STREAM_SCHEMA: 'shroom.frame.v1';
+export function encodeStreamFrame(frame: Frame): StreamFrame;
+export function decodeStreamFrame(frame: unknown): Frame | GloveFrame | HandPadFrame;
+export function connectStream<T extends Frame = Frame>(options?: StreamOptions<T>): Promise<StreamDevice<T>>;
+/** source 存在时自动订阅；手套为二维分区视图，不包含三维模型。 */
+export function createProductView<T extends Frame = Frame>(target: HTMLElement | string, options?: ProductViewOptions<T>): ProductView;
+export interface ProductDevice<T extends ProductFrame = ProductFrame> extends Omit<Device, 'info' | 'onFrame'> {
+  info: DeviceInfo & { product: T['product']; label: string; side?: 'left' | 'right' };
+  onFrame(handler: (frame: T) => void): () => void;
+  /** onFrame 的产品入口别名。 */
+  onData(handler: (frame: T) => void): () => void;
+}
+export interface ProductCallbacks<T extends ProductFrame> {
+  /** 连接前注册，首帧可能早于 await 返回；同步调用，不等待 Promise。 */
+  onData?: (frame: T) => void;
+  onError?: (error: ShroomError) => void;
+}
+export interface WebGloveOptions extends ProductCallbacks<GloveFrame> {
+  side: 'left' | 'right';
+  port?: unknown;
+  filters?: WebConnectOptions['filters'];
+}
+export interface WebHandPadOptions extends ProductCallbacks<HandPadFrame> {
+  port?: unknown;
+  filters?: WebConnectOptions['filters'];
+}
+export interface NodeGloveOptions extends ProductCallbacks<GloveFrame> {
+  side: 'left' | 'right';
+  /** 未指定时仅一个端口可自动选择；多端口抛 PORT_AMBIGUOUS。 */
+  path?: string;
+}
+export interface NodeHandPadOptions extends ProductCallbacks<HandPadFrame> {
+  path?: string;
+}
+export type WebProductOptions =
+  | (WebGloveOptions & { product: 'handGloveFullPacket' })
+  | (WebHandPadOptions & { product: 'hand' });
+export type NodeProductOptions =
+  | (NodeGloveOptions & { product: 'handGloveFullPacket' })
+  | (NodeHandPadOptions & { product: 'hand' });
+export function listDeviceProducts(): DeviceProductInfo[];
+export function connectGlove(options: WebGloveOptions): Promise<ProductDevice<GloveFrame>>;
+export function connectHandPad(options?: WebHandPadOptions): Promise<ProductDevice<HandPadFrame>>;
+export function connectProduct(options: WebGloveOptions & { product: 'handGloveFullPacket' }): Promise<ProductDevice<GloveFrame>>;
+export function connectProduct(options: WebHandPadOptions & { product: 'hand' }): Promise<ProductDevice<HandPadFrame>>;
+export function connectProduct(options: WebProductOptions): Promise<ProductDevice<GloveFrame | HandPadFrame>>;
 
 export type ColormapName = 'shroom' | 'jet' | 'jetWhite' | 'grey';
 export type ColormapFn = (t: number) => [number, number, number];
@@ -175,7 +425,7 @@ export interface NodeConnectOptions extends DecodeOptions, FramerOptions {
 export interface MockOptions extends DecodeOptions {
   rows?: number;
   cols?: number;
-  /** 帧率，默认 30 */
+  /** 帧率，默认 30；范围 1000/2147483647 至 1000，避免计时器溢出 */
   fps?: number;
 }
 
@@ -276,6 +526,21 @@ export function listPorts(): Promise<PortInfo[]>;
 export function renderAscii(frame: Frame, options?: AsciiOptions): string;
 
 export const Shroom: {
+  activateLicense: typeof activateLicense;
+  getLicenseStatus: typeof getLicenseStatus;
+  clearLicense: typeof clearLicense;
+  ShroomError: typeof ShroomError;
+  ERROR_CODES: typeof ERROR_CODES;
+  asShroomError: typeof asShroomError;
+  connectProduct: typeof connectProduct;
+  connectGlove: typeof connectGlove;
+  connectHandPad: typeof connectHandPad;
+  listDeviceProducts: typeof listDeviceProducts;
+  connectStream: typeof connectStream;
+  createProductView: typeof createProductView;
+  encodeStreamFrame: typeof encodeStreamFrame;
+  decodeStreamFrame: typeof decodeStreamFrame;
+  STREAM_SCHEMA: typeof STREAM_SCHEMA;
   connect(options?: WebConnectOptions): Promise<Device>;
   mock(options?: MockOptions): Device;
   createHeatmap(target: HTMLCanvasElement | string, options?: HeatmapOptions): Heatmap;

@@ -1,7 +1,7 @@
 {
   "name": "shroom-sdk",
   "version": "0.1.0",
-  "description": "压力传感器最小 SDK：连接串口、拿到数据、画成热力图",
+  "description": "Shroom 产品 SDK：取数、WS、分区渲染、带标签录制与下载",
   "type": "module",
   "types": "index.d.ts",
   "exports": {
@@ -17,10 +17,13 @@
     "./core": "./core/frame.js"
   },
   "scripts": {
+    "generate:examples": "node examples/generate-product-examples.mjs",
     "start": "node start.mjs",
     "demo": "node node/demo.js",
     "ports": "node node/demo.js --list",
     "demo:backend": "node node/backend-demo.js",
+    "demo:quick": "node node/quick-demo.js",
+    "demo:quick:mock": "node node/quick-demo.js --mock",
     "test:backend": "node --test tests/backend-client.test.mjs"
   },
   "optionalDependencies": {

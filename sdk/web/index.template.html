@@ -8,6 +8,7 @@
       * { box-sizing: border-box; }
       body {
         margin: 0;
+        padding: 24px 0;
         min-height: 100vh;
         display: flex;
         align-items: center;
@@ -20,6 +21,19 @@
       h1 { font-size: 18px; margin: 0 0 4px; font-weight: 600; }
       .sub { color: #7d8590; margin: 0 0 20px; }
       .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+      .license-panel { border: 1px solid #30363d; border-radius: 6px; padding: 16px; margin: 16px 0; }
+      .license-panel label { display: block; margin: 8px 0 4px; }
+      .license-panel input { width: 100%; padding: 10px; color: #e6edf3; background: #0b0f14; border: 1px solid #7d8590; border-radius: 4px; }
+      .license-panel button, .license-panel select { min-height: 44px; }
+      .license-panel .bar { margin: 12px 0 0; }
+      .license-panel p { margin-bottom: 0; color: #b1bac4; }
+      .driver-panel { margin: 16px 0; padding: 16px; border: 1px solid #9e6a03; border-left-width: 3px; border-radius: 6px; background: #1c1810; color: #d8c3a0; }
+      .driver-panel h2 { margin: 0 0 8px; color: #f0d9aa; font-size: 16px; }
+      .driver-panel p { margin: 8px 0; }
+      .driver-links { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+      .driver-links a { display: inline-flex; min-height: 44px; align-items: center; color: #a5d6ff; text-underline-offset: 4px; }
+      .driver-panel ol { margin: 8px 0 0; padding-left: 20px; }
+      :focus-visible { outline: 2px solid #79c0ff; outline-offset: 3px; }
       button {
         padding: 8px 16px;
         border: 1px solid #30363d;
@@ -73,12 +87,42 @@
     <div class="app">
       <h1>Shroom SDK · 最小示例</h1>
       <p class="sub">连接串口 → 拿到数据 → 画成热力图。整个页面的逻辑就是下面那段 script。</p>
+      <p><a href="./quick-start.html" style="color:#79c0ff">完整快速接入：WS → 产品展示 → 标签录制 → 下载</a></p>
+
+      <section class="driver-panel" aria-labelledby="driver-title">
+        <h2 id="driver-title">先安装串口驱动</h2>
+        <p>缺少匹配的驱动时，系统可能无法识别设备，本页也无法读取该串口。请在连接设备的这台电脑安装驱动。</p>
+        <div class="driver-links">
+          <a href="https://shroom.jq-industries.com/drive/CH341SER.EXE" target="_blank" rel="noreferrer">Windows 驱动 · EXE</a>
+          <a href="https://shroom.jq-industries.com/drive/CH34xVCPDriver.zip" target="_blank" rel="noreferrer">macOS 驱动 · ZIP（解压后按说明安装）</a>
+        </div>
+        <ol>
+          <li>连接列表没有串口时，先安装对应系统驱动。</li>
+          <li>安装后重插设备，并重启浏览器。</li>
+          <li>重新点击“连接设备”，查看串口选择列表；仍不可见时检查 USB 数据线与系统串口识别情况。</li>
+        </ol>
+      </section>
 
       <p class="note" id="filenote">
         你是双击打开这个文件的（<code>file://</code>）。模拟数据能正常跑，但<b>连不了真实设备</b>——
         浏览器规定串口只在 <code>https</code> 或 <code>localhost</code> 下开放，这条绕不过去。
         要连设备：回到 SDK 根目录，双击 <code>start-demo.bat</code>（macOS / Linux 是 <code>sh start.sh</code>）。
       </p>
+
+      <form id="license-form" class="license-panel" aria-describedby="license-help">
+        <label for="license-key">SDK 产品密钥</label>
+        <input id="license-key" type="password" required maxlength="16384" autocomplete="off" spellcheck="false" />
+        <label for="license-device">电脑标识（同一浏览器自动保留）</label>
+        <input id="license-device" pattern="[a-f0-9]{64}" autocomplete="off" spellcheck="false" />
+        <div class="bar">
+          <label for="license-mode">密钥格式</label>
+          <select id="license-mode"><option value="online">在线密钥</option><option value="offline">RSA 离线码</option></select>
+          <button id="license-activate" type="submit">激活授权</button>
+          <button id="license-clear" type="button">清除授权</button>
+          <span id="license-status" role="status" aria-live="polite">尚未激活；模拟数据可直接使用</span>
+        </div>
+        <p id="license-help">真实设备需要有效 SDK 产品密钥，SDK 授权不限制设备型号；协议与解码配置仍需与设备匹配。限定电脑数量的密钥需联网。密钥只在本次页面内使用。</p>
+      </form>
 
       <div class="bar">
         <button class="primary" id="connect">连接设备</button>
@@ -111,7 +155,7 @@
           视角 <input id="tilt" type="range" min="45" max="85" step="5" value="70" /><b id="tiltv">70°</b>
           <input id="flip" type="checkbox" checked title="按下面却是上面鼓起来，就点掉它" />前后翻转
         </label>
-        <span id="status">未连接</span>
+        <span id="status" role="status" aria-live="polite">未连接</span>
       </div>
 
       <div class="stage">
@@ -174,11 +218,57 @@
         var frames = 0;
         var lastTick = performance.now();
         var shape = null;
+        var connecting = false;
+
+        try {
+          var deviceId = localStorage.getItem('shroom-sdk-device-id');
+          if (!deviceId || !/^[a-f0-9]{64}$/.test(deviceId)) {
+            deviceId = Array.from(crypto.getRandomValues(new Uint8Array(32)), function (value) { return value.toString(16).padStart(2, '0'); }).join('');
+            localStorage.setItem('shroom-sdk-device-id', deviceId);
+          }
+          $('license-device').value = deviceId;
+        } catch (error) { $('license-status').textContent = '无法保存电脑标识；限定数量的密钥需手动填写稳定标识。'; }
+        $('license-form').onsubmit = async function (event) {
+          event.preventDefault();
+          $('license-activate').disabled = true;
+          $('license-form').setAttribute('aria-busy', 'true');
+          $('license-status').textContent = '正在校验授权…';
+          try {
+            var license = await Shroom.activateLicense($('license-key').value, {
+              mode: $('license-mode').value,
+              deviceId: $('license-device').value || undefined,
+            });
+            $('license-key').value = '';
+            $('license-status').textContent = 'SDK 授权已通过，有效至 ' + new Date(license.expiresAt).toLocaleString();
+          } catch (error) { $('license-status').textContent = '[' + (error.code || 'ERROR') + '] ' + error.message; }
+          finally { $('license-activate').disabled = false; $('license-form').removeAttribute('aria-busy'); }
+        };
+        $('license-clear').onclick = function () {
+          Shroom.clearLicense();
+          $('license-key').value = '';
+          $('license-status').textContent = '授权已清除；模拟数据可直接使用';
+        };
+
+        function showError(err) {
+          $('status').textContent = err.code === 'USER_CANCELLED'
+            ? '你取消了选择；需要时可再次点击连接。'
+            : '[' + (err.code || 'ERROR') + '] ' + err.message + (err.suggestion ? ' ' + err.suggestion : '');
+          $('status').className = 'warn';
+        }
+
+        function setConnecting(value) {
+          connecting = value;
+          $('connect').disabled = value || !Shroom.isSupported();
+          $('mock').disabled = $('stop').disabled = value;
+        }
 
         function attach(dev, label) {
           device = dev;
           $('status').textContent = label;
           $('status').className = '';
+          dev.onError(function (err) {
+            if (device === dev) showError(err);
+          });
           dev.onFrame(function (frame) {
             heatmap.render(frame);
             shape = frame;
@@ -193,7 +283,7 @@
           var closing = device ? device.close() : Promise.resolve();
           device = null;
           shape = null;
-          return Promise.resolve(closing).then(function () {
+          return Promise.resolve(closing).finally(function () {
             heatmap.clear();
             $('status').textContent = '未连接';
             $('status').className = '';
@@ -206,35 +296,31 @@
         }
 
         $('connect').onclick = function () {
+          if (connecting) return;
+          setConnecting(true);
+          $('status').textContent = '请选择串口，正在等待连接…';
+          $('status').className = '';
           // 第一件事就是弹串口选择框，前面别 await，否则可能丢掉用户手势
           opts.baudRate = Number($('baud').value);
           Shroom.connect(opts).then(
             function (dev) {
-              return stop().then(function () { attach(dev, '已连接串口'); });
-            },
-            function (err) {
-              var canceled = /No port selected|cancell?ed/i.test(err.message);
-              // 「Failed to open serial port」基本都是端口被别的程序占着 —— 上位机、
-              // 串口助手、另一个标签页。原文照抄给用户看不出这一点，这里直接说破。
-              var busy = /Failed to open serial port/i.test(err.message);
-              var text = canceled
-                ? '你取消了选择'
-                : busy
-                  ? '打不开这个串口，多半是被别的程序占着（上位机、串口助手、另一个标签页），先在那边断开再试。'
-                  : '连接失败：' + err.message;
-              $('status').textContent = text;
-              $('status').className = 'warn';
+              return stop().then(function () { attach(dev, '已连接串口'); }, function (error) {
+                return dev.close().catch(function () {}).then(function () { throw error; });
+              });
             }
-          );
+          ).catch(showError).finally(function () { setConnecting(false); });
         };
 
         $('mock').onclick = function () {
+          if (connecting) return;
+          setConnecting(true);
           stop().then(function () {
             attach(Shroom.mock({ rows: 32, cols: 32, fps: 30 }), '模拟数据运行中');
-          });
+          }).catch(showError).finally(function () { setConnecting(false); });
         };
 
-        $('stop').onclick = stop;
+        $('stop').onclick = function () { void stop().catch(showError); };
+        window.addEventListener('pagehide', function () { void stop().catch(console.error); });
         $('layout').onchange = function (e) {
           // 下拉里的 value 是产品名，解码要的是线序名，这里换一道。
           // 「高速」那几款不需要换线序，产品表里记的就是 'raw'
@@ -271,28 +357,25 @@
         };
 
         // 「连上了但没画面」全靠这几个数字定位：
-        // 字节不涨 = 设备没发；字节涨帧不涨 = 波特率/分隔符不对；都涨 = 数据没问题
+        // 这些是累计观测，只用于缩小范围，不保证设备仍在持续输出或线序配置正确。
         function diagnose() {
           if (!device || device.bytesReceived === undefined) {
             $('diaghint').textContent = '';
             return;
           }
-          var bytes = device.bytesReceived;
-          var got = device.frameCount;
-          $('bytes').textContent = bytes;
-          $('frames').textContent = got;
-          $('dropped').textContent = device.droppedCount;
-          if (bytes === 0) {
-            $('diaghint').textContent = '设备没在发数据 —— 确认选对了 COM 口';
-          } else if (got === 0) {
-            $('diaghint').textContent = '有数据但切不出帧 —— 换个波特率再连一次';
+          var diagnostic = device.getDiagnostics();
+          $('bytes').textContent = diagnostic.bytesReceived;
+          $('frames').textContent = diagnostic.frameCount;
+          $('dropped').textContent = diagnostic.droppedCount;
+          if (diagnostic.status !== 'streaming') {
+            $('diaghint').textContent = diagnostic.hint;
           } else if (shape && shape.rows === 1 && shape.cols > 64) {
             // 帧长不是完全平方数，推断不出方阵，退化成了 1×N 一条横线
             $('diaghint').textContent =
               '帧长 ' + shape.cols + ' 字节，不是完全平方数，画成了一条横线 —— ' +
               '在 connect() 里显式写上 rows / cols';
           } else {
-            $('diaghint').textContent = '';
+            $('diaghint').textContent = (diagnostic.source === 'mock' ? '模拟生成数据；' : '') + diagnostic.hint;
           }
         }
 

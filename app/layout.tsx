@@ -55,7 +55,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <DownloadProvider>
-          <SiteShell pageTitles={{ '/': '开发概览', '/docs': '文档中心', '/knowledge': 'AI 知识问答', ...Object.fromEntries(docPages.map((doc) => [`/docs/${doc.slug}`, doc.label])) }}>
+          <SiteShell
+            pageTitles={{ '/': '开发概览', '/docs': '文档中心', '/knowledge': 'AI 知识问答', ...Object.fromEntries(docPages.map((doc) => [`/docs/${doc.slug}`, doc.label])) }}
+            docOutlines={Object.fromEntries(docPages.map((doc) => [`/docs/${doc.slug}`, doc.toc]))}
+          >
             {children}
           </SiteShell>
         </DownloadProvider>

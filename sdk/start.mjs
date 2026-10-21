@@ -74,6 +74,7 @@ server.once('listening', () => {
   server.removeAllListeners('error');
   const url = `http://localhost:${server.address().port}`;
   console.log(`\n  Shroom SDK 示例已启动：${url}`);
+  console.log(`  WS、标签录制与下载示例：${url}/web/quick-start.html`);
   console.log('  浏览器应该会自动打开；没打开就自己把上面这行地址复制过去。');
   console.log('  用 Chrome 或 Edge 打开，Ctrl+C 退出。\n');
   openBrowser(url);

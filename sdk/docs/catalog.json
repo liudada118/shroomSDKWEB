@@ -1,22 +1,50 @@
 [
   {
+    "slug": "drivers", "file": "docs/DRIVERS.md", "label": "安装串口驱动", "navLabel": "串口驱动",
+    "summary": "下载 Windows / macOS 串口驱动，安装后确认端口，排查找不到串口的问题。",
+    "forAi": false, "area": "guides", "group": "guides"
+  },
+  {
+    "slug": "license", "file": "docs/LICENSE.md", "label": "SDK 授权", "navLabel": "SDK 授权",
+    "summary": "激活不限制设备型号的 SDK 产品密钥，配置电脑名额、有效期与在线或离线校验。",
+    "forAi": false, "area": "guides", "group": "guides"
+  },
+  {
+    "slug": "quick-start", "file": "docs/QUICK-START.md", "label": "快速接入文档", "navLabel": "快速接入文档",
+    "summary": "按环境、参数、完整示例、授权连接、实机验收和项目集成六章接入；网页展示、录制与下载按需扩展。",
+    "forAi": false, "area": "guides", "group": "guides", "route": "quick",
+    "chapters": [
+      { "id": "guide-prepare", "label": "准备环境与 SDK 密钥" },
+      { "id": "guide-config", "label": "确认产品与运行参数" },
+      { "id": "guide-run", "label": "下载并运行完整示例" },
+      { "id": "guide-connect", "label": "激活 SDK 授权，再连接设备" },
+      { "id": "guide-verify", "label": "验收真实数据，安全结束采集" },
+      { "id": "guide-code", "label": "阅读代码，接入自己的项目" }
+    ]
+  },
+  {
+    "slug": "custom", "file": "docs/CUSTOM.md", "label": "基础文档", "navLabel": "基础文档",
+    "summary": "为新设备与自定义展示选择串口、解析、数据结构、通讯、存储和渲染能力。",
+    "forAi": false, "area": "guides", "group": "guides", "route": "custom"
+  },
+  {
     "slug": "python", "file": "python/README.md", "label": "Python SDK", "navLabel": "Python",
     "summary": "安装 Python 包，读取串口与模拟数据，接入数据分析和算法。",
     "forAi": false, "area": "backend", "group": "languages", "hidden": true
   },
   {
     "slug": "node", "file": "docs/NODE.md", "label": "Node.js SDK", "navLabel": "Node.js",
-    "summary": "在 Node.js / Electron 中枚举串口、接收数据帧或连接已有后端。",
+    "summary": "按产品连接整包手套或手部检测垫，进阶使用通用串口与已有后端。",
     "forAi": false, "area": "backend", "group": "languages", "hidden": true
   },
   {
     "slug": "serial", "file": "docs/SERIAL.md", "label": "串口接入", "navLabel": "串口",
-    "summary": "选择端口、设置波特率与点位排列，读取数据并关闭设备。",
+    "summary": "优先按产品连接手套或手部检测垫，进阶配置通用串口并排查错误。",
     "forAi": false, "area": "backend", "group": "features", "hidden": true
   },
   {
     "slug": "backend", "file": "docs/BACKEND-GUIDE.md", "label": "后端文档", "navLabel": "后端",
-    "summary": "切换 Node.js / Python，按接口查阅串口、模拟数据、解析、后端通讯与存储：调用方式、参数、默认值、返回值和示例。",
+    "summary": "优先查阅 Node.js 产品连接，或切换 Python 通用串口；保留模拟、解析、后端通讯与存储 API 的参数和示例。",
     "forAi": false, "area": "backend", "group": "features", "apiReference": true,
     "chapters": [
       { "id": "serial", "label": "串口" },
@@ -24,10 +52,19 @@
       { "id": "storage", "label": "存储" }
     ],
     "tocDescriptions": {
+      "node-connect-glove": "连接整包手套并选择左右手",
+      "node-connect-hand-pad": "连接手部检测垫",
+      "node-connect-product": "按产品类型连接设备",
+      "node-device-products": "列出已封装的设备产品",
+      "node-on-data": "订阅高层产品数据",
+      "node-product-data": "读取产品压力矩阵与手套整包字段",
       "node-list-ports": "列出可用串口",
       "node-connect": "连接串口设备",
       "node-mock": "生成模拟传感器数据",
       "node-on-frame": "订阅每一帧数据",
+      "node-on-error": "订阅设备运行错误",
+      "node-diagnostics": "读取设备状态与诊断快照",
+      "node-errors": "识别与处理结构化错误",
       "node-close": "关闭设备并释放连接",
       "node-framer": "创建字节流拆帧器",
       "node-framer-push": "提取完整帧与重置缓存",
@@ -43,6 +80,8 @@
       "python-frames": "连续读取数据帧",
       "python-write": "向串口发送字节",
       "python-close": "关闭设备与自动释放资源",
+      "python-diagnostics": "读取设备状态与诊断快照",
+      "python-errors": "捕获同步结构化错误",
       "python-framer": "创建字节流拆帧器",
       "python-framer-push": "提取完整帧与重置缓存",
       "python-decode-frame": "将原始字节解码为数据帧",
@@ -94,18 +133,23 @@
   },
   {
     "slug": "storage", "file": "docs/STORAGE.md", "label": "数据存储", "navLabel": "存储",
-    "summary": "在应用侧保存帧快照与 JSONL 文件，了解数据库接入的职责边界。",
+    "summary": "按会话录制带标签数据、导出 CSV / JSONL，并了解基础文件保存和数据库边界。",
     "forAi": false, "area": "backend", "group": "features", "hidden": true
   },
   {
     "slug": "frontend-communication", "file": "docs/FRONTEND-COMMUNICATION.md", "label": "前端通讯", "navLabel": "通讯",
-    "summary": "查阅浏览器串口检测、连接、帧订阅与后端网络连接接口的参数、返回值和生命周期。",
+    "summary": "按产品连接手套或手部检测垫，查阅浏览器串口、数据订阅与后端网络接口。",
     "forAi": false, "area": "frontend", "group": "features", "apiReference": true,
     "tocDescriptions": {
       "web-serial": "浏览器串口通讯",
+      "connect-glove": "连接整包手套并选择左右手",
+      "connect-hand-pad": "连接手部检测垫",
+      "connect-product": "按产品连接与查询支持清单",
+      "product-data": "读取产品数据与订阅数据回调",
       "supported": "检测浏览器串口支持",
       "connect": "连接串口设备",
       "on-frame": "订阅每一帧数据",
+      "on-error": "订阅设备运行错误",
       "close": "关闭设备并释放连接",
       "mock-device": "生成模拟传感器数据",
       "backend-client": "连接已有后端服务"

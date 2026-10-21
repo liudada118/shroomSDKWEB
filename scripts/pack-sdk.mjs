@@ -18,6 +18,7 @@ const SRC = join(ROOT, 'sdk');
 const SKIP = new Set([
   'node_modules', '.git', '.DS_Store', 'index.template.html',
   '__pycache__', '.venv', 'venv', 'build', 'dist', '.pytest_cache', '.ruff_cache',
+  '.shroom-recordings', 'recordings',
 ]);
 
 // 固定为 2026-01-01 00:00:00 的 DOS 时间，保证产物可复现

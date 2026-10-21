@@ -9,6 +9,9 @@
  *   const frames = framer.push(chunk)   // chunk 是 Uint8Array，返回本次切出的若干帧
  */
 
+import { ShroomError } from './errors.js';
+import { validateFramerOptions } from './serial-config.js';
+
 export const DEFAULT_DELIMITER = [0xaa, 0x55, 0x03, 0x99];
 
 /** 在 haystack 中从 from 开始找 needle，找不到返回 -1 */
@@ -38,6 +41,7 @@ function concat(a, b) {
  * @param {boolean}  [options.lockLength] 锁定帧长，默认 true，见下面 LOCK_AFTER 处的说明
  */
 export function createFramer(options = {}) {
+  options = validateFramerOptions(options);
   const delimiter = Uint8Array.from(options.delimiter ?? DEFAULT_DELIMITER);
   const minLength = options.minLength ?? 8;
   const maxLength = options.maxLength ?? 8192;
@@ -81,6 +85,10 @@ export function createFramer(options = {}) {
 
   function push(chunk) {
     if (!chunk || chunk.length === 0) return [];
+    if (!(chunk instanceof Uint8Array) && (!Array.isArray(chunk)
+      || !chunk.every((byte) => Number.isInteger(byte) && byte >= 0 && byte <= 255))) {
+      throw new ShroomError('PARSE_FAILED', '输入数据必须是字节数组', { stage: 'parse' });
+    }
     buffer = concat(buffer, chunk instanceof Uint8Array ? chunk : Uint8Array.from(chunk));
 
     const frames = [];

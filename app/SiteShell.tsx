@@ -6,18 +6,22 @@ import { usePathname } from 'next/navigation';
 import SiteNavigation from './SiteNavigation';
 import KnowledgeWidget from './components/knowledge-widget';
 import { consumePendingAnchor } from './components/knowledge-jump';
+import type { DocOutlineItem } from './docs/doc-position';
+import { ProductWorkspaceProvider } from './docs/product-workspace-state';
 
-export default function SiteShell({ children, pageTitles }: {
+export default function SiteShell({ children, pageTitles, docOutlines }: {
   children: ReactNode;
   pageTitles: Record<string, string>;
+  docOutlines: Record<string, DocOutlineItem[]>;
 }) {
   const pathname = usePathname();
+  const isDocs = pathname === '/docs' || pathname.startsWith('/docs/');
   useEffect(() => { consumePendingAnchor(); }, [pathname]);
 
-  return (
-    <div className="min-h-screen bg-white text-[#101828]">
-      <SiteNavigation key={pathname} pathname={pathname} pageTitle={pageTitles[pathname] ?? '页面未找到'} />
-      <main id="main-content" tabIndex={-1} className="sdk-content min-h-[calc(100dvh-160px)] min-w-0 overflow-x-clip pt-[72px] lg:ml-60">
+  const shell = (
+    <div className={`min-h-screen bg-white text-[#101828] ${isDocs ? 'docs-shell' : pathname === '/' ? 'home-shell' : ''}`}>
+      <SiteNavigation key={pathname} pathname={pathname} pageTitle={pageTitles[pathname] ?? '页面未找到'} docOutline={docOutlines[pathname] ?? []} />
+      <main id="main-content" tabIndex={-1} className={`sdk-content min-h-[calc(100dvh-160px)] min-w-0 pt-[72px] lg:ml-60 ${isDocs ? 'docs-content' : 'overflow-x-clip'}`}>
         {children}
       </main>
       <footer className="border-t border-[#e4e7ec] bg-white lg:ml-60">
@@ -43,4 +47,5 @@ export default function SiteShell({ children, pageTitles }: {
       <KnowledgeWidget />
     </div>
   );
+  return pathname === '/docs/quick-start' ? <ProductWorkspaceProvider>{shell}</ProductWorkspaceProvider> : shell;
 }

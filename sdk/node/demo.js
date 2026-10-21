@@ -6,6 +6,7 @@
  *   node sdk/node/demo.js --list     列出可用串口
  */
 import { Shroom } from './index.js';
+import { activateLicenseFromEnv } from './license-env.js';
 
 const arg = process.argv[2];
 
@@ -17,11 +18,19 @@ async function main() {
     return;
   }
 
+  if (arg) await activateLicenseFromEnv();
   const device = arg
     ? await Shroom.connect({ path: arg, baudRate: 1000000 })
     : Shroom.mock({ rows: 32, cols: 32, fps: 20 });
 
   console.log(`数据源：${device.info.source}，Ctrl+C 退出\n`);
+  device.onError((error) => {
+    console.error(`\n[${error.code}/${error.stage}] ${error.message}\n${error.suggestion}`);
+    if (error.code !== 'CALLBACK_FAILED') {
+      process.exitCode = 1;
+      process.stdout.write('\x1b[?25h');
+    }
+  });
 
   let frames = 0;
   let last = Date.now();
@@ -45,15 +54,23 @@ async function main() {
   });
 
   process.on('SIGINT', async () => {
-    await device.close();
-    process.stdout.write('\x1b[?25h\n已断开\n');
-    process.exit(0);
+    try {
+      await device.close();
+      process.stdout.write('\n已断开\n');
+    } catch (error) {
+      console.error(`[${error.code ?? 'CLOSE_FAILED'}] ${error.message}`);
+      process.exitCode = 1;
+    } finally {
+      process.stdout.write('\x1b[?25h');
+      process.exit(process.exitCode ?? 0);
+    }
   });
 
   process.stdout.write('\x1b[?25l'); // 隐藏光标，免得闪
 }
 
 main().catch((err) => {
-  console.error(err.message);
+  console.error(`[${err.code ?? 'ERROR'}/${err.stage ?? 'connect'}] ${err.message}`);
+  if (err.suggestion) console.error(err.suggestion);
   process.exit(1);
 });

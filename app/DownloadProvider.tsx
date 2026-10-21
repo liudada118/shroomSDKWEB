@@ -82,8 +82,7 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
     if (gateOpen) dialogRef.current?.querySelector<HTMLElement>('[data-initial-focus]')?.focus();
   }, [gateOpen]);
 
-  // 程序化触发下载：造一个隐藏的 <a download> 点一下。
-  // 不用 location.href，那样在部分浏览器里会先跳走再回来，页面闪一下
+  // 同源 SDK 使用 download；跨域安装包由下载站的响应头决定下载行为。
   function startDownload(target: DownloadTarget) {
     const a = document.createElement('a');
     a.href = target.url;
@@ -203,7 +202,7 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
               setDraft(Object.fromEntries(Array.from(new FormData(event.currentTarget), ([key, value]) => [key, String(value)])));
             }}>
             <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">
-              {gateTarget.source === 'desktop-win' ? 'DESKTOP DOWNLOAD' : 'SDK DOWNLOAD'}
+              {gateTarget.source.startsWith('desktop-') ? 'DESKTOP DOWNLOAD' : 'SDK DOWNLOAD'}
             </p>
             <h2 id="sdk-gate-title" className="mt-2 pr-8 text-xl font-semibold">{gateTarget.title}</h2>
             <p className="mt-2 text-sm leading-6 text-[#667085]">{gateTarget.subtitle}</p>

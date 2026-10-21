@@ -6,6 +6,56 @@
  */
 import { decodeFrame } from './frame.js';
 import { createFrameHub } from './device.js';
+import { asShroomError, ShroomError } from './errors.js';
+import { validateMockOptions } from './serial-config.js';
+import { serialDiagnostics } from './serial-diagnostics.js';
+import { prepareProductConnection } from './product.js';
+
+const trustedMockDevices = new WeakSet();
+
+/** Only SDK-created mock sources receive the license-free demo path. */
+export function isMockDevice(device) {
+  return trustedMockDevices.has(device);
+}
+
+/** Internal demo factory: bytes are generated here, never accepted from an external source. */
+export function createProductMockDevice(options = {}) {
+  const session = prepareProductConnection(options);
+  if (Object.keys(options).some((field) => !['product', 'side'].includes(field))) {
+    throw new ShroomError('INVALID_CONFIG', '产品模拟仅支持 product 和 side。', { stage: 'configure' });
+  }
+  const glove = session.info.product === 'handGloveFullPacket';
+  const source = createMockDevice({ rows: glove ? 16 : 32, cols: glove ? 16 : 32 });
+  const hub = createFrameHub();
+  let sequence = 0;
+  source.onFrame((frame) => {
+    const payload = new Uint8Array(glove ? 274 : 1024);
+    if (glove) {
+      payload[0] = sequence++ & 255;
+      payload[1] = 2;
+      payload.set(frame.raw, 2);
+    } else payload.set(frame.raw);
+    for (const productFrame of session.parser.push(Uint8Array.from([...payload, 0xaa, 0x55, 0x03, 0x99]))) hub.emit(productFrame);
+  });
+  source.onError(hub.emitError);
+  const device = {
+    info: { ...source.info, ...session.info },
+    onFrame: hub.onFrame, onData: hub.onFrame, onError: hub.onError,
+    get state() { return source.state; },
+    get bytesReceived() { return source.frameCount * (glove ? 274 : 1024); },
+    get frameCount() { return source.frameCount; },
+    get droppedCount() { return session.parser.droppedCount; },
+    get frameLength() { return session.parser.frameLength; },
+    getDiagnostics() {
+      return serialDiagnostics({ source: 'mock', state: source.state, bytesReceived: device.bytesReceived,
+        frameCount: source.frameCount, droppedCount: session.parser.droppedCount,
+        frameLength: session.parser.frameLength, lastError: hub.lastError });
+    },
+    async close() { await source.close(); hub.clear(); },
+  };
+  trustedMockDevices.add(device);
+  return Object.freeze(device);
+}
 
 /** 生成一帧：两个高斯亮斑绕着中心转 */
 function renderBlobs(rows, cols, phase) {
@@ -39,25 +89,56 @@ function renderBlobs(rows, cols, phase) {
  * @returns {object} device：和 connect() 返回的是同一套接口
  */
 export function createMockDevice(options = {}) {
+  const decodeOptions = options;
+  options = validateMockOptions(options);
   const rows = options.rows ?? 32;
   const cols = options.cols ?? 32;
   const fps = options.fps ?? 30;
 
   const hub = createFrameHub();
   let phase = 0;
+  let state = 'open';
+  let bytesReceived = 0;
+  let frameCount = 0;
   let timer = setInterval(() => {
-    phase += 0.08;
-    const payload = renderBlobs(rows, cols, phase);
-    hub.emit(decodeFrame(payload, { ...options, rows, cols }));
+    if (state !== 'open') return;
+    try {
+      phase += 0.08;
+      const payload = renderBlobs(rows, cols, phase);
+      const frame = decodeFrame(payload, { ...decodeOptions, rows, cols });
+      bytesReceived += payload.length;
+      frameCount += 1;
+      hub.emit(frame);
+    } catch (error) {
+      state = 'error';
+      clearInterval(timer);
+      timer = null;
+      hub.emitError(asShroomError(error, { code: 'PARSE_FAILED', stage: 'parse' }));
+    }
   }, Math.round(1000 / fps));
 
-  return {
+  const device = {
     info: { source: 'mock', rows, cols, fps },
     onFrame: hub.onFrame,
+    onError: hub.onError,
+    get state() { return state; },
+    get bytesReceived() { return bytesReceived; },
+    get frameCount() { return frameCount; },
+    get droppedCount() { return 0; },
+    get frameLength() { return frameCount ? rows * cols : 0; },
+    getDiagnostics() {
+      return serialDiagnostics({
+        source: 'mock', state, bytesReceived, frameCount, droppedCount: 0,
+        frameLength: frameCount ? rows * cols : 0, lastError: hub.lastError,
+      });
+    },
     async close() {
       if (timer) clearInterval(timer);
       timer = null;
+      if (state !== 'error') state = 'closed';
       hub.clear();
     },
   };
+  trustedMockDevices.add(device);
+  return Object.freeze(device);
 }

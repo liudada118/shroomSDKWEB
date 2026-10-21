@@ -3,9 +3,12 @@
 import argparse
 from dataclasses import asdict
 import json
+from pathlib import Path
 import sys
 
-from . import Shroom
+from . import Shroom, ShroomError
+from .device import _timeout
+from .license import DEFAULT_SERVER_URL
 
 
 def main(argv=None) -> int:
@@ -20,6 +23,11 @@ def main(argv=None) -> int:
     parser.add_argument("--baud-rate", type=int, default=1_000_000)
     parser.add_argument("--fps", type=float, default=30, help="Mock frame rate")
     parser.add_argument("--timeout", type=float, default=5.0, help="Seconds to wait for a complete frame")
+    parser.add_argument("--license-file", help="UTF-8 file containing a shroom-sdk license (required for real serial)")
+    parser.add_argument("--license-mode", choices=("online", "offline"), default="online")
+    parser.add_argument("--license-server", default=DEFAULT_SERVER_URL, help="HTTPS key manager URL")
+    parser.add_argument("--device-id", help="Persisted 64-character lowercase hex computer ID for limited licenses")
+    parser.add_argument("--license-public-key", help="Trusted RSA public-key PEM file for a custom offline signer")
     args = parser.parse_args(argv)
     if args.frames < 0:
         parser.error("--frames must be >= 0")
@@ -36,6 +44,14 @@ def main(argv=None) -> int:
                 if not ports:
                     print("No serial ports found.")
             return 0
+        # The CLI owns the read timeout; reject it before opening a real port.
+        _timeout(args.timeout)
+        if args.path and args.license_file:
+            license_options = {"mode": args.license_mode, "server_url": args.license_server,
+                               "device_id": args.device_id}
+            if args.license_public_key:
+                license_options["public_key"] = Path(args.license_public_key).read_text(encoding="utf-8-sig")
+            Shroom.activate_license(Path(args.license_file).read_text(encoding="utf-8-sig").strip(), **license_options)
         options = {"layout": args.layout}
         if args.rows is not None:
             options.update(rows=args.rows, cols=args.cols)
@@ -46,7 +62,7 @@ def main(argv=None) -> int:
             while not device.closed:
                 frame = device.read_frame(timeout=args.timeout)
                 if frame is None:
-                    print("No complete frame before timeout. Check port, baud rate and delimiter.", file=sys.stderr)
+                    print("No complete frame before timeout. " + device.get_diagnostics()["hint"], file=sys.stderr)
                     return 1
                 if args.json:
                     print(json.dumps(frame.to_dict()))
@@ -60,6 +76,9 @@ def main(argv=None) -> int:
         return 0
     except KeyboardInterrupt:
         return 0
+    except ShroomError as exc:
+        print(f"shroom [{exc.code}/{exc.stage}]: {exc}\n{exc.suggestion}", file=sys.stderr)
+        return 1
     except (ImportError, OSError, ValueError, RuntimeError) as exc:
         print(f"shroom: {exc}", file=sys.stderr)
         return 1
