@@ -18,19 +18,18 @@ const navigationGroups = [
     ],
   },
   {
-    label: '接入与下载',
+    label: '下载',
     items: [
-      { label: 'SDK Skill', href: '#skill' },
       { label: 'SDK 下载', href: '#downloads' },
       { label: '上位机下载', href: '#desktop-downloads' },
-      { label: '快速开始', href: '#quick-start' },
     ],
   },
   {
-    label: '工具与文档',
+    label: '开始接入',
     items: [
-      { label: '开发工具', href: '#tools' },
-      { label: '文档中心', href: '/docs' },
+      { label: '文档与接入', href: '#docs' },
+      { label: '一步拿数据', href: '/docs/quick-start' },
+      { label: 'AI 接入指南', href: '/docs/ai-context' },
       { label: 'AI 知识问答', href: '/knowledge' },
     ],
   },

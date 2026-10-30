@@ -49,22 +49,33 @@ try {
       }));
       assert.ok(styleSheets.some(css => css.includes(`.${selectClass}`)), '生产页面实际加载产品选择器样式');
       const configuration = html.indexOf('id="workspace-config"');
-      const run = html.indexOf('id="workspace-run"');
-      const code = html.indexOf('id="workspace-code"');
-      const guide = html.indexOf('id="guide-prepare"');
-      assert.ok(configuration > 0 && configuration < run && run < code && code < guide, '配置、运行和完整示例先于详细教程');
-      const beforeGuide = html.slice(0, guide);
-      const guideDetails = beforeGuide.slice(beforeGuide.lastIndexOf('<details'));
-      assert.match(guideDetails.slice(0, guideDetails.indexOf('>') + 1), /\sopen(?:\s|=|>)/, '完整接入说明默认展开');
-      const mainDownload = html.indexOf('下载完整示例');
-      assert.ok(mainDownload > configuration && mainDownload < run, '完整示例为工作台主要操作');
-      assert.doesNotMatch(html.slice(configuration, mainDownload), /type="checkbox"/, '主操作之前无需手动勾选教程清单');
-      const preview = html.slice(code, html.indexOf('id="guide-prepare"'));
-      assert.match(preview, /完整示例/);
-      assert.match(preview, /&lt;!doctype html&gt;/i, '默认直接展示完整 HTML 源码');
-      assert.match(preview, /activateLicense/);
-      assert.match(preview, /connectProduct/);
-      assert.match(preview, /代码阅读预览/);
+      const flowPanel = html.indexOf('<section id="product-start"');
+      const preparationPanel = html.indexOf('<section id="product-guide"');
+      assert.ok(configuration > 0 && flowPanel > configuration && preparationPanel > flowPanel);
+      const flow = html.slice(flowPanel, preparationPanel);
+      const steps = ['flow-read', 'flow-ws', 'flow-start', 'flow-stop', 'flow-download'];
+      let previous = -1;
+      for (const id of steps) {
+        const position = flow.indexOf(`id="${id}"`);
+        assert.ok(position > previous, `${id} follows the preceding step`);
+        previous = position;
+      }
+      assert.equal((flow.match(/复制代码/g) ?? []).length, 6, 'five steps use six focused code blocks');
+      for (const call of ['readProduct({', 'createWS(device,', 'startRecording(stream,', 'stopRecording(stream)', 'downloadRecording(stream,']) {
+        assert.ok(flow.includes(call), `actual SDK API: ${call}`);
+      }
+      assert.doesNotMatch(flow, /let recording|downloadRecording\(recording\.id,/, 'SDK 管理本次下载 ID，无需跨按钮维护变量');
+      assert.match(flow, /onData/);
+      assert.match(flow, /data\.fingers/);
+      assert.match(flow, /Node\.js/);
+      assert.match(flow, /浏览器 JavaScript/);
+      assert.match(flow, /SDK 授权/);
+      assert.match(flow, /按钮/);
+      assert.doesNotMatch(html, /&lt;!doctype|下载完整示例|复制完整示例|示例内容|glove-left-example/);
+      const panelTag = html.slice(preparationPanel, html.indexOf('>', preparationPanel) + 1);
+      assert.match(panelTag, /\shidden(?:\s|=|>)/, 'preparation is a separate task');
+      assert.match(html.slice(preparationPanel), /activateLicenseFromEnv/);
+      assert.match(html.slice(preparationPanel), /npm install/);
       const productTable = [...html.matchAll(/<table\b[\s\S]*?<\/table>/g)]
         .map(([table]) => table).find(table => table.includes('<caption>产品返回字段</caption>'));
       assert.ok(productTable, '手套产品字段表可用');
@@ -74,7 +85,6 @@ try {
       for (const chapter of ['guide-prepare', 'guide-config', 'guide-run', 'guide-connect', 'guide-verify', 'guide-code']) {
         assert.ok(html.includes(`id="${chapter}"`), chapter);
       }
-      for (const legacy of ['extensions', 'device', 'demo', 'view', 'record', 'download', 'troubleshooting']) assert.ok(html.includes(`id="${legacy}"`), legacy);
       assert.ok(html.includes('CH341SER.EXE') && html.includes('CH34xVCPDriver.zip'));
       assert.ok(html.includes('disabled=""'), '未确认手侧的首屏生成操作被禁用');
       assert.doesNotMatch(html, /outputs\/layout-discussion|product-workspace-examples\.js/);

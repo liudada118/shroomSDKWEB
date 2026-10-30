@@ -2,6 +2,7 @@
   "name": "sites-project",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@10.9.4",
   "engines": {
     "node": ">=22.13.0"
   },
@@ -9,11 +10,17 @@
     "dev": "vinext dev",
     "build": "npm run pack:sdk && npm run build:docs && vinext build",
     "start": "vinext start",
-    "pack:sdk": "npm run build:sdk-bundle && node sdk/examples/generate-product-examples.mjs && node scripts/pack-sdk.mjs",
+    "pack:sdk": "node scripts/pack-sdk.mjs",
     "build:sdk-bundle": "node scripts/build-sdk-bundle.mjs",
     "build:docs": "node scripts/build-docs.mjs",
     "test:knowledge": "npm run build:docs && node --experimental-strip-types --test server/*.test.ts",
-    "test:sdk": "npm run build:sdk-bundle && node --test sdk/tests/*.test.mjs",
+    "test:sdk": "npm --prefix sdk run test:sdk",
+    "test:python": "npm --prefix sdk run test:python",
+    "test:integration": "node --test scripts/tests/*.test.mjs",
+    "sdk:init": "git submodule update --init --recursive",
+    "sdk:check": "node scripts/check-sdk-source.mjs && node sdk/scripts/sdk-check.mjs",
+    "sdk:verify": "npm --prefix sdk run sdk:verify",
+    "verify": "node scripts/verify-site.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {

@@ -10,95 +10,6 @@
 (function (global) {
   'use strict';
 
-  // ---------- core/colormap.js ----------
-  /**
-   * 调色板：把 0~1 的值映射成颜色。
-   *
-   * 只放最基础的两张，够画热力图用。要别的配色自己加一个函数进 COLORMAPS 就行。
-   */
-
-  function clamp01(t) {
-    return t < 0 ? 0 : t > 1 ? 1 : t;
-  }
-
-  /** 经典 jet 彩虹配色：蓝 → 青 → 绿 → 黄 → 红 */
-  function jet(t) {
-    const x = clamp01(t);
-    let r = 1;
-    let g = 1;
-    let b = 1;
-    if (x < 0.25) {
-      r = 0;
-      g = 4 * x;
-    } else if (x < 0.5) {
-      r = 0;
-      b = 1 + 4 * (0.25 - x);
-    } else if (x < 0.75) {
-      r = 4 * (x - 0.5);
-      b = 0;
-    } else {
-      g = 1 + 4 * (0.75 - x);
-      b = 0;
-    }
-    return [Math.round(255 * r), Math.round(255 * g), Math.round(255 * b)];
-  }
-
-  /** 白底 jet：0 是白色，压力越大越红。适合打印和浅色界面 */
-  function jetWhite(t) {
-    const x = clamp01(t);
-    if (x <= 0.001) return [255, 255, 255];
-    const [r, g, b] = jet(x);
-    const fade = Math.min(1, x / 0.15);
-    return [
-      Math.round(255 + (r - 255) * fade),
-      Math.round(255 + (g - 255) * fade),
-      Math.round(255 + (b - 255) * fade),
-    ];
-  }
-
-  /** 灰度：黑到白 */
-  function grey(t) {
-    const v = Math.round(255 * clamp01(t));
-    return [v, v, v];
-  }
-
-  /**
-   * Shroom 上位机同款配色：深紫底 → 蓝紫 → 青 → 绿 → 黄 → 红。
-   * 色标和取值点跟正式上位机一致，两边看到的颜色能对上。
-   */
-  const SHROOM_STOPS = [
-    [0.0, [21, 18, 42]],
-    [0.4, [62, 0, 248]],
-    [0.55, [149, 253, 237]],
-    [0.7, [154, 255, 62]],
-    [0.85, [246, 254, 71]],
-    [1.0, [216, 36, 36]],
-  ];
-
-  function shroom(t) {
-    const x = clamp01(t);
-    for (let i = 1; i < SHROOM_STOPS.length; i += 1) {
-      const [p1, c1] = SHROOM_STOPS[i];
-      if (x > p1) continue;
-      const [p0, c0] = SHROOM_STOPS[i - 1];
-      const k = p1 === p0 ? 0 : (x - p0) / (p1 - p0);
-      return [
-        Math.round(c0[0] + (c1[0] - c0[0]) * k),
-        Math.round(c0[1] + (c1[1] - c0[1]) * k),
-        Math.round(c0[2] + (c1[2] - c0[2]) * k),
-      ];
-    }
-    return SHROOM_STOPS[SHROOM_STOPS.length - 1][1].slice();
-  }
-
-  const COLORMAPS = { shroom, jet, jetWhite, grey };
-
-  /** 按名字取调色板，取不到就回退到 jet */
-  function getColormap(name) {
-    if (typeof name === 'function') return name;
-    return COLORMAPS[name] ?? jet;
-  }
-
   // ---------- core/layout.js ----------
   /**
    * 点位排列（线序）：把「采集板扫描顺序」换成「垫子上的实际位置」。
@@ -634,7 +545,8 @@
    *
    * @param {string} [name] 排列名，见 LAYOUTS
    * @returns {{rows: number, cols: number, perm: Int32Array}|null}
-   *          perm[显示位置] = 扫描顺序里的下标；-1 表示这个位置没有传感器
+   *          perm[显示位置] = 扫描顺序里的下标；-1 表示这个位置没有传感器。
+   *          结果按名称缓存并复用，调用方应只读使用；需要调整时先复制 perm。
    */
   function getLayout(name) {
     if (!name || name === 'raw') return null;
@@ -669,7 +581,7 @@
 
   /**
    * 产品菜单：和公司桌面端「请选择传感器」那个下拉**一字不差、顺序也一样**，
-   * 只去掉手套那几项（手套线序不在这个 SDK 里）。
+   * 此通用矩阵菜单不包含手套；整包手套由独立的 connectGlove() 产品接口提供。
    *
    * 上面的 LAYOUTS 是按**线序**列的，一种走线一条，名字是内部叫法
    *（`mat32`、`列式垫`、`sit100 坐垫`……）。那张表是给 decodeFrame 用的，
@@ -695,10 +607,9 @@
    *      那是改数值不是搬位置，收进来这里就名不副实了（见文件开头第 2 条）
    *    - 小床褥监测 —— 桌面端菜单里没有这一项，别自己加
    *    - 整椅展示 —— 桌面端那**一个**菜单项背后是坐垫 + 靠背 + 头枕三块板子、
-   *      三条线序、**三个串口同时连**，画面上拼成一把椅子。这个 SDK 一次只连一个口，
-   *      拆成「· 坐垫 / · 靠背 / · 头枕」三行已经不是桌面端那件事了，不符合
-   *      「跟桌面端一模一样」的要求，所以整个不收。走线还在 LAYOUTS 里，
-   *      谁真要单个垫子自己传 `layout` 即可。
+   *      三条线序、**三个串口同时连**，画面上拼成一把椅子。单个 SDK 连接对象对应一个口，
+   *      组合展示需要应用管理多个连接，因此本菜单不将其中一个垫子冒充“整椅”。
+   *      各部分的线序仍保留在 LAYOUTS 中，可按实际部件传入对应 `layout`。
    */
   const PRODUCTS = [
     { name: 'hand', label: '手部检测', layout: 'mat32' },
@@ -747,7 +658,7 @@
   }
 
   // ---------- core/errors.js ----------
-  /** Stable error codes shared by serial, product streaming and recording adapters. */
+  /** 串口、产品数据流和录制适配器共用的稳定错误码；业务逻辑应按 code 判断而非匹配文案。 */
   const ERROR_CODES = Object.freeze(Object.fromEntries([
     'INVALID_CONFIG', 'DEPENDENCY_MISSING', 'PORT_NOT_FOUND', 'PORT_AMBIGUOUS',
     'PERMISSION_DENIED', 'PORT_BUSY', 'CONNECTION_FAILED', 'UNSUPPORTED_ENVIRONMENT',
@@ -778,6 +689,7 @@
     CALLBACK_FAILED: '检查应用的数据回调；一个回调失败不会中断其他订阅。',
   };
 
+  /** 统一错误对象：保留原始 cause 便于本地调试，同时提供阶段、建议与可控的诊断字段。 */
   class ShroomError extends Error {
     constructor(code, message, options = {}) {
       super(message, options.cause === undefined ? undefined : { cause: options.cause });
@@ -788,7 +700,7 @@
       this.details = { ...(options.details ?? {}) };
     }
 
-    /** The original cause is deliberately excluded from serializable diagnostics. */
+    /** 导出可序列化诊断快照；不包含可能携带底层资源或敏感上下文的原始 cause。 */
     toJSON() {
       return {
         name: this.name, code: this.code, stage: this.stage, message: this.message,
@@ -797,6 +709,10 @@
     }
   }
 
+  /**
+   * 将操作系统、浏览器或未知异常转换成 ShroomError；已有统一错误原样保留。
+   * options 可明确失败阶段和默认错误码，原始异常仅挂在 cause 上。
+   */
   function asShroomError(error, options = {}) {
     if (error instanceof ShroomError) return error;
     let code = options.code ?? 'CONNECTION_FAILED';
@@ -805,7 +721,7 @@
     const nativeName = error?.name;
     const nativeMessage = error instanceof Error || typeof error?.message === 'string'
       ? error.message : String(error ?? '未知错误');
-    // Only classify OS/browser operations; application callback messages are not device errors.
+    // 仅对底层 I/O 操作识别权限、占用和断开原因；应用回调的报错不能误归类为设备故障。
     if (['query', 'connect', 'read', 'write', 'close'].includes(stage)) {
       if (nativeCode === 'ERR_MODULE_NOT_FOUND' || nativeCode === 'MODULE_NOT_FOUND') code = 'DEPENDENCY_MISSING';
       else if (['EACCES', 'EPERM'].includes(nativeCode) || ['NotAllowedError', 'SecurityError'].includes(nativeName)
@@ -819,284 +735,10 @@
     return new ShroomError(code, options.message ?? nativeMessage, { ...options, stage, cause: error });
   }
 
-  // ---------- core/license.js ----------
-  /** SDK licenses share the key server with the desktop product, with a separate product boundary. */
-
-  const SDK_PRODUCT_TYPE = 'shroom-sdk';
-  const DEFAULT_LICENSE_SERVER = 'https://shroom.jq-industries.com';
-  const DEFAULT_LICENSE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
-  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0xly+Gg/8LvoWV0VRO/k
-  l1dEQRt7N6yilC2yiza+W1V2aXWKoiLlkPcJa9KQmNArjcHq8nBLlEppHjwEm2u5
-  SrgADP/frf1n8GZpRejZo6Ab1psppUm/neVcoxsK+0z6a00B9syv8AEIt2jrN4ZZ
-  zz51MgJqzgXmqPaibtzGl8RFr1jYJ2JpXNes6BqFpjQng1S8hu4VgWBIljkE3jKF
-  fHwTP9KPtEcoH/uSPmW5X7IuwpDW2QO6sO61uv/luLI4Wx4upX4CIUepwIzDyG6B
-  fYx2AAZJ1oNEBW28wIUf7i5sVT0FsWRsR55Q3KUcsiqAUVduKiKTQN3dnmbyC1Fg
-  AQIDAQAB
-  -----END PUBLIC KEY-----`;
-
-  const sdkLicenseWatchers = new Set();
-  const sdkLicensedDevices = new WeakMap();
-  let sdkLicenseSession = null;
-  let sdkLicenseRevision = 0;
-  let sdkLicenseWatchTimer = null;
-  let sdkLicenseLastError = null;
-  const sdkLicenseMonotonic = () => globalThis.performance?.now() ?? Date.now();
-  const sdkLicenseFailure = (code, message) => new ShroomError(code, message, {
-    stage: 'license', suggestion: '请在共用授权后台签发或续期 Shroom SDK 产品密钥，核对有效期、功能权限与电脑名额后重新激活。',
-  });
-
-  function sdkLicenseTime(session) {
-    session.highWater = Math.max(session.highWater, Date.now(), session.localStart + Math.max(0, sdkLicenseMonotonic() - session.monotonicStart));
-    return session.mode === 'offline-local' ? session.highWater
-      : session.serverStart + Math.max(0, sdkLicenseMonotonic() - session.monotonicStart);
-  }
-
-  function sdkLicenseExpiry(value) {
-    const expires = typeof value === 'number' ? value : Date.parse(value);
-    if (!Number.isFinite(expires) || expires <= 0) throw sdkLicenseFailure('LICENSE_INVALID', '许可证没有有效的到期时间。');
-    return expires;
-  }
-
-  function sdkLicenseFeatures(value) {
-    if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string')) {
-      throw sdkLicenseFailure('LICENSE_INVALID', 'SDK 许可证缺少功能授权。');
-    }
-    // SDK licenses cover every device model, including custom serial protocols.
-    // Older signed SDK keys need not be reissued merely to add serial.raw.
-    return [...new Set([...value, 'serial.raw'])];
-  }
-
-  /** Return only public entitlement metadata; never the key or transport credentials. */
-  function getLicenseStatus() {
-    try { assertLicense(); } catch (error) {
-      return { valid: false, productType: SDK_PRODUCT_TYPE, code: error.code, message: error.message };
-    }
-    const session = sdkLicenseSession;
-    return {
-      valid: true, productType: SDK_PRODUCT_TYPE, mode: session.mode,
-      expiresAt: session.expiresAt, leaseExpiresAt: session.leaseExpiresAt,
-      products: [...session.products], allProducts: session.all, features: [...session.features],
-    };
-  }
-
-  /** Synchronous so Web Serial can retain the caller's click gesture. */
-  function assertLicense(requirement = {}) {
-    const session = sdkLicenseSession;
-    if (!session) throw sdkLicenseLastError ?? sdkLicenseFailure('LICENSE_REQUIRED', '连接真实设备前请先激活 SDK 产品密钥。');
-    const now = sdkLicenseTime(session);
-    if (now >= session.expiresAt) throw sdkLicenseFailure('LICENSE_EXPIRED', 'SDK 许可证已到期，采集已停止。');
-    if (now >= session.leaseExpiresAt) throw sdkLicenseFailure('LICENSE_UNAVAILABLE', '无法续验在线授权，当前授权时限已结束。');
-    if (requirement.feature === 'serial.raw' && !session.features.includes('serial')) {
-      throw sdkLicenseFailure('LICENSE_FEATURE_DENIED', 'SDK 许可证未包含功能 serial。');
-    }
-    if (requirement.feature && !session.features.includes(requirement.feature)) {
-      throw sdkLicenseFailure('LICENSE_FEATURE_DENIED', `SDK 许可证未包含功能 ${requirement.feature}。`);
-    }
-  }
-
-  function sdkLicenseNotify() {
-    for (const watcher of [...sdkLicenseWatchers]) {
-      if (!sdkLicenseWatchers.has(watcher)) continue;
-      try { assertLicense(watcher.requirement); } catch (error) {
-        sdkLicenseWatchers.delete(watcher);
-        try { watcher.onInvalid(error); } catch { /* A customer callback cannot block other sessions closing. */ }
-      }
-    }
-    if (!sdkLicenseWatchers.size && sdkLicenseWatchTimer) {
-      clearInterval(sdkLicenseWatchTimer);
-      sdkLicenseWatchTimer = null;
-    }
-  }
-
-  /** Notify once on expiry, revocation, clear or an entitlement change. */
-  function watchLicense(requirement, onInvalid) {
-    const watcher = { requirement: { ...requirement }, onInvalid };
-    sdkLicenseWatchers.add(watcher);
-    if (!sdkLicenseWatchTimer) {
-      sdkLicenseWatchTimer = setInterval(sdkLicenseNotify, 250);
-      sdkLicenseWatchTimer.unref?.();
-    }
-    sdkLicenseNotify();
-    return () => {
-      sdkLicenseWatchers.delete(watcher);
-      sdkLicenseNotify();
-    };
-  }
-
-  /** Internal identity metadata cannot be changed by rewriting a device's public info. */
-  function markLicensedDevice(device, requirement) {
-    sdkLicensedDevices.set(device, Object.freeze({ ...requirement }));
-    return device;
-  }
-
-  function getDeviceLicenseRequirement(device) {
-    const requirement = sdkLicensedDevices.get(device);
-    return requirement ? { ...requirement } : null;
-  }
-
-  /** Clear runtime credentials and stop sources using them. Keys are never persisted by the SDK. */
-  function clearLicense() {
-    sdkLicenseRevision += 1;
-    if (sdkLicenseSession?.refreshTimer) clearTimeout(sdkLicenseSession.refreshTimer);
-    sdkLicenseSession = null;
-    sdkLicenseLastError = null;
-    sdkLicenseNotify();
-  }
-
-  function sdkLicenseServer(value) {
-    let url;
-    try { url = new URL(value ?? DEFAULT_LICENSE_SERVER); } catch { throw sdkLicenseFailure('INVALID_CONFIG', '授权服务地址无效。'); }
-    if (url.username || url.password || url.search || url.hash || (url.protocol !== 'https:'
-      && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)))) {
-      throw sdkLicenseFailure('INVALID_CONFIG', '授权服务必须使用 HTTPS，本机调试可以使用 localhost HTTP。');
-    }
-    return url.href.replace(/\/$/, '');
-  }
-
-  function sdkLicenseDecodeBase64(value) {
-    if (typeof value !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value) || value.length % 4 !== 0) {
-      throw sdkLicenseFailure('LICENSE_INVALID', '许可证的 Base64 格式无效。');
-    }
-    return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
-  }
-
-  async function sdkLicenseVerifyOffline(key, publicKey) {
-    try {
-      const envelope = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(sdkLicenseDecodeBase64(key)));
-      if (typeof envelope.payload !== 'string' || typeof envelope.signature !== 'string') throw new Error('envelope');
-      const pem = publicKey ?? DEFAULT_LICENSE_PUBLIC_KEY;
-      if (typeof pem !== 'string') throw new Error('publicKey');
-      const der = sdkLicenseDecodeBase64(pem.replace(/-----[A-Z ]+-----|\s/g, ''));
-      const subtle = globalThis.crypto?.subtle ?? (await import('node:crypto')).webcrypto.subtle;
-      const trustedKey = await subtle.importKey('spki', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
-      if (!await subtle.verify('RSASSA-PKCS1-v1_5', trustedKey, sdkLicenseDecodeBase64(envelope.signature), new TextEncoder().encode(envelope.payload))) {
-        throw new Error('signature');
-      }
-      const payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(sdkLicenseDecodeBase64(envelope.payload)));
-      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('payload');
-      return payload;
-    } catch {
-      throw sdkLicenseFailure('LICENSE_INVALID', '离线许可证格式或 RSA 签名无效。');
-    }
-  }
-
-  function sdkLicenseProduct(productType) {
-    if (productType !== SDK_PRODUCT_TYPE) throw sdkLicenseFailure('LICENSE_PRODUCT_MISMATCH', '此密钥不属于 Shroom SDK；上位机密钥不能启用 SDK。');
-  }
-
-  async function sdkLicenseRequest(config) {
-    const controller = new AbortController();
-    const requestStart = sdkLicenseMonotonic();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    try {
-      const response = await fetch(`${config.serverUrl}${config.path}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store', redirect: 'error', signal: controller.signal,
-        body: JSON.stringify({ key: config.key, productType: SDK_PRODUCT_TYPE, clientTime: Date.now(),
-          ...(config.deviceId ? { deviceId: config.deviceId } : {}) }),
-      });
-      if (!response.ok) throw sdkLicenseFailure('LICENSE_UNAVAILABLE', '授权服务暂时不可用，请检查网络或联系管理员。');
-      const result = await response.json();
-      if (result.valid !== true) {
-        const code = result.status === 'PRODUCT_MISMATCH' || result.status === 'LICENSE_PRODUCT_MISMATCH' ? 'LICENSE_PRODUCT_MISMATCH'
-          : result.status === 'EXPIRED' ? 'LICENSE_EXPIRED'
-            : result.status === 'DEVICE_ID_REQUIRED' ? 'LICENSE_DEVICE_REQUIRED' : 'LICENSE_REJECTED';
-        throw sdkLicenseFailure(code, `授权未通过（${String(result.status ?? 'INVALID').slice(0, 64)}）。请核对产品、有效期和电脑名额。`);
-      }
-      sdkLicenseProduct(result.productType);
-      const serverTime = sdkLicenseExpiry(result.time);
-      const expiresAt = sdkLicenseExpiry(result.expireTimestamp ?? config.offlinePayload?.expireDate);
-      const leaseExpiresAt = Math.min(expiresAt, serverTime + 60000, result.leaseExpiresAt == null ? Infinity : sdkLicenseExpiry(result.leaseExpiresAt));
-      const effectiveServerTime = serverTime + Math.max(0, sdkLicenseMonotonic() - requestStart);
-      if (expiresAt <= effectiveServerTime || leaseExpiresAt <= effectiveServerTime) throw sdkLicenseFailure('LICENSE_EXPIRED', 'SDK 授权已过期。');
-      const entitlement = { all: true, products: [], features: sdkLicenseFeatures(result.sdkFeatures),
-        expiresAt, leaseExpiresAt, serverStart: effectiveServerTime };
-      if (config.offlinePayload) {
-        const signedExpiry = sdkLicenseExpiry(config.offlinePayload.expireDate);
-        const signedFeatures = sdkLicenseFeatures(config.offlinePayload.sdkFeatures);
-        entitlement.expiresAt = Math.min(signedExpiry, entitlement.expiresAt);
-        entitlement.leaseExpiresAt = Math.min(signedExpiry, entitlement.leaseExpiresAt);
-        entitlement.features = entitlement.features.filter((feature) => signedFeatures.includes(feature));
-      }
-      return entitlement;
-    } catch (error) {
-      if (error instanceof ShroomError) throw error;
-      throw sdkLicenseFailure('LICENSE_UNAVAILABLE', '授权服务连接失败，未获得新的授权时限。');
-    } finally { clearTimeout(timer); }
-  }
-
-  function sdkLicenseScheduleRefresh(session, revision) {
-    const remaining = session.leaseExpiresAt - sdkLicenseTime(session);
-    session.refreshTimer = setTimeout(async () => {
-      if (sdkLicenseRevision !== revision || sdkLicenseSession !== session) return;
-      try {
-        const next = await sdkLicenseRequest(session.config);
-        if (sdkLicenseRevision !== revision || sdkLicenseSession !== session) return;
-        Object.assign(session, next, { localStart: Date.now(), highWater: Date.now(), monotonicStart: sdkLicenseMonotonic() });
-        sdkLicenseLastError = null;
-        sdkLicenseNotify();
-      } catch (error) {
-        if (sdkLicenseRevision !== revision || sdkLicenseSession !== session) return;
-        if (error.code !== 'LICENSE_UNAVAILABLE') {
-          sdkLicenseSession = null;
-          sdkLicenseLastError = error;
-        }
-        sdkLicenseNotify();
-      }
-      if (sdkLicenseSession === session && sdkLicenseRevision === revision && sdkLicenseTime(session) < session.leaseExpiresAt) {
-        sdkLicenseScheduleRefresh(session, revision);
-      }
-    }, Math.max(50, Math.min(30000, remaining / 2)));
-    session.refreshTimer.unref?.();
-  }
-
-  /** Activate before connecting. Offline mode denotes the RSA code format; limited codes still require online device checks. */
-  async function activateLicense(key, options = {}) {
-    if (typeof key !== 'string' || !key.trim() || key.length > 16384 || !options || typeof options !== 'object' || Array.isArray(options)) {
-      throw sdkLicenseFailure('INVALID_CONFIG', '请提供有效的许可证和激活参数。');
-    }
-    const mode = options.mode ?? 'online';
-    if (!['online', 'offline'].includes(mode)) throw sdkLicenseFailure('INVALID_CONFIG', '授权方式应为 online 或 offline。');
-    if (options.deviceId !== undefined && (typeof options.deviceId !== 'string' || !/^[a-f0-9]{64}$/.test(options.deviceId))) {
-      throw sdkLicenseFailure('INVALID_CONFIG', 'deviceId 必须是稳定的 64 位小写十六进制电脑标识。');
-    }
-    clearLicense();
-    const revision = sdkLicenseRevision;
-    try {
-      let config = null;
-      let entitlement;
-      if (mode === 'offline') {
-        const payload = await sdkLicenseVerifyOffline(key.trim(), options.publicKey);
-        sdkLicenseProduct(payload.productType);
-        const expiresAt = sdkLicenseExpiry(payload.expireDate);
-        const features = sdkLicenseFeatures(payload.sdkFeatures);
-        if (payload.deviceLimit != null && (!Number.isInteger(payload.deviceLimit) || payload.deviceLimit < 0)) throw sdkLicenseFailure('LICENSE_INVALID', '电脑数量限制无效。');
-        if (payload.deviceLimit > 0) {
-          if (!options.deviceId) throw sdkLicenseFailure('LICENSE_DEVICE_REQUIRED', '此离线码限定电脑数量，请提供稳定的 deviceId 并联网激活。');
-          config = { key: key.trim(), deviceId: options.deviceId, serverUrl: sdkLicenseServer(options.serverUrl), path: '/api/license/devices/check', offlinePayload: payload };
-          entitlement = await sdkLicenseRequest(config);
-        } else entitlement = { all: true, products: [], features, expiresAt, leaseExpiresAt: expiresAt, serverStart: Date.now() };
-      } else {
-        config = { key: key.trim(), deviceId: options.deviceId, serverUrl: sdkLicenseServer(options.serverUrl), path: '/licenseCheck' };
-        entitlement = await sdkLicenseRequest(config);
-      }
-      if (revision !== sdkLicenseRevision) throw sdkLicenseFailure('LICENSE_REJECTED', '此激活请求已被后续操作取消。');
-      sdkLicenseSession = { ...entitlement, config, mode: config ? (mode === 'offline' ? 'offline-device' : 'online') : 'offline-local',
-        localStart: Date.now(), highWater: Date.now(), monotonicStart: sdkLicenseMonotonic() };
-      assertLicense();
-      if (config) sdkLicenseScheduleRefresh(sdkLicenseSession, revision);
-      return getLicenseStatus();
-    } catch (error) {
-      if (revision === sdkLicenseRevision) {
-        sdkLicenseSession = null;
-        sdkLicenseLastError = error;
-        sdkLicenseNotify();
-      }
-      throw error;
-    }
-  }
-
   // ---------- core/serial-config.js ----------
-  // Bound allocations before a corrupt configuration can create a huge frame/buffer.
+  /** 串口、通用解码和模拟源共用的参数校验；在分配缓冲区或打开硬件前拒绝无效配置。 */
+
+  // 限制单帧和矩阵的最大点数，避免错误配置造成过大的内存分配。
   const MAX_MATRIX_POINTS = 1048576;
 
   function serialConfigObject(options) {
@@ -1112,6 +754,7 @@
     });
   }
 
+  /** 未提供的可选字段交给调用层取默认值；已提供的值必须满足数值范围与整数约束。 */
   function serialConfigNumber(options, field, { min = 0, max = Infinity, integer = false, exclusive = false } = {}) {
     const value = options[field];
     if (value === undefined) return;
@@ -1121,6 +764,7 @@
     }
   }
 
+  /** 校验分隔符与帧长区间；返回浅拷贝，并复制 delimiter，避免调用方随后改动原数组。 */
   function validateFramerOptions(options = {}) {
     serialConfigObject(options);
     serialConfigNumber(options, 'minLength', { integer: true, max: MAX_MATRIX_POINTS });
@@ -1138,6 +782,7 @@
     return { ...options, ...(options.delimiter === undefined ? {} : { delimiter: Array.from(options.delimiter) }) };
   }
 
+  /** 校验矩阵尺寸、满量程和阈值；rows / cols 必须成对出现，返回配置浅拷贝。 */
   function validateDecodeOptions(options = {}) {
     serialConfigObject(options);
     for (const field of ['rows', 'cols']) serialConfigNumber(options, field, { min: 1, integer: true, max: MAX_MATRIX_POINTS });
@@ -1147,10 +792,11 @@
     serialConfigNumber(options, 'fullScale', { min: 0, exclusive: true });
     serialConfigNumber(options, 'threshold');
     if (options.layout !== undefined && typeof options.layout !== 'string') serialConfigInvalid('layout', '必须是排列名称字符串');
-    // Preserve the documented fallback for unknown JS layout names; do not infer products.
+    // 未知排列名仍按文档约定回退到原扫描顺序；此处不根据名字推测产品。
     return { ...options };
   }
 
+  /** 串口入口的组合校验：解码参数 → 分帧参数 → 波特率与路径；不查询实际端口。 */
   function validateSerialOptions(options = {}) {
     const result = validateFramerOptions(validateDecodeOptions(options));
     serialConfigNumber(result, 'baudRate', { min: 1, integer: true });
@@ -1158,15 +804,199 @@
     return result;
   }
 
+  /** 校验模拟矩阵与帧率；帧率上下限同时保证 JavaScript 定时器的毫秒间隔有效。 */
   function validateMockOptions(options = {}) {
     const result = validateDecodeOptions(options);
-    // JS timers use a signed 32-bit millisecond delay; smaller FPS would wrap to 1 ms.
+    // 定时器延迟使用有符号 32 位毫秒；过低帧率会让延迟溢出并退化为约 1 ms。
     serialConfigNumber(result, 'fps', { min: 1000 / 2147483647, max: 1000 });
     return result;
   }
 
+  // ---------- core/frame.js ----------
+  /**
+   * 帧解码：把一帧原始字节变成统一的 Frame 对象。
+   *
+   * Web Serial / Node 串口 / 模拟源共用这一基础结构；产品层在其上增加
+   * pressure、fingers、palm、imu 等产品字段，不在本通用解码器中推断产品。
+   *
+   * Frame {
+   *   raw       Uint8Array   原始 ADC 值，0~255，一个点一个字节
+   *   values    Float32Array ADC / fullScale，默认满量程 255 时为 0~1，长度 = rows * cols
+   *   rows, cols             矩阵尺寸
+   *   min, max, avg          归一化后的极值与均值
+   *   area                   有效点数（超过阈值的点）
+   *   center    {x, y}       压力重心，0~1
+   *   timestamp              毫秒时间戳
+   * }
+   *
+   * 说明：默认按「1 字节 = 1 个点」解析，方阵推断行列（1024 → 32×32）。
+   * 如果你的设备不是这个规格，用 options.rows / options.cols 显式指定。
+   * fullScale 用于相对归一化，结果不截断，也不等于标定后的物理压力。
+   *
+   * 另外注意：字节的先后顺序是采集板的扫描顺序，不等于垫子上的位置。
+   * 要让画面和手指位置对上，用 options.layout 选一个点位排列（见 core/layout.js）。
+   */
+
+
+  /** 优先使用成对传入的 rows / cols；否则由点数推断方阵，非完全平方数返回单行。 */
+  function resolveShape(points, options = {}) {
+    validateDecodeOptions(options);
+    if (!Number.isSafeInteger(points) || points < 0 || points > MAX_MATRIX_POINTS) {
+      throw new ShroomError('INVALID_CONFIG', '点数必须是有效范围内的非负整数', { stage: 'configure', details: { field: 'points' } });
+    }
+    if (options.rows && options.cols) {
+      return { rows: options.rows, cols: options.cols };
+    }
+    const side = Math.round(Math.sqrt(points));
+    if (side * side === points) return { rows: side, cols: side };
+    return { rows: 1, cols: points };
+  }
+
+  /**
+   * @param {Uint8Array} payload 一帧的原始字节（不含分隔符）
+   * @param {object} [options] 通用解码配置；未指定线序时保持扫描顺序。
+   * @param {number} [options.rows]      指定行数
+   * @param {number} [options.cols]      指定列数
+   * @param {number} [options.points]    只取前 N 个字节，默认取全部
+   * @param {number} [options.fullScale] 相对归一化除数，必须大于 0，默认 255，不裁剪结果
+   * @param {number} [options.threshold] 有效点阈值（归一化后），默认 0.02
+   * @param {string} [options.layout]    点位排列，'raw'（默认）或排列名，见 core/layout.js
+   * @returns {object} 基础 Frame；raw 是输入载荷的视图，values 是新分配的映射数组。
+   */
+  function decodeFrame(payload, options = {}) {
+    options = validateDecodeOptions(options);
+    if (!(payload instanceof Uint8Array)) throw new ShroomError('PARSE_FAILED', '解码输入必须是 Uint8Array 字节数据', { stage: 'parse' });
+    if (payload.length > MAX_MATRIX_POINTS) throw new ShroomError('PARSE_FAILED', '输入帧超过最大点数限制', { stage: 'parse' });
+    const fullScale = options.fullScale ?? 255;
+    const threshold = options.threshold ?? 0.02;
+    const points = Math.min(options.points ?? payload.length, payload.length);
+
+    // 选了排列就以排列的行列为准：它知道这块垫子实际是几行几列，
+    // 比如 car10 是从 1024 个扫描点里取 10×10，输出就是 10×10 而不是 32×32
+    const layout = getLayout(options.layout);
+    const { rows, cols } = layout ?? resolveShape(points, options);
+    const size = rows * cols;
+
+    // raw 保留输入视图供底层追溯；调用方若要跨帧持有且输入缓冲区会复用，应自行复制。
+    const raw = payload.subarray(0, points);
+    const values = new Float32Array(size);
+
+    let min = Infinity;
+    let max = 0;
+    let sum = 0;
+    let area = 0;
+    let weight = 0;
+    let cx = 0;
+    let cy = 0;
+
+    // perm 为 null 时按扫描顺序原样铺；给了排列就按排列取，
+    // 这样 center / area 这些也是按垫子实际位置算的，不用调用方再修一遍。
+    // perm 里的 -1 表示这个位置没有传感器，固定给 0
+    const perm = layout ? layout.perm : null;
+
+    for (let i = 0; i < size; i += 1) {
+      const src = perm ? perm[i] : i;
+      const v = src >= 0 && src < points ? raw[src] / fullScale : 0;
+      values[i] = v;
+      sum += v;
+      if (v < min) min = v;
+      if (v > max) max = v;
+      if (v > threshold) {
+        area += 1;
+        weight += v;
+        cx += (i % cols) * v;
+        cy += Math.floor(i / cols) * v;
+      }
+    }
+
+    return {
+      raw,
+      values,
+      rows,
+      cols,
+      min: min === Infinity ? 0 : min,
+      max,
+      avg: size > 0 ? sum / size : 0,
+      area,
+      // 只用超过阈值的点计算加权重心；没有有效点时返回几何中心。
+      center: weight > 0
+        ? { x: cx / weight / Math.max(1, cols - 1), y: cy / weight / Math.max(1, rows - 1) }
+        : { x: 0.5, y: 0.5 },
+      timestamp: Date.now(),
+    };
+  }
+
+  // ---------- core/device.js ----------
+  /**
+   * 帧订阅中心：设备适配器共用这套实现，每次创建的订阅集合彼此独立。
+   *
+   * 帧率可能到 100Hz，回调里别做重活；一个回调抛错不影响其他回调。
+   */
+  function createFrameHub() {
+    const listeners = new Set();
+    const errorListeners = new Set();
+    let lastError = null;
+
+    /** 缓存最近错误并通知错误订阅；订阅自身抛错时记录日志，避免递归派发。 */
+    function emitError(error) {
+      lastError = error;
+      if (!errorListeners.size) console.error('[shroom]', error);
+      for (const handler of [...errorListeners]) {
+        try { handler(error); }
+        catch (callbackError) { console.error('[shroom] onError 回调出错：', callbackError); }
+      }
+    }
+
+    return {
+      /** 订阅每一帧，返回取消订阅的函数 */
+      onFrame(handler) {
+        if (typeof handler !== 'function') {
+          throw new TypeError('onFrame 需要传一个函数');
+        }
+        listeners.add(handler);
+        return () => listeners.delete(handler);
+      },
+
+      /** 订阅运行期错误，返回取消订阅函数；不会立即重放此前的 lastError。 */
+      onError(handler) {
+        if (typeof handler !== 'function') throw new TypeError('onError 需要传一个函数');
+        errorListeners.add(handler);
+        return () => errorListeners.delete(handler);
+      },
+
+      emitError,
+
+      get lastError() { return lastError; },
+
+      /** 同步分发同一帧对象；复制订阅名单，避免回调内新增订阅影响本轮遍历。 */
+      emit(frame) {
+        for (const handler of [...listeners]) {
+          try {
+            handler(frame);
+          } catch (err) {
+            emitError(asShroomError(err, { code: 'CALLBACK_FAILED', stage: 'callback', message: '应用的 onFrame 回调执行失败' }));
+          }
+        }
+      },
+
+      /** 连接关闭时释放全部回调引用；最近错误仍可由 lastError 读取。 */
+      clear() {
+        listeners.clear();
+        errorListeners.clear();
+      },
+
+      get count() {
+        return listeners.size;
+      },
+    };
+  }
+
   // ---------- core/serial-diagnostics.js ----------
-  /** 串口和模拟设备共用的只读诊断快照。 */
+  /**
+   * 串口和模拟设备共用的诊断快照：根据连接状态与累计计数给出排查提示。
+   * 不探测硬件，也不修改传入计数；已有帧仅证明曾经收过数据，不能证明当前还在发送。
+   * lastError 转为可序列化信息，避免把原始异常对象直接交给界面或日志。
+   */
   function serialDiagnostics({
     source,
     state,
@@ -1210,398 +1040,10 @@
     return { source, state, bytesReceived, frameCount, droppedCount, frameLength, lastError: errorInfo, status, hint };
   }
 
-  // ---------- core/framer.js ----------
-  /**
-   * 切帧器：把串口过来的字节流切成一帧一帧。
-   *
-   * 协议约定（可通过 options 覆盖）：
-   *   每帧以分隔符 AA 55 03 99 开头，两个分隔符之间的部分就是这一帧的数据。
-   *
-   * 用法：
-   *   const framer = createFramer()
-   *   const frames = framer.push(chunk)   // chunk 是 Uint8Array，返回本次切出的若干帧
-   */
-
-
-  const DEFAULT_DELIMITER = [0xaa, 0x55, 0x03, 0x99];
-
-  /** 在 haystack 中从 from 开始找 needle，找不到返回 -1 */
-  function indexOfBytes(haystack, needle, from) {
-    const limit = haystack.length - needle.length;
-    outer: for (let i = from; i <= limit; i += 1) {
-      for (let j = 0; j < needle.length; j += 1) {
-        if (haystack[i + j] !== needle[j]) continue outer;
-      }
-      return i;
-    }
-    return -1;
-  }
-
-  function concat(a, b) {
-    const out = new Uint8Array(a.length + b.length);
-    out.set(a, 0);
-    out.set(b, a.length);
-    return out;
-  }
-
-  /**
-   * @param {object} [options]
-   * @param {number[]} [options.delimiter]  帧分隔符，默认 [0xAA,0x55,0x03,0x99]
-   * @param {number}   [options.minLength]  小于这个长度的帧当作脏帧丢弃
-   * @param {number}   [options.maxLength]  大于这个长度的帧当作脏帧丢弃
-   * @param {boolean}  [options.lockLength] 锁定帧长，默认 true，见下面 LOCK_AFTER 处的说明
-   */
-  function createFramer(options = {}) {
-    options = validateFramerOptions(options);
-    const delimiter = Uint8Array.from(options.delimiter ?? DEFAULT_DELIMITER);
-    const minLength = options.minLength ?? 8;
-    const maxLength = options.maxLength ?? 8192;
-    const lockLength = options.lockLength !== false;
-    // 缓冲区上限：超过就丢掉前半段，避免一直收不到分隔符时内存无限增长
-    const bufferLimit = maxLength * 4;
-
-    // 帧长锁定。分隔符只有 4 个字节，数据里迟早会撞出一个一模一样的，
-    // 于是切出一个长度不对的短帧。这种帧长度多半不是完全平方数，解码时会退化成
-    // 1×N 一条横线，画面就在方阵和横线之间狂闪——这不是渲染的问题，是脏帧混进来了。
-    // 所以：连着几帧长度一致就把它锁死，之后长度对不上的一律当脏帧丢掉。
-    // 万一锁错了（比如第一帧本身就是残的），另一个长度连着来够多次就改锁它，能自己纠回来。
-    const LOCK_AFTER = 3;
-    const RELOCK_AFTER = 12;
-    let locked = 0;
-    let runLength = 0;
-    let runCount = 0;
-
-    let buffer = new Uint8Array(0);
-    let dropped = 0;
-
-    /** 返回这一帧要不要收下 */
-    function accept(len) {
-      if (!lockLength) return true;
-      if (len === runLength) runCount += 1;
-      else {
-        runLength = len;
-        runCount = 1;
-      }
-      if (!locked) {
-        if (runCount >= LOCK_AFTER) locked = len;
-        return true; // 还没锁上，先全收下，免得开头几帧被白丢
-      }
-      if (len === locked) return true;
-      if (runCount >= RELOCK_AFTER) {
-        locked = len; // 锁错了，改锁这个
-        return true;
-      }
-      return false;
-    }
-
-    function push(chunk) {
-      if (!chunk || chunk.length === 0) return [];
-      if (!(chunk instanceof Uint8Array) && (!Array.isArray(chunk)
-        || !chunk.every((byte) => Number.isInteger(byte) && byte >= 0 && byte <= 255))) {
-        throw new ShroomError('PARSE_FAILED', '输入数据必须是字节数组', { stage: 'parse' });
-      }
-      buffer = concat(buffer, chunk instanceof Uint8Array ? chunk : Uint8Array.from(chunk));
-
-      const frames = [];
-      let start = indexOfBytes(buffer, delimiter, 0);
-
-      if (start < 0) {
-        // 还没对上分隔符，只保留末尾几个字节（分隔符可能被切断在两个 chunk 之间）
-        if (buffer.length > delimiter.length) {
-          buffer = buffer.slice(buffer.length - delimiter.length + 1);
-        }
-        return frames;
-      }
-
-      for (;;) {
-        const next = indexOfBytes(buffer, delimiter, start + delimiter.length);
-        if (next < 0) break;
-        const payload = buffer.slice(start + delimiter.length, next);
-        if (payload.length >= minLength && payload.length <= maxLength && accept(payload.length)) {
-          frames.push(payload);
-        } else {
-          dropped += 1;
-        }
-        start = next;
-      }
-
-      buffer = buffer.slice(start);
-      if (buffer.length > bufferLimit) buffer = buffer.slice(-maxLength);
-      return frames;
-    }
-
-    function reset() {
-      buffer = new Uint8Array(0);
-      dropped = 0;
-      locked = 0;
-      runLength = 0;
-      runCount = 0;
-    }
-
-    return {
-      push,
-      reset,
-      /** 被丢弃的脏帧数量，用来判断协议参数是不是配错了 */
-      get droppedCount() {
-        return dropped;
-      },
-      /** 锁定下来的帧长（字节）。还没锁上是 0 */
-      get frameLength() {
-        return locked;
-      },
-    };
-  }
-
-  // ---------- core/frame.js ----------
-  /**
-   * 帧解码：把一帧原始字节变成统一的 Frame 对象。
-   *
-   * 整个 SDK 只有这一个数据结构，连接方式（Web Serial / Node 串口 / 模拟）
-   * 不同，拿到的 Frame 是一样的。
-   *
-   * Frame {
-   *   raw       Uint8Array   原始 ADC 值，0~255，一个点一个字节
-   *   values    Float32Array 归一化到 0~1 的值，长度 = rows * cols
-   *   rows, cols             矩阵尺寸
-   *   min, max, avg          归一化后的极值与均值
-   *   area                   有效点数（超过阈值的点）
-   *   center    {x, y}       压力重心，0~1
-   *   timestamp              毫秒时间戳
-   * }
-   *
-   * 说明：默认按「1 字节 = 1 个点」解析，方阵推断行列（1024 → 32×32）。
-   * 如果你的设备不是这个规格，用 options.rows / options.cols 显式指定。
-   *
-   * 另外注意：字节的先后顺序是采集板的扫描顺序，不等于垫子上的位置。
-   * 要让画面和手指位置对上，用 options.layout 选一个点位排列（见 core/layout.js）。
-   */
-
-
-  /** 由点数推断矩阵行列；不是完全平方数就退化成单行 */
-  function resolveShape(points, options = {}) {
-    validateDecodeOptions(options);
-    if (!Number.isSafeInteger(points) || points < 0 || points > MAX_MATRIX_POINTS) {
-      throw new ShroomError('INVALID_CONFIG', '点数必须是有效范围内的非负整数', { stage: 'configure', details: { field: 'points' } });
-    }
-    if (options.rows && options.cols) {
-      return { rows: options.rows, cols: options.cols };
-    }
-    const side = Math.round(Math.sqrt(points));
-    if (side * side === points) return { rows: side, cols: side };
-    return { rows: 1, cols: points };
-  }
-
-  /**
-   * @param {Uint8Array} payload 一帧的原始字节（不含分隔符）
-   * @param {object} [options]
-   * @param {number} [options.rows]      指定行数
-   * @param {number} [options.cols]      指定列数
-   * @param {number} [options.points]    只取前 N 个字节，默认取全部
-   * @param {number} [options.fullScale] 满量程，默认 255
-   * @param {number} [options.threshold] 有效点阈值（归一化后），默认 0.02
-   * @param {string} [options.layout]    点位排列，'raw'（默认）或产品名，见 core/layout.js
-   * @returns {object} Frame
-   */
-  function decodeFrame(payload, options = {}) {
-    options = validateDecodeOptions(options);
-    if (!(payload instanceof Uint8Array)) throw new ShroomError('PARSE_FAILED', '解码输入必须是 Uint8Array 字节数据', { stage: 'parse' });
-    if (payload.length > MAX_MATRIX_POINTS) throw new ShroomError('PARSE_FAILED', '输入帧超过最大点数限制', { stage: 'parse' });
-    const fullScale = options.fullScale ?? 255;
-    const threshold = options.threshold ?? 0.02;
-    const points = Math.min(options.points ?? payload.length, payload.length);
-
-    // 选了排列就以排列的行列为准：它知道这块垫子实际是几行几列，
-    // 比如 car10 是从 1024 个扫描点里取 10×10，输出就是 10×10 而不是 32×32
-    const layout = getLayout(options.layout);
-    const { rows, cols } = layout ?? resolveShape(points, options);
-    const size = rows * cols;
-
-    const raw = payload.subarray(0, points);
-    const values = new Float32Array(size);
-
-    let min = Infinity;
-    let max = 0;
-    let sum = 0;
-    let area = 0;
-    let weight = 0;
-    let cx = 0;
-    let cy = 0;
-
-    // perm 为 null 时按扫描顺序原样铺；给了排列就按排列取，
-    // 这样 center / area 这些也是按垫子实际位置算的，不用调用方再修一遍。
-    // perm 里的 -1 表示这个位置没有传感器，固定给 0
-    const perm = layout ? layout.perm : null;
-
-    for (let i = 0; i < size; i += 1) {
-      const src = perm ? perm[i] : i;
-      const v = src >= 0 && src < points ? raw[src] / fullScale : 0;
-      values[i] = v;
-      sum += v;
-      if (v < min) min = v;
-      if (v > max) max = v;
-      if (v > threshold) {
-        area += 1;
-        weight += v;
-        cx += (i % cols) * v;
-        cy += Math.floor(i / cols) * v;
-      }
-    }
-
-    return {
-      raw,
-      values,
-      rows,
-      cols,
-      min: min === Infinity ? 0 : min,
-      max,
-      avg: size > 0 ? sum / size : 0,
-      area,
-      center: weight > 0
-        ? { x: cx / weight / Math.max(1, cols - 1), y: cy / weight / Math.max(1, rows - 1) }
-        : { x: 0.5, y: 0.5 },
-      timestamp: Date.now(),
-    };
-  }
-
-  // ---------- core/stream-codec.js ----------
-  /** Versioned wire contract shared by the standalone server and browser client. */
-  const STREAM_SCHEMA = 'shroom.frame.v1';
-  const MAX_STREAM_POINTS = 16384;
-  const streamFingerKeys = ['thumb', 'index', 'middle', 'ring', 'little'];
-
-  /** Reject corrupt network data before constructing typed arrays or rendering. */
-  function streamInvalid(field) {
-    throw new ShroomError('PARSE_FAILED', `数据帧字段无效：${field}`, {
-      stage: 'parse', details: { field },
-      suggestion: '确认服务端与浏览器使用相同版本的 Shroom SDK 数据协议。',
-    });
-  }
-
-  /** Require an object; never spread untrusted input into the returned frame. */
-  function streamObject(value, field) {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) streamInvalid(field);
-    return value;
-  }
-
-  /** Validate numeric metadata without coercing strings, NaN or infinity. */
-  function streamNumber(value, field, min = 0, max = Number.MAX_VALUE, integer = false) {
-    if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max
-      || (integer && !Number.isSafeInteger(value))) streamInvalid(field);
-    return value;
-  }
-
-  /** Copy bounded numeric arrays and reject byte wrapping and Float32 overflow. */
-  function streamArray(value, field, { max = MAX_STREAM_POINTS, byte = false, index = false } = {}) {
-    if ((!Array.isArray(value) && !ArrayBuffer.isView(value)) || !Number.isSafeInteger(value.length)
-      || value.length > max) streamInvalid(field);
-    return Array.from(value, (entry) => {
-      streamNumber(entry, field, 0, byte || index ? 255 : Number.MAX_VALUE, byte || index);
-      if (!byte && !index && !Number.isFinite(Math.fround(entry))) streamInvalid(field);
-      return entry;
-    });
-  }
-
-  /** Return either ordinary JSON arrays or fresh typed-array snapshots. */
-  function streamOutput(values, typed, Kind) {
-    return typed ? Kind.from(values) : values;
-  }
-
-  /** Preserve real ragged rows: the palm has 72 points, not 75 padded points. */
-  function streamRegion(value, field, typed, expectedRows) {
-    streamObject(value, field);
-    if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 64) streamInvalid(`${field}.name`);
-    const rows = streamNumber(value.rows, `${field}.rows`, 1, 5, true);
-    const cols = streamNumber(value.cols, `${field}.cols`, 1, 15, true);
-    const rowLengths = streamArray(value.rowLengths, `${field}.rowLengths`, { max: 5, index: true });
-    if (rows !== expectedRows.length || rowLengths.length !== rows
-      || rowLengths.some((length, i) => length !== expectedRows[i])
-      || cols !== Math.max(...expectedRows)) streamInvalid(`${field}.rowLengths`);
-    const size = rowLengths.reduce((sum, length) => sum + length, 0);
-    const raw = streamArray(value.raw, `${field}.raw`, { max: 75, byte: true });
-    const values = streamArray(value.values, `${field}.values`, { max: 75 });
-    const indices = streamArray(value.sourceIndices, `${field}.sourceIndices`, { max: 75, index: true });
-    if ([raw, values, indices].some((array) => array.length !== size)) streamInvalid(`${field}.length`);
-    if (!Array.isArray(value.matrix) || value.matrix.length !== rows) streamInvalid(`${field}.matrix`);
-    const matrix = value.matrix.map((row, i) => {
-      const result = streamArray(row, `${field}.matrix[${i}]`, { max: 15, byte: true });
-      if (result.length !== rowLengths[i]) streamInvalid(`${field}.matrix[${i}]`);
-      return result;
-    });
-    return {
-      name: value.name, rows, cols, rowLengths, matrix,
-      raw: streamOutput(raw, typed, Uint8Array),
-      values: streamOutput(values, typed, Float32Array),
-      sourceIndices: streamOutput(indices, typed, Uint16Array),
-    };
-  }
-
-  /** Validate and copy the shared matrix and the two supported product extensions. */
-  function streamReadFrame(input, typed) {
-    streamObject(input, 'frame');
-    const rows = streamNumber(input.rows, 'rows', 0, MAX_STREAM_POINTS, true);
-    const cols = streamNumber(input.cols, 'cols', 0, MAX_STREAM_POINTS, true);
-    const size = rows * cols;
-    if (size > MAX_STREAM_POINTS || ((rows === 0) !== (cols === 0))) streamInvalid('rows/cols');
-    const raw = streamArray(input.raw, 'raw', { byte: true });
-    const values = streamArray(input.values, 'values');
-    if (values.length !== size) streamInvalid('values.length');
-    streamObject(input.center, 'center');
-    const output = {
-      raw: streamOutput(raw, typed, Uint8Array),
-      values: streamOutput(values, typed, Float32Array), rows, cols,
-      min: streamNumber(input.min, 'min'), max: streamNumber(input.max, 'max'),
-      avg: streamNumber(input.avg, 'avg'), area: streamNumber(input.area, 'area', 0, size, true),
-      center: { x: streamNumber(input.center.x, 'center.x', 0, 1), y: streamNumber(input.center.y, 'center.y', 0, 1) },
-      timestamp: streamNumber(input.timestamp, 'timestamp'),
-    };
-    if (output.min > output.max) streamInvalid('min/max');
-    if (input.product === undefined) return output;
-    if (!['hand', 'handGloveFullPacket'].includes(input.product)) streamInvalid('product');
-    const pressure = streamArray(input.pressure, 'pressure', { byte: true });
-    const matrix = streamArray(input.pressureMatrix, 'pressureMatrix', { byte: true });
-    if (pressure.length !== raw.length || pressure.some((value, i) => value !== raw[i])
-      || matrix.length !== size) streamInvalid('pressure/pressureMatrix');
-    output.product = input.product;
-    output.pressure = typed ? output.raw : [...raw];
-    output.pressureMatrix = streamOutput(matrix, typed, Uint8Array);
-    if (input.product === 'hand') {
-      if (rows !== 32 || cols !== 32 || raw.length !== 1024) streamInvalid('hand.shape');
-      return output;
-    }
-    if (rows !== 13 || cols !== 15 || raw.length !== 256) streamInvalid('glove.shape');
-    if (!['left', 'right'].includes(input.side)) streamInvalid('side');
-    output.side = input.side;
-    output.sequence = streamNumber(input.sequence, 'sequence', 0, 255, true);
-    output.packetType = streamNumber(input.packetType, 'packetType', 0, 255, true);
-    streamObject(input.imu, 'imu');
-    const imu = streamArray(input.imu.raw, 'imu.raw', { max: 16, byte: true });
-    if (imu.length !== 16) streamInvalid('imu.raw.length');
-    output.imu = { raw: streamOutput(imu, typed, Uint8Array) };
-    streamObject(input.fingers, 'fingers');
-    output.fingers = {};
-    for (const key of streamFingerKeys) {
-      const field = `fingers.${key}`;
-      const finger = streamRegion(input.fingers[key], field, typed, [3, 3, 3, 3]);
-      finger.pulp = streamRegion(input.fingers[key].pulp, `${field}.pulp`, typed, [1]);
-      output.fingers[key] = finger;
-    }
-    output.palm = streamRegion(input.palm, 'palm', typed, [12, 15, 15, 15, 15]);
-    return output;
-  }
-
-  /** Encode one independent JSON snapshot; JSON.stringify never sees typed arrays. */
-  function encodeStreamFrame(frame) {
-    return streamReadFrame(frame, false);
-  }
-
-  /** Restore typed arrays after WS/JSON transport without applying a second mapping. */
-  function decodeStreamFrame(frame) {
-    return streamReadFrame(frame, true);
-  }
-
   // ---------- core/glove-regions.js ----------
-  // Authoritative product mapping supplied by the glove owner. These are 1-based
-  // scan positions, not coordinates in the legacy display/pressureMatrix layout.
+  /** 手套标准分区：每指 4×3 主体与独立指腹，手掌按真实行长输出 72 点。 */
+
+  // 产品方提供的分区表：编号从 1 开始，指向原始扫描通道，而非旧展示矩阵的坐标。
   const gloveRegionsLayouts = {
     left: {
       little: { name: '小拇指', indices: [[31, 30, 29], [15, 14, 13], [255, 254, 253], [239, 238, 237]], pulpIndices: [[222]] },
@@ -1639,11 +1081,12 @@
     },
   };
 
+  /** 按分区行表读取压力；对外 sourceIndices 转为从 0 开始的原始通道下标。 */
   function gloveRegionsRead(name, indices, cols, pressure, fullScale) {
     const sourceIndices = Uint16Array.from(indices.flat(), (position) => position - 1);
     const raw = Uint8Array.from(sourceIndices, (position) => pressure[position]);
     let offset = 0;
-    // Matrix values are ADC snapshots, independent from the writable flat raw array.
+    // matrix 的每行独立复制 ADC 值；修改扁平 raw 数组不会反向改变 matrix。
     const matrix = indices.map((row) => {
       const values = Array.from(raw.subarray(offset, offset + row.length));
       offset += row.length;
@@ -1656,10 +1099,11 @@
   }
 
   /**
-   * Extract named fingers, independent finger-pulp sensors and the ragged palm.
-   * All outputs are independent writable snapshots; zeros are valid sensor values.
-   * @param {Uint8Array} pressure Exactly 256 scan-order ADC bytes.
-   * @param {{side:'left'|'right',fullScale?:number}} options Explicit product side.
+   * 提取命名五指、独立指腹与行长不齐的手掌；0 是有效测量值，不能据此删除触点。
+   * 各输出数组为独立可写快照；values = raw / fullScale，不做物理量标定或截断。
+   * @param {Uint8Array} pressure 严格为 256 字节、保持原始扫描顺序的 ADC 数据。
+   * @param {{side:'left'|'right',fullScale?:number}} options 明确实物手侧，fullScale 默认 255。
+   * @returns {object} fingers 五指对象与 palm；手掌 rowLengths 为 [12,15,15,15,15]，不补齐空点。
    */
   function createGloveRegions(pressure, options = {}) {
     if (!options || typeof options !== 'object' || Array.isArray(options)
@@ -1687,7 +1131,9 @@
   }
 
   // ---------- core/glove.js ----------
-  // Copied from Shroom's handGloveFullPacket product mapping, not a generic matrix layout.
+  /** 整包手套解码：拆出序号、压力和 IMU，再按明确手侧生成五指与手掌分区。 */
+
+  // 沿用 handGloveFullPacket 旧展示的点位表，仅用于兼容矩阵；不是五指/手掌的标准分区表。
   const gloveFullPacketLayouts = {
     left: {
       fingerRows: [
@@ -1734,7 +1180,7 @@
     },
   };
 
-  /** Map 256 scan-order bytes to the existing 13-row, 15-column hand outline. */
+  /** 将 256 个扫描通道映射到旧版 13×15 展示轮廓；未填位置为 0，仅保留兼容用途。 */
   function gloveMapPressure(pressure, side) {
     const layout = gloveFullPacketLayouts[side];
     const result = new Uint8Array(195);
@@ -1751,12 +1197,13 @@
   }
 
   /**
-   * Decode one 274-byte full-packet glove payload, excluding the serial delimiter.
-   * Side is explicit: the existing hardware integration does not reliably infer it from packetType.
-   * IMU bytes stay opaque; no unverified axis order, quaternion meaning or units are promised.
-   * @param {Uint8Array} payload Sequence, packet type, 256 pressure bytes and 16 IMU bytes.
-   * @param {{side:'left'|'right',fullScale?:number,threshold?:number}} options Product configuration.
-   * @returns {object} A mapped Frame plus unchanged scan-order pressure and IMU bytes.
+   * 解码一份 274 字节的手套整包载荷，不含串口尾分隔符。
+   * 必须显式设置 side：当前接入不能可靠地通过 packetType 判断左右手。
+   * IMU 仅保留 16 字节原始数据，不猜测轴序、四元数语义、角度或单位。
+   * @param {Uint8Array} payload 1 字节序号 + 1 字节包类型 + 256 字节压力 + 16 字节 IMU。
+   * @param {{side:'left'|'right',fullScale?:number,threshold?:number}} options 实物手侧、归一化满量程和有效点阈值。
+   * @returns {object} 产品帧：pressure / raw 是同一份原始压力快照，fingers / palm 为独立分区。
+   * pressureMatrix / values / rows / cols 保留旧展示兼容数据；新业务读取 fingers 与 palm。
    */
   function decodeGlovePacket(payload, options = {}) {
     if (!options || typeof options !== 'object' || Array.isArray(options)
@@ -1777,7 +1224,7 @@
     const frame = decodeFrame(pressureMatrix, {
       rows: 13, cols: 15, fullScale: options.fullScale, threshold: options.threshold,
     });
-    // The supplied anatomical table is separate from the legacy 195-cell display layout.
+    // 五指/手掌直接从原始扫描压力取值，不经过旧展示的 195 格兼容矩阵，避免重复映射。
     const regions = createGloveRegions(pressure, { side: options.side, fullScale: options.fullScale });
     return {
       ...frame,
@@ -1794,84 +1241,38 @@
     };
   }
 
-  // ---------- core/product.js ----------
-  // Only profiles whose wire protocol and mapping have been checked against shroom1.
-  const deviceProductProfiles = Object.freeze({
-    handGloveFullPacket: Object.freeze({
-      product: 'handGloveFullPacket', label: '触觉手套（整包）', family: 'glove',
-      baudRate: 921600, payloadLength: 274, sensorPoints: 256, rows: 13, cols: 15,
-    }),
-    hand: Object.freeze({
-      product: 'hand', label: '手部检测垫', family: 'mat',
-      baudRate: 1000000, payloadLength: 1024, sensorPoints: 1024, rows: 32, cols: 32,
-    }),
-  });
-  const deviceProductDelimiter = [0xaa, 0x55, 0x03, 0x99];
+  // ---------- core/products/tail-parser.js ----------
+  /** 固定载荷 + 尾分隔协议的共用分帧器；其他协议由产品适配器提供自己的解析器。 */
 
-  /** 列出已封装连接协议的产品；不等于通用线序/展示产品清单。 */
-  function listDeviceProducts() {
-    return Object.values(deviceProductProfiles).map((profile) => ({ ...profile }));
-  }
-
-  /** 在打开端口前验证产品与回调，不允许客户误改产品固有协议。 */
-  function prepareProductConnection(options = {}) {
-    const invalid = (field, message) => {
-      throw new ShroomError('INVALID_CONFIG', message, { stage: 'configure', details: { field } });
-    };
-    if (!options || typeof options !== 'object' || Array.isArray(options)) invalid('options', '产品连接参数必须是一个对象。');
-    const profile = Object.hasOwn(deviceProductProfiles, options.product) ? deviceProductProfiles[options.product] : null;
-    if (!profile) invalid('product', '请选择已支持的产品：handGloveFullPacket（整包手套）或 hand（手部检测垫）。');
-    const allowed = new Set(['product', 'path', 'port', 'filters', 'side', 'onData', 'onError']);
-    for (const field of Object.keys(options)) {
-      if (!allowed.has(field)) invalid(field, `产品接口不接受 ${field}；波特率、分帧和线序已经内置。自定义协议请使用 connect()。`);
-    }
-    for (const field of ['onData', 'onError']) {
-      if (options[field] !== undefined && typeof options[field] !== 'function') invalid(field, `${field} 必须是函数。`);
-    }
-    if (profile.family === 'glove' && !['left', 'right'].includes(options.side)) {
-      invalid('side', '整包手套必须明确指定 side: left 或 right，不能根据串口或包类型猜测手侧。');
-    }
-    if (profile.family !== 'glove' && options.side !== undefined) invalid('side', '手部检测垫不需要 side 参数。');
-    const serialOptions = {
-      baudRate: profile.baudRate, rows: profile.rows, cols: profile.cols,
-      ...(options.path === undefined ? {} : { path: options.path }),
-      ...(options.port === undefined ? {} : { port: options.port }),
-      ...(options.filters === undefined ? {} : { filters: options.filters }),
-    };
-    return {
-      serialOptions,
-      parser: createProductParser(profile.product, { side: options.side }),
-      info: {
-        product: profile.product, label: profile.label, rows: profile.rows, cols: profile.cols,
-        ...(profile.family === 'glove' ? { side: options.side } : {}),
-      },
-      onData: options.onData, onError: options.onError,
-    };
-  }
-
-  /** 找出协议尾分隔符，允许分隔符跨多个串口 chunk。 */
-  function productDelimiterIndex(bytes, offset) {
-    outer: for (let i = offset; i <= bytes.length - deviceProductDelimiter.length; i++) {
-      for (let j = 0; j < deviceProductDelimiter.length; j++) {
-        if (bytes[i + j] !== deviceProductDelimiter[j]) continue outer;
+  /** 找到完整尾分隔符；跨 chunk 的尾部由 pending 留到下一次输入。 */
+  function productTailDelimiterIndex(bytes, offset, delimiter) {
+    outer: for (let i = offset; i <= bytes.length - delimiter.length; i++) {
+      for (let j = 0; j < delimiter.length; j++) {
+        if (bytes[i + j] !== delimiter[j]) continue outer;
       }
       return i;
     }
     return -1;
   }
 
-  /** 按 shroom1 的尾分隔协议产出产品数据；不靠帧长推测型号或手侧。 */
-  function createProductParser(product, { side } = {}) {
-    const profile = Object.hasOwn(deviceProductProfiles, product) ? deviceProductProfiles[product] : null;
-    if (!profile || (profile.family === 'glove' && !['left', 'right'].includes(side))) {
-      throw new ShroomError('INVALID_CONFIG', '请选择有效的产品及手套手侧。', { stage: 'configure' });
+  /**
+   * 为一个连接创建独立状态；decodePayload 只接收长度正确且复制过的载荷。
+   * 配置由内置产品适配器提供，不接受用户覆盖协议；不根据帧长识别产品。
+   */
+  function createTailProductParser({ payloadLength, delimiter, decodePayload }) {
+    if (!Number.isSafeInteger(payloadLength) || payloadLength < 1
+      || (!Array.isArray(delimiter) && !(delimiter instanceof Uint8Array)) || delimiter.length === 0
+      || Array.from(delimiter).some(byte => !Number.isInteger(byte) || byte < 0 || byte > 255)
+      || typeof decodePayload !== 'function') {
+      throw new ShroomError('INVALID_CONFIG', '产品拆帧器需要正整数载荷长度、非空字节分隔符和解码函数。', { stage: 'configure' });
     }
+    delimiter = Uint8Array.from(delimiter); // 固定本连接协议，避免外部修改分隔符影响正在取数的设备。
     let pending = new Uint8Array();
     let overflowed = false;
     let dropped = 0;
     let frameLength = 0;
     return {
-      /** 输入串口字节；不完整帧继续等待，长度错误的包丢弃并计数。 */
+      /** 输入串口字节；保留半包，丢弃错误长度和溢出段，并累计诊断计数。 */
       push(chunk) {
         if (!(chunk instanceof Uint8Array)) throw new ShroomError('PARSE_FAILED', '产品输入必须是 Uint8Array 字节。', { stage: 'parse' });
         if (!chunk.length) return [];
@@ -1881,99 +1282,310 @@
         let offset = 0;
         let tail;
         const frames = [];
-        while ((tail = productDelimiterIndex(bytes, offset)) !== -1) {
+        while ((tail = productTailDelimiterIndex(bytes, offset, delimiter)) !== -1) {
           const size = tail - offset;
-          if (!overflowed && size === profile.payloadLength) {
-            const payload = bytes.slice(offset, tail);
-            let frame;
-            if (profile.family === 'glove') frame = decodeGlovePacket(payload, { side });
-            else {
-              frame = decodeFrame(payload, { layout: 'mat32' });
-              frame.product = profile.product;
-              frame.pressure = payload;
-              // ADC matrix is distinct from normalized values and source scan order.
-              frame.pressureMatrix = Uint8Array.from(frame.values, (value) => Math.round(value * 255));
-            }
-            frames.push(frame);
-            frameLength = profile.payloadLength;
+          if (!overflowed && size === payloadLength) {
+            frames.push(decodePayload(bytes.slice(offset, tail)));
+            frameLength = payloadLength;
           } else if (overflowed || size > 0) dropped += 1;
           overflowed = false;
-          offset = tail + deviceProductDelimiter.length;
+          offset = tail + delimiter.length;
         }
         pending = bytes.slice(offset);
-        if (pending.length > profile.payloadLength + deviceProductDelimiter.length - 1) {
-          // Discard the entire oversize segment up to the next tail, not a fake last-N-byte frame.
+        if (pending.length > payloadLength + delimiter.length - 1) {
+          // 超长段丢弃到下个帧尾；仅保留可能跨 chunk 的分隔符前缀，避免拼出伪帧。
           overflowed = true;
-          pending = pending.slice(-(deviceProductDelimiter.length - 1));
+          pending = delimiter.length > 1 ? pending.slice(-(delimiter.length - 1)) : new Uint8Array();
         }
         return frames;
       },
-      /** 清空半包与累计计数，供独立数据源重新开始。 */
+      /** 重置半包及累计诊断，供同一独立解析器重新开始。 */
       reset() { pending = new Uint8Array(); overflowed = false; dropped = 0; frameLength = 0; },
       get droppedCount() { return dropped; },
       get frameLength() { return frameLength; },
     };
   }
 
-  // ---------- core/device.js ----------
-  /**
-   * 帧订阅中心：所有 device 共用这一套回调管理。
-   *
-   * 帧率可能到 100Hz，回调里别做重活；一个回调抛错不影响其他回调。
-   */
-  function createFrameHub() {
-    const listeners = new Set();
-    const errorListeners = new Set();
-    let lastError = null;
+  // ---------- core/products/stream-utils.js ----------
+  /** 产品适配器和 WS 编解码器共用的字段校验；不引用注册表，避免循环依赖。 */
 
-    function emitError(error) {
-      lastError = error;
-      if (!errorListeners.size) console.error('[shroom]', error);
-      for (const handler of [...errorListeners]) {
-        try { handler(error); }
-        catch (callbackError) { console.error('[shroom] onError 回调出错：', callbackError); }
-      }
+  const STREAM_FRAME_MAX_POINTS = 16384;
+
+  /** 在分配类型数组和绘图前拒绝无效输入，保留可定位的字段名。 */
+  function streamInvalid(field) {
+    throw new ShroomError('PARSE_FAILED', `数据帧字段无效：${field}`, {
+      stage: 'parse', details: { field },
+      suggestion: '确认服务端与浏览器使用相同版本的 Shroom SDK 数据协议。',
+    });
+  }
+
+  /** 后续逐字段构造结果，不直接展开未经验证的网络对象。 */
+  function streamObject(value, field) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) streamInvalid(field);
+    return value;
+  }
+
+  /** 不隐式转换字符串；排除 NaN、无穷值和超出范围的数值。 */
+  function streamNumber(value, field, min = 0, max = Number.MAX_VALUE, integer = false) {
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < min || value > max
+      || (integer && !Number.isSafeInteger(value))) streamInvalid(field);
+    return value;
+  }
+
+  /** 限制长度并复制数值；字节/通道下标为 0–255 整数，浮点值不能溢出 Float32。 */
+  function streamArray(value, field, { max = STREAM_FRAME_MAX_POINTS, byte = false, index = false } = {}) {
+    if ((!Array.isArray(value) && !ArrayBuffer.isView(value)) || !Number.isSafeInteger(value.length)
+      || value.length > max) streamInvalid(field);
+    return Array.from(value, (entry) => {
+      streamNumber(entry, field, 0, byte || index ? 255 : Number.MAX_VALUE, byte || index);
+      if (!byte && !index && !Number.isFinite(Math.fround(entry))) streamInvalid(field);
+      return entry;
+    });
+  }
+
+  /** 编码返回普通数组；解码创建独立类型数组快照。 */
+  function streamOutput(values, typed, Kind) {
+    return typed ? Kind.from(values) : values;
+  }
+
+  /** 现有压力产品共用的扩展：原扫描压力必须等于 raw，映射 ADC 长度必须匹配矩阵。 */
+  function streamPressureFields(input, output, typed) {
+    const pressure = streamArray(input.pressure, 'pressure', { byte: true });
+    const matrix = streamArray(input.pressureMatrix, 'pressureMatrix', { byte: true });
+    if (pressure.length !== output.raw.length || pressure.some((value, i) => value !== output.raw[i])
+      || matrix.length !== output.rows * output.cols) streamInvalid('pressure/pressureMatrix');
+    output.product = input.product;
+    output.pressure = typed ? output.raw : [...output.raw];
+    output.pressureMatrix = streamOutput(matrix, typed, Uint8Array);
+    return output;
+  }
+
+  // ---------- core/products/glove.js ----------
+  /** 整包触觉手套适配器：固定串口配置、左右手要求、协议解析与 WS 分区校验。 */
+
+  const gloveProductProfile = Object.freeze({
+    product: 'handGloveFullPacket', label: '触觉手套（整包）', family: 'glove',
+    baudRate: 921600, payloadLength: 274, sensorPoints: 256, rows: 13, cols: 15,
+  });
+  const gloveStreamFingerKeys = ['thumb', 'index', 'middle', 'ring', 'little'];
+
+  /** 手侧必须由应用按实物明确指定，不能从包类型或串口猜测。 */
+  function validateGloveProductOptions(options, invalid) {
+    if (!['left', 'right'].includes(options.side)) {
+      invalid('side', '整包手套必须明确指定 side: left 或 right，不能根据串口或包类型猜测手侧。');
     }
+  }
 
+  function createGloveProductParser({ side } = {}) {
+    validateGloveProductOptions({ side }, () => {
+      throw new ShroomError('INVALID_CONFIG', '请选择有效的产品及手套手侧。', { stage: 'configure' });
+    });
+    return createTailProductParser({
+      payloadLength: gloveProductProfile.payloadLength,
+      delimiter: [0xaa, 0x55, 0x03, 0x99],
+      decodePayload: (payload) => decodeGlovePacket(payload, { side }),
+    });
+  }
+
+  /** 校验真实行长；手掌保留 72 点，不补成 5×15 的规则矩阵。 */
+  function gloveStreamRegion(value, field, typed, expectedRows) {
+    streamObject(value, field);
+    if (typeof value.name !== 'string' || !value.name.trim() || value.name.length > 64) streamInvalid(`${field}.name`);
+    const rows = streamNumber(value.rows, `${field}.rows`, 1, 5, true);
+    const cols = streamNumber(value.cols, `${field}.cols`, 1, 15, true);
+    const rowLengths = streamArray(value.rowLengths, `${field}.rowLengths`, { max: 5, index: true });
+    if (rows !== expectedRows.length || rowLengths.length !== rows
+      || rowLengths.some((length, i) => length !== expectedRows[i])
+      || cols !== Math.max(...expectedRows)) streamInvalid(`${field}.rowLengths`);
+    const size = rowLengths.reduce((sum, length) => sum + length, 0);
+    const raw = streamArray(value.raw, `${field}.raw`, { max: 75, byte: true });
+    const values = streamArray(value.values, `${field}.values`, { max: 75 });
+    const indices = streamArray(value.sourceIndices, `${field}.sourceIndices`, { max: 75, index: true });
+    if ([raw, values, indices].some((array) => array.length !== size)) streamInvalid(`${field}.length`);
+    if (!Array.isArray(value.matrix) || value.matrix.length !== rows) streamInvalid(`${field}.matrix`);
+    const matrix = value.matrix.map((row, i) => {
+      const result = streamArray(row, `${field}.matrix[${i}]`, { max: 15, byte: true });
+      if (result.length !== rowLengths[i]) streamInvalid(`${field}.matrix[${i}]`);
+      return result;
+    });
     return {
-      /** 订阅每一帧，返回取消订阅的函数 */
-      onFrame(handler) {
-        if (typeof handler !== 'function') {
-          throw new TypeError('onFrame 需要传一个函数');
-        }
-        listeners.add(handler);
-        return () => listeners.delete(handler);
-      },
-
-      onError(handler) {
-        if (typeof handler !== 'function') throw new TypeError('onError 需要传一个函数');
-        errorListeners.add(handler);
-        return () => errorListeners.delete(handler);
-      },
-
-      emitError,
-
-      get lastError() { return lastError; },
-
-      emit(frame) {
-        for (const handler of [...listeners]) {
-          try {
-            handler(frame);
-          } catch (err) {
-            emitError(asShroomError(err, { code: 'CALLBACK_FAILED', stage: 'callback', message: '应用的 onFrame 回调执行失败' }));
-          }
-        }
-      },
-
-      clear() {
-        listeners.clear();
-        errorListeners.clear();
-      },
-
-      get count() {
-        return listeners.size;
-      },
+      name: value.name, rows, cols, rowLengths, matrix,
+      raw: streamOutput(raw, typed, Uint8Array),
+      values: streamOutput(values, typed, Float32Array),
+      sourceIndices: streamOutput(indices, typed, Uint16Array),
     };
+  }
+
+  /** 白名单复制手套字段；旧展示矩阵和标准五指/手掌分区分别验证。 */
+  function readGloveStreamFields(input, output, typed) {
+    streamPressureFields(input, output, typed);
+    if (output.rows !== 13 || output.cols !== 15 || output.raw.length !== 256) streamInvalid('glove.shape');
+    if (!['left', 'right'].includes(input.side)) streamInvalid('side');
+    output.side = input.side;
+    output.sequence = streamNumber(input.sequence, 'sequence', 0, 255, true);
+    output.packetType = streamNumber(input.packetType, 'packetType', 0, 255, true);
+    streamObject(input.imu, 'imu');
+    const imu = streamArray(input.imu.raw, 'imu.raw', { max: 16, byte: true });
+    if (imu.length !== 16) streamInvalid('imu.raw.length');
+    output.imu = { raw: streamOutput(imu, typed, Uint8Array) };
+    streamObject(input.fingers, 'fingers');
+    output.fingers = {};
+    for (const key of gloveStreamFingerKeys) {
+      const field = `fingers.${key}`;
+      const finger = gloveStreamRegion(input.fingers[key], field, typed, [3, 3, 3, 3]);
+      finger.pulp = gloveStreamRegion(input.fingers[key].pulp, `${field}.pulp`, typed, [1]);
+      output.fingers[key] = finger;
+    }
+    output.palm = gloveStreamRegion(input.palm, 'palm', typed, [12, 15, 15, 15, 15]);
+    return output;
+  }
+
+  /** 内部静态适配器；只有连接参数接受别名，输出帧始终使用 profile.product。 */
+  const gloveProductAdapter = Object.freeze({
+    profile: gloveProductProfile,
+    aliases: Object.freeze(['glove']),
+    optionFields: Object.freeze(['side']),
+    validateOptions: validateGloveProductOptions,
+    connectionInfo: (options) => ({ side: options.side }),
+    createParser: createGloveProductParser,
+    readStreamFields: readGloveStreamFields,
+  });
+
+  // ---------- core/products/pad.js ----------
+  /** 手部检测垫适配器：固定 1024 点协议、mat32 映射与压力帧校验。 */
+
+  const padProductProfile = Object.freeze({
+    product: 'hand', label: '手部检测垫', family: 'mat',
+    baudRate: 1000000, payloadLength: 1024, sensorPoints: 1024, rows: 32, cols: 32,
+  });
+
+  function validatePadProductOptions(options, invalid) {
+    if (options.side !== undefined) invalid('side', '手部检测垫不需要 side 参数。');
+  }
+
+  function createPadProductParser() {
+    return createTailProductParser({
+      payloadLength: padProductProfile.payloadLength,
+      delimiter: [0xaa, 0x55, 0x03, 0x99],
+      decodePayload(payload) {
+        const frame = decodeFrame(payload, { layout: 'mat32' });
+        frame.product = padProductProfile.product;
+        frame.pressure = payload;
+        // 单独保留映射后的 ADC；values 是归一化值，pressure 是原始扫描顺序。
+        frame.pressureMatrix = Uint8Array.from(frame.values, (value) => Math.round(value * 255));
+        return frame;
+      },
+    });
+  }
+
+  function readPadStreamFields(input, output, typed) {
+    streamPressureFields(input, output, typed);
+    if (output.rows !== 32 || output.cols !== 32 || output.raw.length !== 1024) streamInvalid('hand.shape');
+    return output;
+  }
+
+  const padProductAdapter = Object.freeze({
+    profile: padProductProfile,
+    aliases: Object.freeze(['pad']),
+    // 允许省略或显式传 side: undefined；非空手侧仍按原接口规则拒绝。
+    optionFields: Object.freeze(['side']),
+    validateOptions: validatePadProductOptions,
+    connectionInfo: () => ({}),
+    createParser: createPadProductParser,
+    readStreamFields: readPadStreamFields,
+  });
+
+  // ---------- core/products/registry.js ----------
+  /**
+   * 已支持产品的唯一静态注册表：登记规范 ID、连接别名及适配器。
+   * 新产品实现独立适配器后在此登记；不会根据参数、数据长度或设备名猜测产品。
+   */
+
+  const deviceProductAdapters = Object.freeze([gloveProductAdapter, padProductAdapter]);
+  const deviceProductCanonicalRegistry = new Map();
+  const deviceProductConnectionRegistry = new Map();
+
+  for (const adapter of deviceProductAdapters) {
+    const canonical = adapter.profile.product;
+    for (const name of [canonical, ...adapter.aliases]) {
+      if (typeof name !== 'string' || !name || deviceProductConnectionRegistry.has(name)) {
+        throw new Error(`产品注册表包含无效或重复 ID：${String(name)}`);
+      }
+      deviceProductConnectionRegistry.set(name, adapter);
+    }
+    deviceProductCanonicalRegistry.set(canonical, adapter);
+  }
+
+  /** 连接可接受别名；网络帧必须使用规范 ID，避免扩大已有 WS 协议的接受范围。 */
+  function getDeviceProductAdapter(product, { allowAliases = true } = {}) {
+    if (typeof product !== 'string') return undefined;
+    return (allowAliases ? deviceProductConnectionRegistry : deviceProductCanonicalRegistry).get(product);
+  }
+
+  // ---------- core/product.js ----------
+  /**
+   * 产品连接适配层：将产品名转换成固定串口配置，再把字节流解析成产品帧。
+   * Node / Web 串口入口共用此层；本模块不打开端口，也不自动识别设备或手侧。
+   */
+
+  /** 列出已封装连接协议的产品；不等于通用线序/展示产品清单。 */
+  function listDeviceProducts() {
+    return deviceProductAdapters.map((adapter) => ({ ...adapter.profile }));
+  }
+
+  /**
+   * 在打开端口前验证产品与回调，不允许调用方覆盖产品固有协议。
+   * @param {object} options 产品名、串口路径/浏览器端口、手侧和 onData / onError 回调。
+   * @returns {object} 串口入口使用的配置、独立解析器、产品信息与原回调；不会连接设备。
+   */
+  function prepareProductConnection(options = {}) {
+    const invalid = (field, message) => {
+      throw new ShroomError('INVALID_CONFIG', message, { stage: 'configure', details: { field } });
+    };
+    if (!options || typeof options !== 'object' || Array.isArray(options)) invalid('options', '产品连接参数必须是一个对象。');
+    const adapter = getDeviceProductAdapter(options.product);
+    if (!adapter) {
+      const supported = deviceProductAdapters.map(({ profile }) => `${profile.product}（${profile.label}）`).join(' 或 ');
+      invalid('product', `请选择已支持的产品：${supported}。`);
+    }
+    const profile = adapter.profile;
+    const allowed = new Set(['product', 'path', 'port', 'filters', 'onData', 'onError', ...adapter.optionFields]);
+    for (const field of Object.keys(options)) {
+      if (!allowed.has(field)) invalid(field, `产品接口不接受 ${field}；波特率、分帧和线序已经内置。自定义协议请使用 connect()。`);
+    }
+    for (const field of ['onData', 'onError']) {
+      if (options[field] !== undefined && typeof options[field] !== 'function') invalid(field, `${field} 必须是函数。`);
+    }
+    adapter.validateOptions(options, invalid);
+    const serialOptions = {
+      baudRate: profile.baudRate, rows: profile.rows, cols: profile.cols,
+      ...(options.path === undefined ? {} : { path: options.path }),
+      ...(options.port === undefined ? {} : { port: options.port }),
+      ...(options.filters === undefined ? {} : { filters: options.filters }),
+    };
+    return {
+      serialOptions,
+      parser: adapter.createParser(options),
+      info: {
+        product: profile.product, label: profile.label, rows: profile.rows, cols: profile.cols,
+        ...adapter.connectionInfo(options),
+      },
+      onData: options.onData, onError: options.onError,
+    };
+  }
+
+  /**
+   * 从注册表创建产品自己的解析器；不靠帧长推测型号或手侧。
+   * @param {string} product 已注册的规范产品名或连接别名，未知产品一律拒绝。
+   * @param {object} options 产品解析选项；手套必须明确传入 side: left/right。
+   * @returns {object} 带 push / reset 和累计诊断计数的解析器；每个连接应各建一个。
+   */
+  function createProductParser(product, options = {}) {
+    const adapter = getDeviceProductAdapter(product);
+    if (!adapter) {
+      throw new ShroomError('INVALID_CONFIG', '请选择有效的产品及手套手侧。', { stage: 'configure' });
+    }
+    return adapter.createParser(options);
   }
 
   // ---------- core/mock.js ----------
@@ -1981,17 +1593,20 @@
    * 模拟数据源：没有硬件的时候也能把整条链路跑通。
    *
    * 它生成的是「原始字节」，和真实串口走同一条解码路径，
-   * 所以你用模拟数据写好的渲染代码，插上真设备不用改。
+   * 可用于验证通用帧的渲染和回调流程；模拟结果不代表真实产品的物理量或硬件验收。
    */
 
   const trustedMockDevices = new WeakSet();
 
-  /** Only SDK-created mock sources receive the license-free demo path. */
+  /** 只有 SDK 内部创建并登记的模拟实例才可走免授权演示路线，不能靠改公开 info 冒充。 */
   function isMockDevice(device) {
     return trustedMockDevices.has(device);
   }
 
-  /** Internal demo factory: bytes are generated here, never accepted from an external source. */
+  /**
+   * 内部产品模拟工厂：仅接收 product / side，生成字节并经过真实产品解析器。
+   * 输入不接收外部数据源；手套 IMU 保持零值，不生成虚构姿态。返回设备需显式 close。
+   */
   function createProductMockDevice(options = {}) {
     const session = prepareProductConnection(options);
     if (Object.keys(options).some((field) => !['product', 'side'].includes(field))) {
@@ -2055,11 +1670,12 @@
   }
 
   /**
-   * @param {object} [options]
+   * 创建周期性通用矩阵模拟源，经过 decodeFrame 后同步通知 onFrame 订阅。
+   * @param {object} [options] 矩阵、帧率与通用解码参数。
    * @param {number} [options.rows] 默认 32
    * @param {number} [options.cols] 默认 32
    * @param {number} [options.fps]  默认 30
-   * @returns {object} device：和 connect() 返回的是同一套接口
+   * @returns {object} device：提供帧/错误订阅、诊断与 close；close 会停止定时器并清理订阅。
    */
   function createMockDevice(options = {}) {
     const decodeOptions = options;
@@ -2117,11 +1733,14 @@
   }
 
   // ---------- backend/client.js ----------
-  /** HTTP/WebSocket client adapted from E:/ShroomSDK's BackendSdkClient.
-   * No serial, database or Node-only imports. Backend frames remain unchanged.
+  /**
+   * 连接已有主项目后端的 HTTP/WebSocket 客户端，改编自 E:/ShroomSDK 的 BackendSdkClient。
+   * 不直接读取串口或数据库，也不依赖 Node 专属模块；后端帧按原样交给调用方。
+   * 使用主项目的通道订阅协议，与 serveDevice 的独立产品流协议不同。
    */
   const DEFAULT_HTTP_BASE_URL = 'http://127.0.0.1:19245';
   const DEFAULT_WS_URL = 'ws://127.0.0.1:19999';
+  /** 默认接口表；契约中的路由可覆盖默认值，调用方的 routes 优先级最高。 */
   const DEFAULT_ROUTES = Object.freeze({
     channels: '/api/channels',
     wsStatus: '/api/ws/status',
@@ -2138,12 +1757,14 @@
     collectionStop: '/api/collection/stop',
   });
 
+  /** 解开后端的 { code, data } 包装；非零 code 抛错，没有包装的数据按原样返回。 */
   function normalizeHttpResult(payload) {
     if (!payload || typeof payload !== 'object' || !Object.hasOwn(payload, 'code')) return payload;
     if (payload.code !== 0) throw new Error(payload.message || payload.error || `Backend error ${payload.code}`);
     return payload.data;
   }
 
+  /** 校验后端地址协议，拒绝夹带凭据、查询参数或片段，统一去掉尾部斜线。 */
   function backendUrl(value, protocols) {
     const url = new URL(value);
     if (!protocols.includes(url.protocol) || url.username || url.password || url.search || url.hash) {
@@ -2152,11 +1773,13 @@
     return url.href.replace(/\/$/, '');
   }
 
+  /** HTTP 请求与 WS 建连共用正毫秒数校验。 */
   function backendTimeout(value) {
     if (!Number.isFinite(value) || value <= 0) throw new TypeError('timeoutMs must be a positive number');
     return value;
   }
 
+  /** 将单通道或通道数组统一为去重列表；仅校验名称，不自动改变通道标识。 */
   function backendChannels(value) {
     const channels = typeof value === 'string' ? [value] : value;
     if (!Array.isArray(channels) || channels.some((item) => typeof item !== 'string' || !item.trim())) {
@@ -2165,7 +1788,12 @@
     return [...new Set(channels)];
   }
 
+  /**
+   * 后端客户端：HTTP 负责查询/控制，WS 负责通道订阅及原始帧事件。
+   * 构造时不连接网络；主动调用 request/getContract/connectRealtime 等方法才发起请求。
+   */
   class BackendSdkClient {
+    /** 可注入 fetch/WebSocket；headers 用于 HTTP，contract/routes 适配已有后端路由。 */
     constructor({
       httpBaseUrl = DEFAULT_HTTP_BASE_URL, wsUrl = DEFAULT_WS_URL,
       fetchImpl = globalThis.fetch, WebSocketImpl = globalThis.WebSocket,
@@ -2186,8 +1814,8 @@
       this.connectionTimer = null;
     }
 
-    // A small browser-safe emitter. Unlike node:events, an unhandled 'error'
-    // does not crash the process. Applications should still listen for errors.
+    // 跨浏览器事件分发器：没有 error 监听器时不会按 node:events 规则抛错。
+    // 应用仍应监听 error；业务监听器自身抛出的异常不会在这里被吞掉。
     on(event, handler) {
       if (typeof handler !== 'function') throw new TypeError('event handler must be a function');
       if (!this.listeners.has(event)) this.listeners.set(event, new Set());
@@ -2195,6 +1823,7 @@
       return this;
     }
 
+    /** 移除指定监听器，也支持通过原处理函数移除 once 包装。 */
     off(event, handler) {
       for (const listener of this.listeners.get(event) || []) {
         if (listener === handler || listener.original === handler) this.listeners.get(event).delete(listener);
@@ -2202,6 +1831,7 @@
       return this;
     }
 
+    /** 只触发一次；调用用户处理函数前先移除，避免重入时重复执行。 */
     once(event, handler) {
       if (typeof handler !== 'function') throw new TypeError('event handler must be a function');
       const once = (...args) => { this.off(event, once); handler(...args); };
@@ -2209,16 +1839,19 @@
       return this.on(event, once);
     }
 
+    /** 传事件名只清理该事件；省略参数清理所有事件监听。 */
     removeAllListeners(event) {
       if (event === undefined) this.listeners.clear();
       else this.listeners.delete(event);
       return this;
     }
 
+    /** 基于当前监听器快照分发，回调期间增删监听不影响这一轮遍历。 */
     emit(event, ...args) {
       for (const handler of [...(this.listeners.get(event) || [])]) handler(...args);
     }
 
+    /** 查找命名路由并编码替换 :id 等路径参数，缺少参数时立即抛错。 */
     route(name, params = {}) {
       const template = this.routes[name];
       if (typeof template !== 'string') throw new Error(`Unknown backend route: ${name}`);
@@ -2228,11 +1861,16 @@
       });
     }
 
+    /**
+     * 请求命名路由或根相对路径；body 自动编码为 JSON，query 添加到查询串。
+     * 默认返回解包后的 data；raw 为 true 时仍校验业务错误，但保留完整响应对象。
+     * 支持调用方 AbortSignal 和超时，结束时清理计时器及取消监听。
+     */
     async request(routeOrName, { method = 'GET', body, query = {}, raw = false,
       routeParams, headers, signal, timeoutMs = this.timeoutMs } = {}) {
       if (typeof this.fetchImpl !== 'function') throw new Error('fetch is unavailable; use Node.js 18+ or inject fetchImpl');
       const path = routeOrName.startsWith('/') ? routeOrName : this.route(routeOrName, routeParams);
-      // Routes must stay on the configured backend, including contract-provided ones.
+      // 包括后端契约提供的路由，也必须是配置后端上的根相对路径。
       if (!path.startsWith('/') || path.startsWith('//') || path.includes('\\')) {
         throw new TypeError('Backend routes must be root-relative paths');
       }
@@ -2268,6 +1906,7 @@
       }
     }
 
+    /** 获取并缓存后端契约；refresh 强制刷新，显式 routes 配置仍保持最高优先级。 */
     async getContract({ refresh = false } = {}) {
       if (this.contract && !refresh) return this.contract;
       const contract = await this.request('sdkContract');
@@ -2277,23 +1916,40 @@
       return contract;
     }
 
+    /** 查询通道配置，保留后端完整响应格式。 */
     getChannels() { return this.request('channels', { raw: true }); }
+    /** 查询后端 WS 服务状态，保留完整响应格式。 */
     getWsStatus() { return this.request('wsStatus', { raw: true }); }
+    /** 列出已有展示系统，保留完整响应格式。 */
     listDisplaySystems() { return this.request('displaySystems', { raw: true }); }
+    /** 按 ID 读取展示系统；ID 会经过 URL 路径编码。 */
     getDisplaySystem(id) { return this.request('displaySystemById', { raw: true, routeParams: { id } }); }
+    /** 查询运行后端的电脑上的串口，不是当前网页所在电脑的串口。 */
     listSerialPorts() { return this.request('serialPorts'); }
+    /** 查询指定角色的串口状态；省略 role 时交由后端决定查询范围。 */
     getSerialStatus(role) { return this.request('serialStatus', { query: { role } }); }
+    /** 获取后端当前传感器类型。 */
     getCurrentSensor() { return this.request('sensorCurrent'); }
+    /** 显式请求后端切换传感器类型，会改变后端配置。 */
     setSensorType(type) { return this.request('sensorType', { method: 'POST', body: { type } }); }
+    /** 请求后端打开角色对应串口；兼容 port/path/portPath，优先使用 port。 */
     openSerial({ role = 'sit', port, path, portPath } = {}) {
       const selectedPort = port || path || portPath;
       if (!selectedPort) throw new TypeError('openSerial requires a port');
       return this.request('serialOpen', { method: 'POST', body: { role, port: selectedPort } });
     }
+    /** 请求后端关闭指定角色的串口，默认角色为 sit。 */
     closeSerial({ role = 'sit' } = {}) { return this.request('serialClose', { method: 'POST', body: { role } }); }
+    /** 调用主项目的采集接口，options 按其契约原样发送；不同于独立流的 startRecording。 */
     startCollection(options = {}) { return this.request('collectionStart', { method: 'POST', body: options }); }
+    /** 请求主项目停止采集；具体返回结果由该后端定义。 */
     stopCollection() { return this.request('collectionStop', { method: 'POST', body: {} }); }
 
+    /**
+     * 建立或复用 WS，返回连接对象而非等待连接完成的 Promise。
+     * channels 在连接成功后订阅；通过 open/error/close 事件观察连接结果。
+     * 此操作不会自动打开后端串口，也不会自动调用 startCollection。
+     */
     connectRealtime({ channels = [], timeoutMs = this.timeoutMs, protocols } = {}) {
       const requested = backendChannels(channels);
       backendTimeout(timeoutMs);
@@ -2315,7 +1971,7 @@
       ws.onopen = () => {
         if (this.ws !== ws) return;
         clearTimeout(this.connectionTimer);
-        // Subscribe before notifying listeners, so on('open') may safely disconnect.
+        // 先完成排队订阅再通知 open，避免 open 回调主动断开后继续使用旧连接。
         if (this.pendingChannels.length) this.subscribe(this.pendingChannels);
         this.pendingChannels = [];
         this.emit('open');
@@ -2335,16 +1991,18 @@
       return ws;
     }
 
+    /** 解除旧连接回调与超时状态，避免迟到事件影响下一条连接。 */
     releaseSocket(ws) {
       clearTimeout(this.connectionTimer);
       this.connectionTimer = null;
       this.pendingChannels = [];
       ws.onopen = ws.onclose = ws.onmessage = null;
-      // ws (Node.js) may emit an error when closing during the opening handshake.
+      // Node 的 ws 在握手期间关闭时可能继续报错，保留空监听以完成清理。
       ws.onerror = () => {};
       if (this.ws === ws) this.ws = null;
     }
 
+    /** 关闭本客户端的订阅连接；不向后端发送关闭串口或停止采集指令。 */
     disconnectRealtime() {
       const ws = this.ws;
       if (!ws) return;
@@ -2353,17 +2011,21 @@
       this.emit('close', { code: 1000, reason: 'client disconnect', wasClean: false });
     }
 
+    /** 仅在连接已打开时发送 JSON；连接中或已关闭时同步抛错。 */
     sendRealtime(message) {
       if (!this.ws || this.ws.readyState !== 1) throw new Error('WebSocket is not connected');
       this.ws.send(JSON.stringify(message));
     }
+    /** 订阅通道；消息类型优先使用后端契约中的 SUBSCRIBE。 */
     subscribe(channels) {
       this.sendRealtime({ type: this.contract?.websocket?.messageTypes?.SUBSCRIBE || 'subscribe', channels: backendChannels(channels) });
     }
+    /** 取消通道订阅，不关闭 WS，也不停止后端采集。 */
     unsubscribe(channels) {
       this.sendRealtime({ type: this.contract?.websocket?.messageTypes?.UNSUBSCRIBE || 'unsubscribe', channels: backendChannels(channels) });
     }
 
+    /** 分发完整 message 与逐帧 frame；无法解析的文本进入 raw 事件，帧内容不做 SDK 映射。 */
     handleRealtimeMessage(rawMessage) {
       let message = rawMessage;
       if (typeof rawMessage === 'string') {
@@ -2378,6 +2040,97 @@
         this.emit('frame', message);
       }
     }
+  }
+
+  // ---------- core/colormap.js ----------
+  /**
+   * 调色板：把 0~1 的值映射成颜色。
+   *
+   * 内置 shroom、jet、jetWhite、grey；均返回 0~255 的 [R, G, B] 数组。
+   * 输入先限制到 0~1，新增配色可向 COLORMAPS 注册同签名函数。
+   */
+
+  function clamp01(t) {
+    return t < 0 ? 0 : t > 1 ? 1 : t;
+  }
+
+  /** 经典 jet 彩虹配色：蓝 → 青 → 绿 → 黄 → 红 */
+  function jet(t) {
+    const x = clamp01(t);
+    let r = 1;
+    let g = 1;
+    let b = 1;
+    if (x < 0.25) {
+      r = 0;
+      g = 4 * x;
+    } else if (x < 0.5) {
+      r = 0;
+      b = 1 + 4 * (0.25 - x);
+    } else if (x < 0.75) {
+      r = 4 * (x - 0.5);
+      b = 0;
+    } else {
+      g = 1 + 4 * (0.75 - x);
+      b = 0;
+    }
+    return [Math.round(255 * r), Math.round(255 * g), Math.round(255 * b)];
+  }
+
+  /** 白底 jet：0 是白色，压力越大越红。适合打印和浅色界面 */
+  function jetWhite(t) {
+    const x = clamp01(t);
+    if (x <= 0.001) return [255, 255, 255];
+    const [r, g, b] = jet(x);
+    const fade = Math.min(1, x / 0.15);
+    return [
+      Math.round(255 + (r - 255) * fade),
+      Math.round(255 + (g - 255) * fade),
+      Math.round(255 + (b - 255) * fade),
+    ];
+  }
+
+  /** 灰度：黑到白 */
+  function grey(t) {
+    const v = Math.round(255 * clamp01(t));
+    return [v, v, v];
+  }
+
+  /**
+   * Shroom 上位机同款配色：深紫底 → 蓝紫 → 青 → 绿 → 黄 → 红。
+   * 色标和取值点跟正式上位机一致，两边看到的颜色能对上。
+   */
+  const SHROOM_STOPS = [
+    [0.0, [21, 18, 42]],
+    [0.4, [62, 0, 248]],
+    [0.55, [149, 253, 237]],
+    [0.7, [154, 255, 62]],
+    [0.85, [246, 254, 71]],
+    [1.0, [216, 36, 36]],
+  ];
+
+  /** 按相邻色标做 RGB 线性插值，保持与 Shroom 上位机一致的色阶。 */
+  function shroom(t) {
+    const x = clamp01(t);
+    for (let i = 1; i < SHROOM_STOPS.length; i += 1) {
+      const [p1, c1] = SHROOM_STOPS[i];
+      if (x > p1) continue;
+      const [p0, c0] = SHROOM_STOPS[i - 1];
+      const k = p1 === p0 ? 0 : (x - p0) / (p1 - p0);
+      return [
+        Math.round(c0[0] + (c1[0] - c0[0]) * k),
+        Math.round(c0[1] + (c1[1] - c0[1]) * k),
+        Math.round(c0[2] + (c1[2] - c0[2]) * k),
+      ];
+    }
+    return SHROOM_STOPS[SHROOM_STOPS.length - 1][1].slice();
+  }
+
+  const COLORMAPS = { shroom, jet, jetWhite, grey };
+
+  /** 按名字取调色板，取不到就回退到 jet；直接传函数时原样返回，供调用方自定义颜色。 */
+  function getColormap(name) {
+    if (typeof name === 'function') return name;
+    return COLORMAPS[name] ?? jet;
   }
 
   // ---------- web/heatmap.js ----------
@@ -2436,6 +2189,7 @@
    *                                    按下面却是上面鼓起来，就把它设成 false
    * @param {string}  [options.background] heat / grid 模式的底色，默认透明（露出 canvas 自己的底色）。
    *                                    Shroom 桌面端热力图铺的是 '#666'，想一模一样就传它
+   * @returns {object} 提供 render/resize/setOptions/clear；绘图增益只影响显示，不改帧数据。
    */
   function createHeatmap(target, options = {}) {
     const canvas = typeof target === 'string' ? document.querySelector(target) : target;
@@ -2456,6 +2210,7 @@
     let flipY = options.flipY !== false;
     let background = options.background ?? null;
 
+    /** 未指定或未知模式统一回退为点阵，使切换入口与默认配置一致。 */
     function normalizeMode(m) {
       return m === 'grid' ? 'grid' : m === 'heat' ? 'heat' : 'dots';
     }
@@ -2500,6 +2255,7 @@
     let screenW = 0;
     let screenH = 0;
 
+    /** 构建并归一化高斯核，避免平滑本身改变整体亮度。 */
     function buildKernel() {
       kernelR = Math.ceil(BLUR * 2.57);
       kernel = new Float32Array(kernelR * 2 + 1);
@@ -2513,6 +2269,7 @@
     }
     buildKernel();
 
+    /** 矩阵尺寸改变时才重建点阵缓冲，同时清空不再匹配形状的跨帧柔化值。 */
     function ensureLattice(rows, cols) {
       if (latRows === rows && latCols === cols) return;
       latRows = rows;
@@ -2901,6 +2658,465 @@
     };
   }
 
+  // ---------- core/framer.js ----------
+  /**
+   * 切帧器：把串口过来的字节流切成一帧一帧。
+   *
+   * 协议约定（可通过 options 覆盖）：
+   *   先找到分隔符 AA 55 03 99，再把两个分隔符之间的字节作为一帧。
+   *   首个分隔符前的数据不接收；产品接口另有固定载荷 + 尾分隔符解析器（product.js）。
+   *
+   * 用法：
+   *   const framer = createFramer()
+   *   const frames = framer.push(chunk)   // chunk 是 Uint8Array，返回本次切出的若干帧
+   */
+
+
+  const DEFAULT_DELIMITER = [0xaa, 0x55, 0x03, 0x99];
+
+  /** 在 haystack 中从 from 开始找 needle，找不到返回 -1 */
+  function indexOfBytes(haystack, needle, from) {
+    const limit = haystack.length - needle.length;
+    outer: for (let i = from; i <= limit; i += 1) {
+      for (let j = 0; j < needle.length; j += 1) {
+        if (haystack[i + j] !== needle[j]) continue outer;
+      }
+      return i;
+    }
+    return -1;
+  }
+
+  /** 合并未消费的缓冲区与新字节，创建独立数组，避免上游复用 chunk 时改写半包。 */
+  function concat(a, b) {
+    const out = new Uint8Array(a.length + b.length);
+    out.set(a, 0);
+    out.set(b, a.length);
+    return out;
+  }
+
+  /**
+   * @param {object} [options] 通用分帧配置，每个独立字节流应创建自己的切帧器。
+   * @param {number[]} [options.delimiter]  帧分隔符，默认 [0xAA,0x55,0x03,0x99]
+   * @param {number}   [options.minLength]  小于这个长度的帧当作脏帧丢弃
+   * @param {number}   [options.maxLength]  大于这个长度的帧当作脏帧丢弃
+   * @param {boolean}  [options.lockLength] 锁定帧长，默认 true，见下面 LOCK_AFTER 处的说明
+   * @returns {object} push 返回本次完整载荷数组；reset 清理半包、锁长状态与累计丢帧数。
+   */
+  function createFramer(options = {}) {
+    options = validateFramerOptions(options);
+    const delimiter = Uint8Array.from(options.delimiter ?? DEFAULT_DELIMITER);
+    const minLength = options.minLength ?? 8;
+    const maxLength = options.maxLength ?? 8192;
+    const lockLength = options.lockLength !== false;
+    // 缓冲区上限：超过后只保留末尾 maxLength 字节，避免一直收不到下个分隔符时无限增长。
+    const bufferLimit = maxLength * 4;
+
+    // 帧长锁定。分隔符只有 4 个字节，数据里迟早会撞出一个一模一样的，
+    // 于是切出一个长度不对的短帧。这种帧长度多半不是完全平方数，解码时会退化成
+    // 1×N 一条横线，画面就在方阵和横线之间狂闪——这不是渲染的问题，是脏帧混进来了。
+    // 所以：连着几帧长度一致就把它锁死，之后长度对不上的一律当脏帧丢掉。
+    // 万一锁错了（比如第一帧本身就是残的），另一个长度连着来够多次就改锁它，能自己纠回来。
+    const LOCK_AFTER = 3;
+    const RELOCK_AFTER = 12;
+    let locked = 0;
+    let runLength = 0;
+    let runCount = 0;
+
+    let buffer = new Uint8Array(0);
+    let dropped = 0;
+
+    /** 返回这一帧要不要收下 */
+    function accept(len) {
+      if (!lockLength) return true;
+      if (len === runLength) runCount += 1;
+      else {
+        runLength = len;
+        runCount = 1;
+      }
+      if (!locked) {
+        if (runCount >= LOCK_AFTER) locked = len;
+        return true; // 还没锁上，先全收下，免得开头几帧被白丢
+      }
+      if (len === locked) return true;
+      if (runCount >= RELOCK_AFTER) {
+        locked = len; // 锁错了，改锁这个
+        return true;
+      }
+      return false;
+    }
+
+    /** 输入一个字节块，可能返回零帧或多帧；末尾缺少分隔符的载荷留到下次继续拼接。 */
+    function push(chunk) {
+      if (!chunk || chunk.length === 0) return [];
+      if (!(chunk instanceof Uint8Array) && (!Array.isArray(chunk)
+        || !chunk.every((byte) => Number.isInteger(byte) && byte >= 0 && byte <= 255))) {
+        throw new ShroomError('PARSE_FAILED', '输入数据必须是字节数组', { stage: 'parse' });
+      }
+      buffer = concat(buffer, chunk instanceof Uint8Array ? chunk : Uint8Array.from(chunk));
+
+      const frames = [];
+      let start = indexOfBytes(buffer, delimiter, 0);
+
+      if (start < 0) {
+        // 还没对上分隔符，只保留末尾几个字节（分隔符可能被切断在两个 chunk 之间）
+        if (buffer.length > delimiter.length) {
+          buffer = buffer.slice(buffer.length - delimiter.length + 1);
+        }
+        return frames;
+      }
+
+      for (;;) {
+        const next = indexOfBytes(buffer, delimiter, start + delimiter.length);
+        if (next < 0) break;
+        const payload = buffer.slice(start + delimiter.length, next);
+        if (payload.length >= minLength && payload.length <= maxLength && accept(payload.length)) {
+          frames.push(payload);
+        } else {
+          dropped += 1;
+        }
+        start = next;
+      }
+
+      buffer = buffer.slice(start);
+      if (buffer.length > bufferLimit) buffer = buffer.slice(-maxLength);
+      return frames;
+    }
+
+    /** 供连接重新开始时调用；不能把前一个设备的半包或锁定长度带到新字节流中。 */
+    function reset() {
+      buffer = new Uint8Array(0);
+      dropped = 0;
+      locked = 0;
+      runLength = 0;
+      runCount = 0;
+    }
+
+    return {
+      push,
+      reset,
+      /** 被丢弃的脏帧数量，用来判断协议参数是不是配错了 */
+      get droppedCount() {
+        return dropped;
+      },
+      /** 锁定下来的帧长（字节）。还没锁上是 0 */
+      get frameLength() {
+        return locked;
+      },
+    };
+  }
+
+  // ---------- core/license.js ----------
+  /**
+   * SDK 授权核心：与上位机共用密钥后台，以 shroom-sdk 产品类型隔离使用权限。
+   * 本模块维护进程/页面内的授权会话、RSA 验签、在线续验及失效通知，不持久化密钥。
+   * 真实串口、WS 服务和录制入口通过 assertLicense / watchLicense 接入同一会话。
+   */
+
+  const SDK_PRODUCT_TYPE = 'shroom-sdk';
+  const DEFAULT_LICENSE_SERVER = 'https://shroom.jq-industries.com';
+  const DEFAULT_LICENSE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
+  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0xly+Gg/8LvoWV0VRO/k
+  l1dEQRt7N6yilC2yiza+W1V2aXWKoiLlkPcJa9KQmNArjcHq8nBLlEppHjwEm2u5
+  SrgADP/frf1n8GZpRejZo6Ab1psppUm/neVcoxsK+0z6a00B9syv8AEIt2jrN4ZZ
+  zz51MgJqzgXmqPaibtzGl8RFr1jYJ2JpXNes6BqFpjQng1S8hu4VgWBIljkE3jKF
+  fHwTP9KPtEcoH/uSPmW5X7IuwpDW2QO6sO61uv/luLI4Wx4upX4CIUepwIzDyG6B
+  fYx2AAZJ1oNEBW28wIUf7i5sVT0FsWRsR55Q3KUcsiqAUVduKiKTQN3dnmbyC1Fg
+  AQIDAQAB
+  -----END PUBLIC KEY-----`;
+
+  const sdkLicenseWatchers = new Set();
+  // WeakMap 将来源权限与设备实例绑定；public info 被应用修改时不会改变这份内部记录。
+  const sdkLicensedDevices = new WeakMap();
+  let sdkLicenseSession = null;
+  let sdkLicenseRevision = 0;
+  let sdkLicenseWatchTimer = null;
+  let sdkLicenseLastError = null;
+  const sdkLicenseMonotonic = () => globalThis.performance?.now() ?? Date.now();
+  const sdkLicenseFailure = (code, message) => new ShroomError(code, message, {
+    stage: 'license', suggestion: '请在共用授权后台签发或续期 Shroom SDK 产品密钥，核对有效期、功能权限与电脑名额后重新激活。',
+  });
+
+  /** 在线会话用服务器时间加单调时钟增量；本地离线会话在本次运行内保留已见最大时间。 */
+  function sdkLicenseTime(session) {
+    session.highWater = Math.max(session.highWater, Date.now(), session.localStart + Math.max(0, sdkLicenseMonotonic() - session.monotonicStart));
+    return session.mode === 'offline-local' ? session.highWater
+      : session.serverStart + Math.max(0, sdkLicenseMonotonic() - session.monotonicStart);
+  }
+
+  /** 将毫秒时间戳或可解析日期统一为毫秒，缺失或无效时间必须拒绝。 */
+  function sdkLicenseExpiry(value) {
+    const expires = typeof value === 'number' ? value : Date.parse(value);
+    if (!Number.isFinite(expires) || expires <= 0) throw sdkLicenseFailure('LICENSE_INVALID', '许可证没有有效的到期时间。');
+    return expires;
+  }
+
+  function sdkLicenseFeatures(value) {
+    if (!Array.isArray(value) || value.some((entry) => typeof entry !== 'string')) {
+      throw sdkLicenseFailure('LICENSE_INVALID', 'SDK 许可证缺少功能授权。');
+    }
+    // SDK 不限制设备型号，包含自定义串口路线；旧签名码无需仅为 serial.raw 重新签发。
+    // 实际使用 serial.raw 时仍由 assertLicense 检查 serial 主权限，不能据此越过功能限制。
+    return [...new Set([...value, 'serial.raw'])];
+  }
+
+  /** 返回可公开的授权状态与权限副本；无效授权返回 valid: false，不暴露密钥或请求凭据。 */
+  function getLicenseStatus() {
+    try { assertLicense(); } catch (error) {
+      return { valid: false, productType: SDK_PRODUCT_TYPE, code: error.code, message: error.message };
+    }
+    const session = sdkLicenseSession;
+    return {
+      valid: true, productType: SDK_PRODUCT_TYPE, mode: session.mode,
+      expiresAt: session.expiresAt, leaseExpiresAt: session.leaseExpiresAt,
+      products: [...session.products], allProducts: session.all, features: [...session.features],
+    };
+  }
+
+  /**
+   * 同步检查有效期、在线租期和 requirement.feature；失败抛出 ShroomError。
+   * 不发网络请求，便于 Web Serial 保留按钮点击所需的用户手势；型号不作为授权限制。
+   */
+  function assertLicense(requirement = {}) {
+    const session = sdkLicenseSession;
+    if (!session) throw sdkLicenseLastError ?? sdkLicenseFailure('LICENSE_REQUIRED', '连接真实设备前请先激活 SDK 产品密钥。');
+    const now = sdkLicenseTime(session);
+    if (now >= session.expiresAt) throw sdkLicenseFailure('LICENSE_EXPIRED', 'SDK 许可证已到期，采集已停止。');
+    if (now >= session.leaseExpiresAt) throw sdkLicenseFailure('LICENSE_UNAVAILABLE', '无法续验在线授权，当前授权时限已结束。');
+    if (requirement.feature === 'serial.raw' && !session.features.includes('serial')) {
+      throw sdkLicenseFailure('LICENSE_FEATURE_DENIED', 'SDK 许可证未包含功能 serial。');
+    }
+    if (requirement.feature && !session.features.includes(requirement.feature)) {
+      throw sdkLicenseFailure('LICENSE_FEATURE_DENIED', `SDK 许可证未包含功能 ${requirement.feature}。`);
+    }
+  }
+
+  /** 按每个订阅的功能要求复查权限；失效回调只触发一次，无订阅后释放轮询定时器。 */
+  function sdkLicenseNotify() {
+    for (const watcher of [...sdkLicenseWatchers]) {
+      if (!sdkLicenseWatchers.has(watcher)) continue;
+      try { assertLicense(watcher.requirement); } catch (error) {
+        sdkLicenseWatchers.delete(watcher);
+        try { watcher.onInvalid(error); } catch { /* 应用回调异常不能阻止其他连接收到关闭通知。 */ }
+      }
+    }
+    if (!sdkLicenseWatchers.size && sdkLicenseWatchTimer) {
+      clearInterval(sdkLicenseWatchTimer);
+      sdkLicenseWatchTimer = null;
+    }
+  }
+
+  /**
+   * 订阅授权失效：到期、后台拒绝、主动清除或功能变化时通知一次，返回取消订阅函数。
+   * 注册后立即检查，此后每 250 ms 复查本地会话；网络续验由独立的刷新任务负责。
+   */
+  function watchLicense(requirement, onInvalid) {
+    const watcher = { requirement: { ...requirement }, onInvalid };
+    sdkLicenseWatchers.add(watcher);
+    if (!sdkLicenseWatchTimer) {
+      sdkLicenseWatchTimer = setInterval(sdkLicenseNotify, 250);
+      sdkLicenseWatchTimer.unref?.();
+    }
+    sdkLicenseNotify();
+    return () => {
+      sdkLicenseWatchers.delete(watcher);
+      sdkLicenseNotify();
+    };
+  }
+
+  /** 将连接时的权限要求绑定到设备实例；修改设备公开的 info 不会改变这份内部记录。 */
+  function markLicensedDevice(device, requirement) {
+    sdkLicensedDevices.set(device, Object.freeze({ ...requirement }));
+    return device;
+  }
+
+  /** 返回设备权限要求的副本；未登记的外部来源返回 null，由服务层决定如何校验。 */
+  function getDeviceLicenseRequirement(device) {
+    const requirement = sdkLicensedDevices.get(device);
+    return requirement ? { ...requirement } : null;
+  }
+
+  /** 清除运行期会话、取消续验并通知使用者停采；递增版本号，使尚未返回的旧请求失效。 */
+  function clearLicense() {
+    sdkLicenseRevision += 1;
+    if (sdkLicenseSession?.refreshTimer) clearTimeout(sdkLicenseSession.refreshTimer);
+    sdkLicenseSession = null;
+    sdkLicenseLastError = null;
+    sdkLicenseNotify();
+  }
+
+  /** 校验授权服务地址，禁止 URL 携带凭据、查询和片段；HTTP 仅用于本机调试。 */
+  function sdkLicenseServer(value) {
+    let url;
+    try { url = new URL(value ?? DEFAULT_LICENSE_SERVER); } catch { throw sdkLicenseFailure('INVALID_CONFIG', '授权服务地址无效。'); }
+    if (url.username || url.password || url.search || url.hash || (url.protocol !== 'https:'
+      && !(url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)))) {
+      throw sdkLicenseFailure('INVALID_CONFIG', '授权服务必须使用 HTTPS，本机调试可以使用 localhost HTTP。');
+    }
+    return url.href.replace(/\/$/, '');
+  }
+
+  function sdkLicenseDecodeBase64(value) {
+    if (typeof value !== 'string' || !/^[A-Za-z0-9+/]+={0,2}$/.test(value) || value.length % 4 !== 0) {
+      throw sdkLicenseFailure('LICENSE_INVALID', '许可证的 Base64 格式无效。');
+    }
+    return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+  }
+
+  /**
+   * 先对信封内 payload 的 Base64 文本验 RSA-SHA256 签名，再解析其内容。
+   * 不把“能解码 JSON”当作可信授权；浏览器与 Node 使用相同的 Web Crypto 验签规则。
+   */
+  async function sdkLicenseVerifyOffline(key, publicKey) {
+    try {
+      const envelope = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(sdkLicenseDecodeBase64(key)));
+      if (typeof envelope.payload !== 'string' || typeof envelope.signature !== 'string') throw new Error('envelope');
+      const pem = publicKey ?? DEFAULT_LICENSE_PUBLIC_KEY;
+      if (typeof pem !== 'string') throw new Error('publicKey');
+      const der = sdkLicenseDecodeBase64(pem.replace(/-----[A-Z ]+-----|\s/g, ''));
+      const subtle = globalThis.crypto?.subtle ?? (await import('node:crypto')).webcrypto.subtle;
+      const trustedKey = await subtle.importKey('spki', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+      if (!await subtle.verify('RSASSA-PKCS1-v1_5', trustedKey, sdkLicenseDecodeBase64(envelope.signature), new TextEncoder().encode(envelope.payload))) {
+        throw new Error('signature');
+      }
+      const payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(sdkLicenseDecodeBase64(envelope.payload)));
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) throw new Error('payload');
+      return payload;
+    } catch {
+      throw sdkLicenseFailure('LICENSE_INVALID', '离线许可证格式或 RSA 签名无效。');
+    }
+  }
+
+  /** 共用后台仍需明确产品类型，防止把上位机密钥当作 SDK 密钥使用。 */
+  function sdkLicenseProduct(productType) {
+    if (productType !== SDK_PRODUCT_TYPE) throw sdkLicenseFailure('LICENSE_PRODUCT_MISMATCH', '此密钥不属于 Shroom SDK；上位机密钥不能启用 SDK。');
+  }
+
+  /**
+   * 请求后台授权并取得短租期；单次超时 5 秒，禁止缓存和重定向。
+   * 租期至多 60 秒且不晚于许可证到期时间；带签名码时再与签名权限取交集。
+   */
+  async function sdkLicenseRequest(config) {
+    const controller = new AbortController();
+    const requestStart = sdkLicenseMonotonic();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(`${config.serverUrl}${config.path}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store', redirect: 'error', signal: controller.signal,
+        body: JSON.stringify({ key: config.key, productType: SDK_PRODUCT_TYPE, clientTime: Date.now(),
+          ...(config.deviceId ? { deviceId: config.deviceId } : {}) }),
+      });
+      if (!response.ok) throw sdkLicenseFailure('LICENSE_UNAVAILABLE', '授权服务暂时不可用，请检查网络或联系管理员。');
+      const result = await response.json();
+      if (result.valid !== true) {
+        const code = result.status === 'PRODUCT_MISMATCH' || result.status === 'LICENSE_PRODUCT_MISMATCH' ? 'LICENSE_PRODUCT_MISMATCH'
+          : result.status === 'EXPIRED' ? 'LICENSE_EXPIRED'
+            : result.status === 'DEVICE_ID_REQUIRED' ? 'LICENSE_DEVICE_REQUIRED' : 'LICENSE_REJECTED';
+        throw sdkLicenseFailure(code, `授权未通过（${String(result.status ?? 'INVALID').slice(0, 64)}）。请核对产品、有效期和电脑名额。`);
+      }
+      sdkLicenseProduct(result.productType);
+      const serverTime = sdkLicenseExpiry(result.time);
+      const expiresAt = sdkLicenseExpiry(result.expireTimestamp ?? config.offlinePayload?.expireDate);
+      const leaseExpiresAt = Math.min(expiresAt, serverTime + 60000, result.leaseExpiresAt == null ? Infinity : sdkLicenseExpiry(result.leaseExpiresAt));
+      // 把本次请求耗时计入时间基准，避免慢请求返回后获得额外可用时长。
+      const effectiveServerTime = serverTime + Math.max(0, sdkLicenseMonotonic() - requestStart);
+      if (expiresAt <= effectiveServerTime || leaseExpiresAt <= effectiveServerTime) throw sdkLicenseFailure('LICENSE_EXPIRED', 'SDK 授权已过期。');
+      const entitlement = { all: true, products: [], features: sdkLicenseFeatures(result.sdkFeatures),
+        expiresAt, leaseExpiresAt, serverStart: effectiveServerTime };
+      if (config.offlinePayload) {
+        const signedExpiry = sdkLicenseExpiry(config.offlinePayload.expireDate);
+        const signedFeatures = sdkLicenseFeatures(config.offlinePayload.sdkFeatures);
+        entitlement.expiresAt = Math.min(signedExpiry, entitlement.expiresAt);
+        entitlement.leaseExpiresAt = Math.min(signedExpiry, entitlement.leaseExpiresAt);
+        entitlement.features = entitlement.features.filter((feature) => signedFeatures.includes(feature));
+      }
+      return entitlement;
+    } catch (error) {
+      if (error instanceof ShroomError) throw error;
+      throw sdkLicenseFailure('LICENSE_UNAVAILABLE', '授权服务连接失败，未获得新的授权时限。');
+    } finally { clearTimeout(timer); }
+  }
+
+  /**
+   * 在剩余租期中途续验，单次间隔不超过 30 秒；版本号隔离清除或重新激活后的旧请求。
+   * 暂时断网仅允许用完已有租期，后台明确拒绝则清空会话并通知使用者停止。
+   */
+  function sdkLicenseScheduleRefresh(session, revision) {
+    const remaining = session.leaseExpiresAt - sdkLicenseTime(session);
+    session.refreshTimer = setTimeout(async () => {
+      if (sdkLicenseRevision !== revision || sdkLicenseSession !== session) return;
+      try {
+        const next = await sdkLicenseRequest(session.config);
+        if (sdkLicenseRevision !== revision || sdkLicenseSession !== session) return;
+        Object.assign(session, next, { localStart: Date.now(), highWater: Date.now(), monotonicStart: sdkLicenseMonotonic() });
+        sdkLicenseLastError = null;
+        sdkLicenseNotify();
+      } catch (error) {
+        if (sdkLicenseRevision !== revision || sdkLicenseSession !== session) return;
+        if (error.code !== 'LICENSE_UNAVAILABLE') {
+          sdkLicenseSession = null;
+          sdkLicenseLastError = error;
+        }
+        sdkLicenseNotify();
+      }
+      if (sdkLicenseSession === session && sdkLicenseRevision === revision && sdkLicenseTime(session) < session.leaseExpiresAt) {
+        sdkLicenseScheduleRefresh(session, revision);
+      }
+    }, Math.max(50, Math.min(30000, remaining / 2)));
+    session.refreshTimer.unref?.();
+  }
+
+  /**
+   * 连接真实设备前激活密钥，成功返回 getLicenseStatus() 的公开状态。
+   * @param {string} key SDK 在线密钥或 RSA 签名离线码，核心只在内存中使用。
+   * @param {object} options mode、serverUrl、稳定 deviceId，以及可选的离线验签 publicKey。
+   * offline 表示签名码格式；限定电脑数量的离线码仍须联网核验并续验名额。
+   * 每次激活先清除旧会话，旧连接会收到失效通知；并发激活只接受最后一次操作的结果。
+   */
+  async function activateLicense(key, options = {}) {
+    if (typeof key !== 'string' || !key.trim() || key.length > 16384 || !options || typeof options !== 'object' || Array.isArray(options)) {
+      throw sdkLicenseFailure('INVALID_CONFIG', '请提供有效的许可证和激活参数。');
+    }
+    const mode = options.mode ?? 'online';
+    if (!['online', 'offline'].includes(mode)) throw sdkLicenseFailure('INVALID_CONFIG', '授权方式应为 online 或 offline。');
+    if (options.deviceId !== undefined && (typeof options.deviceId !== 'string' || !/^[a-f0-9]{64}$/.test(options.deviceId))) {
+      throw sdkLicenseFailure('INVALID_CONFIG', 'deviceId 必须是稳定的 64 位小写十六进制电脑标识。');
+    }
+    clearLicense();
+    const revision = sdkLicenseRevision;
+    try {
+      let config = null;
+      let entitlement;
+      if (mode === 'offline') {
+        const payload = await sdkLicenseVerifyOffline(key.trim(), options.publicKey);
+        sdkLicenseProduct(payload.productType);
+        const expiresAt = sdkLicenseExpiry(payload.expireDate);
+        const features = sdkLicenseFeatures(payload.sdkFeatures);
+        if (payload.deviceLimit != null && (!Number.isInteger(payload.deviceLimit) || payload.deviceLimit < 0)) throw sdkLicenseFailure('LICENSE_INVALID', '电脑数量限制无效。');
+        if (payload.deviceLimit > 0) {
+          if (!options.deviceId) throw sdkLicenseFailure('LICENSE_DEVICE_REQUIRED', '此离线码限定电脑数量，请提供稳定的 deviceId 并联网激活。');
+          config = { key: key.trim(), deviceId: options.deviceId, serverUrl: sdkLicenseServer(options.serverUrl), path: '/api/license/devices/check', offlinePayload: payload };
+          entitlement = await sdkLicenseRequest(config);
+        } else entitlement = { all: true, products: [], features, expiresAt, leaseExpiresAt: expiresAt, serverStart: Date.now() };
+      } else {
+        config = { key: key.trim(), deviceId: options.deviceId, serverUrl: sdkLicenseServer(options.serverUrl), path: '/licenseCheck' };
+        entitlement = await sdkLicenseRequest(config);
+      }
+      if (revision !== sdkLicenseRevision) throw sdkLicenseFailure('LICENSE_REJECTED', '此激活请求已被后续操作取消。');
+      sdkLicenseSession = { ...entitlement, config, mode: config ? (mode === 'offline' ? 'offline-device' : 'online') : 'offline-local',
+        localStart: Date.now(), highWater: Date.now(), monotonicStart: sdkLicenseMonotonic() };
+      assertLicense();
+      if (config) sdkLicenseScheduleRefresh(sdkLicenseSession, revision);
+      return getLicenseStatus();
+    } catch (error) {
+      if (revision === sdkLicenseRevision) {
+        sdkLicenseSession = null;
+        sdkLicenseLastError = error;
+        sdkLicenseNotify();
+      }
+      throw error;
+    }
+  }
+
   // ---------- web/serial.js ----------
   /** 浏览器串口：基于 Web Serial API，需在安全上下文中由用户手势触发。 */
 
@@ -2909,6 +3125,7 @@
     return typeof navigator !== 'undefined' && typeof navigator.serial?.requestPort === 'function';
   }
 
+  /** 检查浏览器专用的已授权端口和 USB 筛选器，避免弹出选择框后才发现配置错误。 */
   function validateWebOptions(options) {
     const invalid = (field, message) => {
       throw new ShroomError('INVALID_CONFIG', message, { stage: 'configure', details: { field } });
@@ -2935,7 +3152,11 @@
     }
   }
 
-  /** 连接串口设备。必须在点击等用户手势里调用；options.port 可复用已授权端口。 */
+  /**
+   * 通用串口入口：根据分隔符/帧长拆包，按矩阵参数解码，通过 onFrame 订阅。
+   * 必须先完成 SDK 授权，再在点击等用户手势里调用；options.port 可复用已授权端口。
+   * 返回 Promise<Device>；打开前失败会拒绝，读取期间的错误通过 onError 交付。
+   */
   async function connectSerial(options = {}) {
     return connectSerialDevice(options);
   }
@@ -2946,12 +3167,15 @@
     return connectSerialDevice(session.serialOptions, session);
   }
 
-  /** 使用整包手套协议连接；左右手需由调用方明确指定。 */
+  /**
+   * 使用整包手套协议连接；options.side 必填 left/right，不自动识别实物手侧。
+   * 可在 options.onData 中直接读取 fingers、palm 和 imu；连接前注册可避免遗漏首帧。
+   */
   async function connectGlove(options = {}) {
     return connectProduct(productOptionsFor(options, 'handGloveFullPacket'));
   }
 
-  /** 使用手部检测垫内置协议连接。 */
+  /** 使用手部检测垫内置协议连接；onData 返回已映射的 32×32 数据，无需配置 side。 */
   async function connectHandPad(options = {}) {
     return connectProduct(productOptionsFor(options, 'hand'));
   }
@@ -2987,7 +3211,7 @@
     const licenseRequirement = Object.freeze(productSession
       ? { product: productSession.info.product, feature: 'serial' }
       : { feature: 'serial.raw' });
-    // Activation is completed before this call, so the browser selection retains its user gesture.
+    // 授权应在调用前完成；这里同步检查，避免异步激活耗掉浏览器串口选择所需的用户手势。
     assertLicense(licenseRequirement);
     const hub = createFrameHub();
     const framer = productSession?.parser ?? createFramer(options);
@@ -3028,6 +3252,7 @@
     let frameCount = 0;
     let unsubscribeLicense;
 
+    /** 记录错误状态后通知订阅者；后续清理不把失败状态伪装为正常关闭。 */
     function report(error) {
       state = 'error';
       hub.emitError(error);
@@ -3045,6 +3270,7 @@
     }));
     port.addEventListener?.('disconnect', onDisconnect);
 
+    /** 单个 reader 持续读字节；分帧器承接半包/粘包，最终只交付完整的产品帧或通用帧。 */
     async function readLoop() {
       if (closing) return;
       let activeReader = null;
@@ -3094,6 +3320,10 @@
       if (failure) fail(failure);
     }
 
+    /**
+     * 幂等关闭：重复调用返回同一个 Promise。
+     * 先取消读取并释放锁，再关闭端口、清除订阅，防止关闭与未完成的 read 互相等待。
+     */
     function close() {
       if (closePromise) return closePromise;
       closing = true;
@@ -3160,7 +3390,92 @@
     return device;
   }
 
+  // ---------- core/stream-codec.js ----------
+  /**
+   * WS 帧编解码：发送前把类型数组转成 JSON 数组，接收后校验结构并恢复独立类型数组。
+   * 本模块只转换传输表示，不重新拆串口包、不二次映射点位，也不推断产品类型。
+   */
+
+  /** 独立 Node 服务和浏览器客户端共用的传输协议版本标识。 */
+  const STREAM_SCHEMA = 'shroom.frame.v1';
+  const MAX_STREAM_POINTS = STREAM_FRAME_MAX_POINTS;
+
+  /**
+   * 校验并复制通用帧，产品扩展交给注册表中的适配器；typed 决定数组表示。
+   * 不在传输层按产品写分支，新增协议也不能跳过公共帧大小及数值安全检查。
+   */
+  function streamReadFrame(input, typed) {
+    streamObject(input, 'frame');
+    const rows = streamNumber(input.rows, 'rows', 0, MAX_STREAM_POINTS, true);
+    const cols = streamNumber(input.cols, 'cols', 0, MAX_STREAM_POINTS, true);
+    const size = rows * cols;
+    if (size > MAX_STREAM_POINTS || ((rows === 0) !== (cols === 0))) streamInvalid('rows/cols');
+    const raw = streamArray(input.raw, 'raw', { byte: true });
+    const values = streamArray(input.values, 'values');
+    if (values.length !== size) streamInvalid('values.length');
+    streamObject(input.center, 'center');
+    const output = {
+      raw: streamOutput(raw, typed, Uint8Array),
+      values: streamOutput(values, typed, Float32Array), rows, cols,
+      min: streamNumber(input.min, 'min'), max: streamNumber(input.max, 'max'),
+      avg: streamNumber(input.avg, 'avg'), area: streamNumber(input.area, 'area', 0, size, true),
+      center: { x: streamNumber(input.center.x, 'center.x', 0, 1), y: streamNumber(input.center.y, 'center.y', 0, 1) },
+      timestamp: streamNumber(input.timestamp, 'timestamp'),
+    };
+    if (output.min > output.max) streamInvalid('min/max');
+    if (input.product === undefined) return output;
+    const adapter = getDeviceProductAdapter(input.product, { allowAliases: false });
+    if (!adapter) streamInvalid('product');
+    return adapter.readStreamFields(input, output, typed);
+  }
+
+  /**
+   * 把一帧转换为独立、可 JSON.stringify 的对象，所有数值数组均变为普通数组。
+   * @param {object} frame 已解析的通用帧或产品帧；缺字段/形状不符时抛 PARSE_FAILED。
+   * @returns {object} 校验后的 JSON 帧对象；这里只生成对象，不返回 JSON 字符串。
+   */
+  function encodeStreamFrame(frame) {
+    return streamReadFrame(frame, false);
+  }
+
+  /**
+   * 将 JSON.parse 后的帧对象恢复成类型数组快照，保留已有点位映射结果。
+   * @param {object} frame 网络消息内的帧对象，而非完整 WS 信封或 JSON 字符串。
+   * @returns {object} 可直接交付 onData 的帧；raw、values、分区数组按 SDK 类型恢复。
+   */
+  function decodeStreamFrame(frame) {
+    return streamReadFrame(frame, true);
+  }
+
+  // ---------- core/recording-url.js ----------
+  /** Node 服务与浏览器订阅共用的记录下载地址规则；不访问文件、网络或 DOM。 */
+
+  /**
+   * 从已校验的 WS/WSS 或 HTTP/HTTPS 服务地址构造同主机、同端口下载 URL。
+   * id 必须是采集记录 UUID，format 仅支持 csv/jsonl；默认 csv。
+   * 清除连接路径和查询参数，不检查记录是否存在或是否已经写完。
+   */
+  function createRecordingUrl(serviceUrl, id, { format = 'csv' } = {}) {
+    if (typeof id !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id)) {
+      throw new ShroomError('INVALID_CONFIG', '必须传入采集记录 ID（recording.id），不能使用标签、产品 ID 或 WS 端口', { stage: 'stream' });
+    }
+    if (!['csv', 'jsonl'].includes(format)) {
+      throw new ShroomError('INVALID_CONFIG', '下载格式仅支持 csv 或 jsonl', { stage: 'stream' });
+    }
+    const downloadUrl = new URL(serviceUrl);
+    downloadUrl.protocol = ['wss:', 'https:'].includes(downloadUrl.protocol) ? 'https:' : 'http:';
+    downloadUrl.pathname = `/recordings/${id}.${format}`;
+    downloadUrl.search = '';
+    return downloadUrl.href;
+  }
+
   // ---------- web/stream.js ----------
+  /**
+   * 浏览器产品数据客户端：连接 node/quick-server.js 创建的 WS 服务。
+   * 接收 ready 握手和产品帧，通过请求 ID 关联录制命令的响应；下载走同端口 HTTP。
+   * 本模块不直接操作串口，关闭订阅也不会替用户停止 Node 端正在进行的录制。
+   */
+
   /** 为实时连接和录制操作产生可供应用判断的错误。 */
   function webStreamError(code, message, cause) {
     return new ShroomError(code, message, { stage: 'stream', cause });
@@ -3187,7 +3502,15 @@
     return url;
   }
 
-  /** 连接产品数据服务，复原类型化帧，并远程控制同一服务端的带标签录制。 */
+  /**
+   * 连接产品数据服务，复原类型化帧，并远程控制同一服务端的带标签录制。
+   * @param {object} [options] 连接与回调选项；默认连接 ws://127.0.0.1:19999。
+   * @param {string} [options.url] 完整 WS/WSS 地址；设置后优先于 host 与 port 拼接的地址。
+   * @param {number} [options.timeoutMs=10000] ready 握手和每个控制请求的超时，单位毫秒。
+   * @param {Function} [options.onData] 每次收到已解码的产品帧时同步调用。
+   * @param {Function} [options.onError] 接收网络、解码或业务回调错误。
+   * @returns {Promise<object>} 收到兼容的 ready 消息后返回客户端；连接前失败则拒绝。
+   */
   async function connectStream(options = {}) {
     if (!options || typeof options !== 'object' || Array.isArray(options)) {
       throw webStreamError('INVALID_CONFIG', 'connectStream 需要配置对象');
@@ -3257,7 +3580,7 @@
       if (!settled) { settled = true; rejectReady(error); }
       if (!intentionalClose) hub.emitError(error);
       if (socket && socket.readyState < 2) {
-        // Node ws emits an asynchronous error when a CONNECTING socket is closed.
+        // Node 的 ws 在握手期间关闭连接会异步报错；临时监听，避免掩盖原始失败原因。
         const ignoreClosingError = () => {};
         const releaseClosingListeners = () => {
           socket.removeEventListener('error', ignoreClosingError);
@@ -3327,7 +3650,10 @@
       }
     }
 
-    /** 给服务端发送带超时及关联 ID 的录制控制请求。 */
+    /**
+     * 给服务端发送带超时及关联 ID 的录制控制请求。
+     * 超时只表示没收到回应，不能据此认定服务端没有执行；应用应查询状态后再重试。
+     */
     function request(type, payload = {}) {
       if (state !== 'open') return Promise.reject(webStreamError('DISCONNECTED', '请先连接 WS 数据服务'));
       const requestId = `browser-${++sequence}`;
@@ -3346,18 +3672,8 @@
       });
     }
 
-    /** 用必填的采集记录 ID 构造下载地址，不默认选择最近一次录制。 */
-    function getRecordingUrl(id, { format = 'csv' } = {}) {
-      if (typeof id !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id)) {
-        throw webStreamError('INVALID_CONFIG', '必须传入采集记录 ID（recording.id），不能使用标签、产品 ID 或 WS 端口');
-      }
-      if (!['csv', 'jsonl'].includes(format)) throw webStreamError('INVALID_CONFIG', '下载格式仅支持 csv 或 jsonl');
-      const downloadUrl = new URL(url.href);
-      downloadUrl.protocol = url.protocol === 'wss:' ? 'https:' : 'http:';
-      downloadUrl.pathname = `/recordings/${id}.${format}`;
-      downloadUrl.search = '';
-      return downloadUrl.href;
-    }
+    /** 用采集记录 ID 构造同主机同端口的下载地址；只拼 URL，不检查文件是否存在。 */
+    function getRecordingUrl(id, downloadOptions = {}) { return createRecordingUrl(url, id, downloadOptions); }
 
     const client = {
       onData: hub.onFrame,
@@ -3380,14 +3696,17 @@
         }
         return request('recording.start', { label: label.trim() });
       },
-      /** 停止服务端录制，等待文件写入完成后返回结果。 */
+      /** 停止录制并等待写入后返回记录；从未开始时配套服务报错，设备与 WS 仍保留。 */
       stopRecording() { return request('recording.stop'); },
       /** 主动查询服务端状态，适用于重连或操作超时后的确认。 */
       getRecordingStatus() { return request('recording.status'); },
       /** 查询持久化录制列表，页面刷新不会丢失下载入口。 */
       listRecordings() { return request('recording.list'); },
       getRecordingUrl,
-      /** 下载指定采集 ID 的文件；ID 必填，不能用标签或端口代替。 */
+      /**
+       * 创建临时链接下载指定记录，并同步返回 URL；需要浏览器 document 环境。
+       * ID 来自停止采集结果或历史列表，不可用标签或端口代替；触发点击不代表保存成功。
+       */
       downloadRecording(id, downloadOptions = {}) {
         const href = getRecordingUrl(id, downloadOptions);
         if (typeof document === 'undefined' || !document.body) {
@@ -3429,6 +3748,11 @@
   }
 
   // ---------- web/product-view.js ----------
+  /**
+   * 产品二维视图：手套按五指、独立指腹和非齐行手掌展示；检测垫复用矩阵热力图。
+   * 只消费已解析的产品帧；显示增益和刷新节流不修改数据源，也不影响服务端录制。
+   */
+
   const productViewFingerNames = { thumb: '大拇指', index: '食指', middle: '中指', ring: '无名指', little: '小拇指' };
 
   /** 把不支持的产品或损坏的形状作为清晰的应用错误返回。 */
@@ -3466,7 +3790,12 @@
     } else throw productViewError('产品视图仅支持整包触觉手套和手部检测垫');
   }
 
-  /** 创建产品展示并可自动订阅数据源；手套为二维分区图，并非三维手模。 */
+  /**
+   * 创建产品展示并可自动订阅数据源；手套为二维分区图，并非三维手模。
+   * @param {HTMLElement|string} target 普通容器或选择器，不能直接传 canvas。
+   * @param {object} [options] source 可传设备或 WS 客户端；不传时由应用手动调用 render。
+   * @returns {object} 提供 render/resize/destroy；destroy 释放视图订阅，数据源由调用方关闭。
+   */
   function createProductView(target, options = {}) {
     if (!options || typeof options !== 'object' || Array.isArray(options)) throw productViewError('视图选项需要配置对象');
     const container = typeof target === 'string' ? globalThis.document?.querySelector(target) : target;

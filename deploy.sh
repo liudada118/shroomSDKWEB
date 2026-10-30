@@ -108,6 +108,14 @@ fi
 
 # ---------------------------------------------------------------- 依赖
 
+# 官网锁定 SDK 提交；更新子模块不会跟随远端 main 自动升级。
+if [ "$SKIP_BUILD" -eq 0 ]; then
+  step '初始化官网锁定的独立 SDK'
+  command -v git >/dev/null 2>&1 || die '找不到 git，无法初始化 SDK 子模块'
+  git submodule update --init --recursive
+  node scripts/check-sdk-source.mjs
+fi
+
 if [ "$SKIP_INSTALL" -eq 1 ]; then
   step '跳过依赖安装（--skip-install）'
   [ -d "$ROOT/node_modules/vinext" ] \

@@ -73,124 +73,180 @@ export const sectionCatalog = [
     "keywords": "license 有效期与失效行为"
   },
   {
+    "anchor": "quick-start--quick-call",
+    "label": "5 步调用",
+    "href": "/docs/quick-start#quick-call",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 5 步调用"
+  },
+  {
+    "anchor": "quick-start--flow-read",
+    "label": "1. 取数",
+    "href": "/docs/quick-start#flow-read",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 1. 取数"
+  },
+  {
+    "anchor": "quick-start--flow-ws",
+    "label": "2. 创建 WS",
+    "href": "/docs/quick-start#flow-ws",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 2. 创建 WS"
+  },
+  {
+    "anchor": "quick-start--flow-start",
+    "label": "3. 开始采集",
+    "href": "/docs/quick-start#flow-start",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 3. 开始采集"
+  },
+  {
+    "anchor": "quick-start--flow-stop",
+    "label": "4. 停止采集",
+    "href": "/docs/quick-start#flow-stop",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 4. 停止采集"
+  },
+  {
+    "anchor": "quick-start--flow-download",
+    "label": "5. 下载",
+    "href": "/docs/quick-start#flow-download",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 5. 下载"
+  },
+  {
+    "anchor": "quick-start--cleanup",
+    "label": "结束使用与接口边界",
+    "href": "/docs/quick-start#cleanup",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 结束使用与接口边界"
+  },
+  {
+    "anchor": "quick-start--product-guide",
+    "label": "接入准备",
+    "href": "/docs/quick-start#product-guide",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 接入准备"
+  },
+  {
     "anchor": "quick-start--guide-prepare",
-    "label": "准备环境与 SDK 密钥",
+    "label": "安装驱动与运行环境",
     "href": "/docs/quick-start#guide-prepare",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 准备环境与 SDK 密钥"
+    "keywords": "quick-start 安装驱动与运行环境"
   },
   {
     "anchor": "quick-start--guide-config",
-    "label": "确认产品与运行参数",
+    "label": "确认产品与串口",
     "href": "/docs/quick-start#guide-config",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 确认产品与运行参数"
+    "keywords": "quick-start 确认产品与串口"
   },
   {
     "anchor": "quick-start--guide-run",
-    "label": "下载并运行完整示例",
+    "label": "安装 SDK 依赖",
     "href": "/docs/quick-start#guide-run",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 下载并运行完整示例"
+    "keywords": "quick-start 安装 SDK 依赖"
   },
   {
     "anchor": "quick-start--guide-connect",
-    "label": "激活 SDK 授权，再连接设备",
+    "label": "激活 SDK 授权",
     "href": "/docs/quick-start#guide-connect",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 激活 SDK 授权，再连接设备"
+    "keywords": "quick-start 激活 SDK 授权"
   },
   {
     "anchor": "quick-start--guide-verify",
-    "label": "验收真实数据，安全结束采集",
+    "label": "验证取数与采集",
     "href": "/docs/quick-start#guide-verify",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 验收真实数据，安全结束采集"
+    "keywords": "quick-start 验证取数与采集"
   },
   {
     "anchor": "quick-start--guide-code",
-    "label": "阅读代码，接入自己的项目",
+    "label": "接入自己的页面",
     "href": "/docs/quick-start#guide-code",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 阅读代码，接入自己的项目"
+    "keywords": "quick-start 接入自己的页面"
   },
   {
     "anchor": "quick-start--extensions",
-    "label": "可选扩展：网页展示、采集与下载",
+    "label": "相关接口与旧链接",
     "href": "/docs/quick-start#extensions",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 可选扩展：网页展示、采集与下载"
+    "keywords": "quick-start 相关接口与旧链接"
   },
   {
     "anchor": "quick-start--device",
-    "label": "可选：设备与网页数据服务",
+    "label": "设备接入",
     "href": "/docs/quick-start#device",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 可选：设备与网页数据服务"
+    "keywords": "quick-start 设备接入"
   },
   {
     "anchor": "quick-start--demo",
-    "label": "可选：展示与采集完整示例",
+    "label": "接入流程",
     "href": "/docs/quick-start#demo",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 可选：展示与采集完整示例"
+    "keywords": "quick-start 接入流程"
   },
   {
     "anchor": "quick-start--view",
-    "label": "可选：前端连接与二维展示",
+    "label": "前端连接与展示",
     "href": "/docs/quick-start#view",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 可选：前端连接与二维展示"
+    "keywords": "quick-start 前端连接与展示"
   },
   {
     "anchor": "quick-start--record",
-    "label": "可选：数据采集",
+    "label": "采集接口",
     "href": "/docs/quick-start#record",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 可选：数据采集"
-  },
-  {
-    "anchor": "quick-start--start-recording",
-    "label": "输入标签，开始录制",
-    "href": "/docs/quick-start#start-recording",
-    "page": "quick-start",
-    "description": "快速接入文档",
-    "keywords": "quick-start 输入标签，开始录制"
-  },
-  {
-    "anchor": "quick-start--stop-recording",
-    "label": "停止录制，确认采集结果",
-    "href": "/docs/quick-start#stop-recording",
-    "page": "quick-start",
-    "description": "快速接入文档",
-    "keywords": "quick-start 停止录制，确认采集结果"
+    "keywords": "quick-start 采集接口"
   },
   {
     "anchor": "quick-start--download",
-    "label": "可选：按记录 ID 下载",
+    "label": "按记录 ID 下载",
     "href": "/docs/quick-start#download",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 可选：按记录 ID 下载"
+    "keywords": "quick-start 按记录 ID 下载"
   },
   {
     "anchor": "quick-start--troubleshooting",
-    "label": "地址、安全与排错",
+    "label": "连接与采集排查",
     "href": "/docs/quick-start#troubleshooting",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 地址、安全与排错"
+    "keywords": "quick-start 连接与采集排查"
+  },
+  {
+    "anchor": "custom--quick-to-base",
+    "label": "五个函数对应哪些基础 API",
+    "href": "/docs/custom#quick-to-base",
+    "page": "custom",
+    "description": "基础文档",
+    "keywords": "custom 五个函数对应哪些基础 API 五个快速函数与基础 API 的对应关系"
   },
   {
     "anchor": "custom--route",
@@ -753,6 +809,22 @@ export const sectionCatalog = [
     "keywords": "backend 通讯"
   },
   {
+    "anchor": "backend--node-serve-device",
+    "label": "serveDevice(device, options)",
+    "href": "/docs/backend?language=node#node-serve-device",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node serveDevice(device, options) 创建独立 WS 与下载服务"
+  },
+  {
+    "anchor": "backend--node-server",
+    "label": "server 的采集、下载与关闭",
+    "href": "/docs/backend?language=node#node-server",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node server 的采集、下载与关闭 控制采集、获取下载地址与关闭服务"
+  },
+  {
     "anchor": "backend--backend-client",
     "label": "new BackendSdkClient(options)",
     "href": "/docs/backend?language=node#backend-client",
@@ -1177,12 +1249,28 @@ export const sectionCatalog = [
     "keywords": "storage 带标签会话录制"
   },
   {
+    "anchor": "storage--recording-api",
+    "label": "采集基础 API",
+    "href": "/docs/storage#recording-api",
+    "page": "storage",
+    "description": "数据存储",
+    "keywords": "storage 采集基础 API 开始、停止与查询录制的基础 API"
+  },
+  {
     "anchor": "storage--export",
     "label": "记录查询与文件下载",
     "href": "/docs/storage#export",
     "page": "storage",
     "description": "数据存储",
     "keywords": "storage 记录查询与文件下载"
+  },
+  {
+    "anchor": "storage--recording-url",
+    "label": "下载与 URL 基础方法",
+    "href": "/docs/storage#recording-url",
+    "page": "storage",
+    "description": "数据存储",
+    "keywords": "storage 下载与 URL 基础方法 按记录 ID 生成地址或触发下载"
   },
   {
     "anchor": "storage--services",
@@ -1239,6 +1327,30 @@ export const sectionCatalog = [
     "page": "frontend-communication",
     "description": "前端通讯",
     "keywords": "frontend-communication 导入与环境"
+  },
+  {
+    "anchor": "frontend-communication--sdk-stream",
+    "label": "SDK WS 数据连接",
+    "href": "/docs/frontend-communication#sdk-stream",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication SDK WS 数据连接 连接 Node SDK 数据服务"
+  },
+  {
+    "anchor": "frontend-communication--connect-stream",
+    "label": "connectStream(options)",
+    "href": "/docs/frontend-communication#connect-stream",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication connectStream(options) 创建 WS 订阅连接"
+  },
+  {
+    "anchor": "frontend-communication--stream-device",
+    "label": "stream 的订阅、控制与关闭",
+    "href": "/docs/frontend-communication#stream-device",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication stream 的订阅、控制与关闭 订阅数据、控制采集与关闭连接"
   },
   {
     "anchor": "frontend-communication--web-serial",
@@ -1505,388 +1617,220 @@ export const sectionCatalog = [
     "keywords": "rendering 完整运行示例"
   },
   {
-    "anchor": "ai-context--s1",
-    "label": "0. 一句话",
-    "href": "/docs/ai-context#s1",
+    "anchor": "ai-context--prepare",
+    "label": "接入前确认",
+    "href": "/docs/ai-context#prepare",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 0. 一句话"
+    "keywords": "ai-context 接入前确认"
   },
   {
-    "anchor": "ai-context--s2",
-    "label": "0.5 先确定 import 路径（第一行代码就会错）",
-    "href": "/docs/ai-context#s2",
+    "anchor": "ai-context--flow-read",
+    "label": "1. 取数：readProduct",
+    "href": "/docs/ai-context#flow-read",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 0.5 先确定 import 路径（第一行代码就会错）"
+    "keywords": "ai-context 1. 取数：readProduct"
   },
   {
-    "anchor": "ai-context--s3",
-    "label": "1. 能力边界（先读这段，能省掉一半错误）",
-    "href": "/docs/ai-context#s3",
+    "anchor": "ai-context--flow-ws",
+    "label": "2. 创建 WS：createWS",
+    "href": "/docs/ai-context#flow-ws",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 1. 能力边界（先读这段，能省掉一半错误）"
+    "keywords": "ai-context 2. 创建 WS：createWS"
   },
   {
-    "anchor": "ai-context--s4",
-    "label": "2. 三十秒上手",
-    "href": "/docs/ai-context#s4",
+    "anchor": "ai-context--flow-start",
+    "label": "3. 开始采集：startRecording",
+    "href": "/docs/ai-context#flow-start",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 2. 三十秒上手"
+    "keywords": "ai-context 3. 开始采集：startRecording"
   },
   {
-    "anchor": "ai-context--s5",
-    "label": "mock 产生的是什么数据",
-    "href": "/docs/ai-context#s5",
+    "anchor": "ai-context--flow-stop",
+    "label": "4. 停止采集：stopRecording",
+    "href": "/docs/ai-context#flow-stop",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context mock 产生的是什么数据"
+    "keywords": "ai-context 4. 停止采集：stopRecording"
   },
   {
-    "anchor": "ai-context--s6",
-    "label": "3. 通用 Frame 与产品数据",
-    "href": "/docs/ai-context#s6",
+    "anchor": "ai-context--flow-download",
+    "label": "5. 下载：downloadRecording",
+    "href": "/docs/ai-context#flow-download",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 3. 通用 Frame 与产品数据"
+    "keywords": "ai-context 5. 下载：downloadRecording"
   },
   {
-    "anchor": "ai-context--s7",
-    "label": "坐标系（做位置相关功能前必读）",
-    "href": "/docs/ai-context#s7",
+    "anchor": "ai-context--errors",
+    "label": "错误处理与状态恢复",
+    "href": "/docs/ai-context#errors",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 坐标系（做位置相关功能前必读）"
+    "keywords": "ai-context 错误处理与状态恢复"
   },
   {
-    "anchor": "ai-context--s8",
-    "label": "点位排列（画面位置对不上时看这里）",
-    "href": "/docs/ai-context#s8",
+    "anchor": "ai-context--cleanup",
+    "label": "结束使用",
+    "href": "/docs/ai-context#cleanup",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 点位排列（画面位置对不上时看这里）"
+    "keywords": "ai-context 结束使用"
   },
   {
-    "anchor": "ai-context--s9",
-    "label": "典型数值量级（写阈值时的依据）",
-    "href": "/docs/ai-context#s9",
+    "anchor": "ai-context--product-data",
+    "label": "产品数据与扩展",
+    "href": "/docs/ai-context#product-data",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context 典型数值量级（写阈值时的依据）"
+    "keywords": "ai-context 产品数据与扩展"
   },
   {
-    "anchor": "ai-context--s10",
-    "label": "⚠️ 关于单位：values 是相对值，不是物理量",
-    "href": "/docs/ai-context#s10",
+    "anchor": "ai-context--references",
+    "label": "按需查阅的其他能力",
+    "href": "/docs/ai-context#references",
     "page": "ai-context",
     "description": "给 AI 的上下文",
-    "keywords": "ai-context ⚠️ 关于单位：values 是相对值，不是物理量"
+    "keywords": "ai-context 按需查阅的其他能力"
   },
   {
-    "anchor": "ai-context--s11",
-    "label": "4. 完整 API",
-    "href": "/docs/ai-context#s11",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4. 完整 API"
-  },
-  {
-    "anchor": "ai-context--s12",
-    "label": "4.1 浏览器入口 sdk/web/index.js",
-    "href": "/docs/ai-context#s12",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4.1 浏览器入口 sdk/web/index.js"
-  },
-  {
-    "anchor": "ai-context--s13",
-    "label": "4.2 Node 入口 sdk/node/index.js",
-    "href": "/docs/ai-context#s13",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4.2 Node 入口 sdk/node/index.js"
-  },
-  {
-    "anchor": "ai-context--s14",
-    "label": "4.3 Device（连接后拿到的东西，两端一致）",
-    "href": "/docs/ai-context#s14",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4.3 Device（连接后拿到的东西，两端一致）"
-  },
-  {
-    "anchor": "ai-context--s15",
-    "label": "4.3.1 connect() 抛错的两种情况",
-    "href": "/docs/ai-context#s15",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4.3.1 connect() 抛错的两种情况"
-  },
-  {
-    "anchor": "ai-context--s16",
-    "label": "4.3.2 切换设备时的顺序（容易踩）",
-    "href": "/docs/ai-context#s16",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4.3.2 切换设备时的顺序（容易踩）"
-  },
-  {
-    "anchor": "ai-context--s17",
-    "label": "4.4 连接参数",
-    "href": "/docs/ai-context#s17",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4.4 连接参数"
-  },
-  {
-    "anchor": "ai-context--s18",
-    "label": "4.5 Heatmap",
-    "href": "/docs/ai-context#s18",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4.5 Heatmap"
-  },
-  {
-    "anchor": "ai-context--s19",
-    "label": "4.6 底层件（自己接数据源时用）",
-    "href": "/docs/ai-context#s19",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 4.6 底层件（自己接数据源时用）"
-  },
-  {
-    "anchor": "ai-context--s20",
-    "label": "5. 硬性约束（违反了代码一定跑不起来）",
-    "href": "/docs/ai-context#s20",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 5. 硬性约束（违反了代码一定跑不起来）"
-  },
-  {
-    "anchor": "ai-context--s21",
-    "label": "5.1 浏览器串口必须在用户手势里调用",
-    "href": "/docs/ai-context#s21",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 5.1 浏览器串口必须在用户手势里调用"
-  },
-  {
-    "anchor": "ai-context--s22",
-    "label": "5.2 浏览器串口只在 https 或 localhost 下开放",
-    "href": "/docs/ai-context#s22",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 5.2 浏览器串口只在 https 或 localhost 下开放"
-  },
-  {
-    "anchor": "ai-context--s23",
-    "label": "5.3 只有 Chrome / Edge 支持",
-    "href": "/docs/ai-context#s23",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 5.3 只有 Chrome / Edge 支持"
-  },
-  {
-    "anchor": "ai-context--s24",
-    "label": "5.4 帧率很高，回调里别做重活",
-    "href": "/docs/ai-context#s24",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 5.4 帧率很高，回调里别做重活"
-  },
-  {
-    "anchor": "ai-context--s25",
-    "label": "5.5 别持有 frame 对象",
-    "href": "/docs/ai-context#s25",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 5.5 别持有 frame 对象"
-  },
-  {
-    "anchor": "ai-context--s26",
-    "label": "6. 帧长锁定（lockLength，默认开）",
-    "href": "/docs/ai-context#s26",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 6. 帧长锁定（lockLength，默认开）"
-  },
-  {
-    "anchor": "ai-context--s27",
-    "label": "7. 排错对照表",
-    "href": "/docs/ai-context#s27",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 7. 排错对照表"
-  },
-  {
-    "anchor": "ai-context--s28",
-    "label": "8. 可以直接抄的例子",
-    "href": "/docs/ai-context#s28",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 8. 可以直接抄的例子"
-  },
-  {
-    "anchor": "ai-context--s29",
-    "label": "8.1 用重心控制一个小球",
-    "href": "/docs/ai-context#s29",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 8.1 用重心控制一个小球"
-  },
-  {
-    "anchor": "ai-context--s30",
-    "label": "8.2 按到哪个格子（打地鼠这类）",
-    "href": "/docs/ai-context#s30",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 8.2 按到哪个格子（打地鼠这类）"
-  },
-  {
-    "anchor": "ai-context--s31",
-    "label": "8.3 最大压力曲线",
-    "href": "/docs/ai-context#s31",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 8.3 最大压力曲线"
-  },
-  {
-    "anchor": "ai-context--s32",
-    "label": "8.4 录制与回放",
-    "href": "/docs/ai-context#s32",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 8.4 录制与回放"
-  },
-  {
-    "anchor": "ai-context--s33",
-    "label": "8.5 分区域统计（比如把 32×32 分成四象限）",
-    "href": "/docs/ai-context#s33",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 8.5 分区域统计（比如把 32×32 分成四象限）"
-  },
-  {
-    "anchor": "ai-context--s34",
-    "label": "8.6 简单去噪（SDK 不提供，自己两行）",
-    "href": "/docs/ai-context#s34",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 8.6 简单去噪（SDK 不提供，自己两行）"
-  },
-  {
-    "anchor": "ai-context--s35",
-    "label": "9. 目录结构（主要用来确认 import 路径）",
-    "href": "/docs/ai-context#s35",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 9. 目录结构（主要用来确认 import 路径）"
-  },
-  {
-    "anchor": "ai-context--s36",
-    "label": "10. 写代码时的默认选择",
-    "href": "/docs/ai-context#s36",
-    "page": "ai-context",
-    "description": "给 AI 的上下文",
-    "keywords": "ai-context 10. 写代码时的默认选择"
-  },
-  {
-    "anchor": "ai-guide--s1",
-    "label": "一、先确认设备是好的（5 分钟，别跳过）",
-    "href": "/docs/ai-guide#s1",
+    "anchor": "ai-guide--prepare",
+    "label": "1. 准备 SDK 和设备",
+    "href": "/docs/ai-guide#prepare",
     "page": "ai-guide",
     "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide 一、先确认设备是好的（5 分钟，别跳过）"
+    "keywords": "ai-guide 1. 准备 SDK 和设备"
   },
   {
-    "anchor": "ai-guide--s2",
-    "label": "二、把说明书交给 AI",
-    "href": "/docs/ai-guide#s2",
+    "anchor": "ai-guide--give-context",
+    "label": "2. 把说明与需求交给 AI",
+    "href": "/docs/ai-guide#give-context",
     "page": "ai-guide",
     "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide 二、把说明书交给 AI"
+    "keywords": "ai-guide 2. 把说明与需求交给 AI"
   },
   {
-    "anchor": "ai-guide--s3",
-    "label": "三、说清楚你要什么",
-    "href": "/docs/ai-guide#s3",
+    "anchor": "ai-guide--five-steps",
+    "label": "3. 一步取数，其余按需接入",
+    "href": "/docs/ai-guide#five-steps",
     "page": "ai-guide",
     "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide 三、说清楚你要什么"
+    "keywords": "ai-guide 3. 一步取数，其余按需接入"
   },
   {
-    "anchor": "ai-guide--s4",
-    "label": "四、常见需求，直接抄",
-    "href": "/docs/ai-guide#s4",
+    "anchor": "ai-guide--errors",
+    "label": "4. 错误处理有没有做",
+    "href": "/docs/ai-guide#errors",
     "page": "ai-guide",
     "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide 四、常见需求，直接抄"
+    "keywords": "ai-guide 4. 错误处理有没有做"
   },
   {
-    "anchor": "ai-guide--s5",
-    "label": "五、AI 写好的代码怎么跑起来",
-    "href": "/docs/ai-guide#s5",
+    "anchor": "ai-guide--verify",
+    "label": "5. 验证和结束使用",
+    "href": "/docs/ai-guide#verify",
     "page": "ai-guide",
     "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide 五、AI 写好的代码怎么跑起来"
+    "keywords": "ai-guide 5. 验证和结束使用"
   },
   {
-    "anchor": "ai-guide--s6",
-    "label": "⚠️ 不能双击打开 HTML 文件",
-    "href": "/docs/ai-guide#s6",
-    "page": "ai-guide",
-    "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide ⚠️ 不能双击打开 HTML 文件"
+    "anchor": "changelog--s1",
+    "label": "[0.1.0] - 2026-10-29",
+    "href": "/docs/changelog#s1",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog [0.1.0] - 2026-10-29"
   },
   {
-    "anchor": "ai-guide--s7",
-    "label": "六、出问题了怎么跟 AI 说",
-    "href": "/docs/ai-guide#s7",
-    "page": "ai-guide",
-    "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide 六、出问题了怎么跟 AI 说"
+    "anchor": "changelog--s2",
+    "label": "Node.js 与浏览器",
+    "href": "/docs/changelog#s2",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog Node.js 与浏览器"
   },
   {
-    "anchor": "ai-guide--s8",
-    "label": "七、几件事先说明白",
-    "href": "/docs/ai-guide#s8",
-    "page": "ai-guide",
-    "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide 七、几件事先说明白"
+    "anchor": "changelog--s3",
+    "label": "Python",
+    "href": "/docs/changelog#s3",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog Python"
   },
   {
-    "anchor": "ai-guide--s9",
-    "label": "八、想深入了解",
-    "href": "/docs/ai-guide#s9",
-    "page": "ai-guide",
-    "description": "怎么用 AI 来开发",
-    "keywords": "ai-guide 八、想深入了解"
+    "anchor": "changelog--s4",
+    "label": "发布管理",
+    "href": "/docs/changelog#s4",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog 发布管理"
+  },
+  {
+    "anchor": "migration--s1",
+    "label": "先确认使用的是哪套包",
+    "href": "/docs/migration#s1",
+    "page": "migration",
+    "description": "旧 SDK 迁移说明",
+    "keywords": "migration 先确认使用的是哪套包"
+  },
+  {
+    "anchor": "migration--s2",
+    "label": "接入代码需要调整",
+    "href": "/docs/migration#s2",
+    "page": "migration",
+    "description": "旧 SDK 迁移说明",
+    "keywords": "migration 接入代码需要调整"
+  },
+  {
+    "anchor": "migration--s3",
+    "label": "采集数据库必须分开",
+    "href": "/docs/migration#s3",
+    "page": "migration",
+    "description": "旧 SDK 迁移说明",
+    "keywords": "migration 采集数据库必须分开"
+  },
+  {
+    "anchor": "migration--s4",
+    "label": "取回旧版",
+    "href": "/docs/migration#s4",
+    "page": "migration",
+    "description": "旧 SDK 迁移说明",
+    "keywords": "migration 取回旧版"
   },
   {
     "anchor": "readme--routes",
-    "label": "两条文档路线",
+    "label": "选择接入方式",
     "href": "/docs/readme#routes",
     "page": "readme",
     "description": "SDK 说明与排错",
-    "keywords": "readme 两条文档路线"
+    "keywords": "readme 选择接入方式"
+  },
+  {
+    "anchor": "readme--source-map",
+    "label": "中文源码导航",
+    "href": "/docs/readme#source-map",
+    "page": "readme",
+    "description": "SDK 说明与排错",
+    "keywords": "readme 中文源码导航"
   },
   {
     "anchor": "readme--s1",
-    "label": "30 秒跑起来",
+    "label": "五步调用概览",
     "href": "/docs/readme#s1",
     "page": "readme",
     "description": "SDK 说明与排错",
-    "keywords": "readme 30 秒跑起来"
+    "keywords": "readme 五步调用概览"
   },
   {
     "anchor": "readme--s2",
-    "label": "浏览器里用",
+    "label": "浏览器直连：独立取数",
     "href": "/docs/readme#s2",
     "page": "readme",
     "description": "SDK 说明与排错",
-    "keywords": "readme 浏览器里用"
+    "keywords": "readme 浏览器直连：独立取数"
   },
   {
     "anchor": "readme--s3",

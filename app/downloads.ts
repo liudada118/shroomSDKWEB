@@ -1,3 +1,8 @@
+import sdkPackage from '../sdk/package.json' with { type: 'json' };
+
+const sdkVersion = sdkPackage.version;
+export const SDK_SOURCE_URL = 'https://github.com/liudada118/shroomSDK';
+
 export type DownloadTarget = {
   url: string;
   source: string;
@@ -5,6 +10,7 @@ export type DownloadTarget = {
   subtitle: string;
   sdkVersion?: string;
   sdkLanguage?: 'python' | 'node';
+  fileName?: string;
 };
 
 // 用户提供的 CH34x 串口驱动；驱动独立于 SDK 和上位机安装包，直接下载无需登记。
@@ -83,7 +89,8 @@ export const SDK_VARIANTS: (DownloadTarget & { label: string; description: strin
     url: '/shroom-sdk-python.zip',
     source: 'sdk-python',
     sdkLanguage: 'python',
-    sdkVersion: '0.1.0',
+    sdkVersion,
+    fileName: `shroom-sdk-python-${sdkVersion}.zip`,
     label: 'Python',
     description: '数据采集、分析与算法开发',
     contents: 'Python 3.10+ · pySerial · 模拟数据与图形示例',
@@ -96,12 +103,13 @@ export const SDK_VARIANTS: (DownloadTarget & { label: string; description: strin
     url: '/shroom-sdk-node.zip',
     source: 'sdk-node',
     sdkLanguage: 'node',
-    sdkVersion: '0.1.0',
+    sdkVersion,
+    fileName: `shroom-sdk-node-${sdkVersion}.zip`,
     label: 'Node.js',
     description: 'Node.js / Electron 开发，也包含浏览器入口',
-    contents: 'Node.js 18+ · 串口直连 · HTTP / WebSocket 后端连接',
-    guideHref: '/docs/backend?language=node',
-    details: '用于 Node.js、Electron 和网页开发。支持串口直连、连接已有后端订阅实时帧，并附 Canvas 热力图和后端连接指南。',
+    contents: 'Node.js 18+ · JavaScript / TypeScript · 含浏览器入口',
+    guideHref: '/docs/quick-start',
+    details: '一个函数读取手套或手垫数据。需要网页传输和保存文件时，再调用创建 WS、开始采集、停止采集和下载。',
     title: '获取 Node.js SDK',
     subtitle: '已选择 Node.js 包（含浏览器入口）。留个联系方式，提交后立即下载 ZIP，包含源码、示例和 AI 接入指南。',
   },

@@ -13,8 +13,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
+import { inspectSdkSource } from './sdk-source.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+await inspectSdkSource(ROOT);
 const SDK = join(ROOT, 'sdk');
 const OUT = join(ROOT, 'app', 'docs', 'generated.ts');
 
@@ -87,7 +89,7 @@ function addAnchors(html) {
 
 const pages = [];
 for (const doc of DOCS) {
-  const source = await readFile(join(SDK, doc.file), 'utf8');
+  const source = (await readFile(join(SDK, doc.file), 'utf8')).replace(/\r\n?/g, '\n');
   const { title, body } = splitTitle(source);
   const parsed = await marked.parse(body, { gfm: true, breaks: false });
   const { html, toc } = addAnchors(rewriteLocalLinks(parsed, doc.file));
@@ -100,7 +102,7 @@ for (const doc of DOCS) {
     heading.description = description.trim();
   }
   for (const chapter of doc.chapters ?? []) {
-    if (!toc.some((item) => item.id === chapter.id && item.level === 2 && item.text === chapter.label)) {
+    if (!toc.some((item) => item.id === chapter.id && [2, 3].includes(item.level) && item.text === chapter.label)) {
       throw new Error(`导航章节与正文不一致：${doc.slug}#${chapter.id}`);
     }
   }

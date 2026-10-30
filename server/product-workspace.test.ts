@@ -1,17 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createWorkspaceStore, initialWorkspaceState, parseWorkspaceLocation, workspaceChapters, workspaceCommands,
-  workspaceFilename, workspaceReady, workspaceStateForLocation, workspaceUrl, workspaceLocationTarget,
+  createWorkspaceStore, initialWorkspaceState, parseWorkspaceLocation, workspaceChapters,
+  workspaceReady, workspaceStateForLocation, workspaceUrl, workspaceLocationTarget,
 } from '../app/docs/product-workspace-model.ts';
-import { createProductExample, getProductExampleFilename } from '../sdk/examples/product-examples.js';
-import { workspaceReadingPreview } from '../app/docs/product-workspace-preview.ts';
+import { workspaceFlow } from '../app/docs/product-workspace-preview.ts';
 
-test('shared chapter links open the requested guide while old default links keep the workbench visible', () => {
+test('old prototype default opens the call flow and preparation deep links remain available', () => {
   assert.equal(workspaceLocationTarget('', '#product=glove&env=web&platform=windows&tab=start&section=guide-prepare&codeKind=complete'), null);
   assert.equal(workspaceLocationTarget('', '#product=glove&side=right&env=node&tab=start&section=guide-code'), 'guide-code');
-  assert.equal(workspaceLocationTarget('', '#product=pad&tab=data&section=guide-code'), 'product-data');
-  for (const id of ['guide-prepare', 'guide-run', 'extensions', 'workspace-config', 'workspace-code']) {
+  for (const id of ['guide-prepare', 'guide-run', 'flow-read', 'flow-download', 'workspace-config']) {
     assert.equal(workspaceLocationTarget('', `#${id}`), id);
   }
   assert.equal(workspaceLocationTarget('', '#%E0%A4%A'), null);
@@ -22,106 +20,77 @@ test('shared configuration preselects side without confirming real hardware', ()
   assert.equal(state.side, 'right');
   assert.equal(state.section, 'guide-code');
   assert.equal(workspaceReady(state), false);
-  assert.match(workspaceCommands(state), /确认左手或右手/);
   assert.equal(workspaceReady({ ...state, sideConfirmed: true }), true);
+  assert.match(workspaceFlow(state)[0].blocks[0].code, /按实物确认/);
 });
 
-test('native chapter, reference and legacy links do not lose same-device confirmation', () => {
-  const confirmed = { ...initialWorkspaceState, side: 'left' as const, sideConfirmed: true };
-  const query = '?product=glove&side=left&env=web&platform=windows&tab=data';
-  for (const hash of ['#guide-connect', '#record', '#extensions']) {
-    const state = workspaceStateForLocation(confirmed, query, hash);
-    assert.equal(state.sideConfirmed, true);
-    assert.equal(state.tab, 'start', 'chapter/legacy navigation reveals the tutorial');
+test('legacy API links point to the corresponding flow step rather than a removed full example', () => {
+  const aliases = { device: 'flow-read', demo: 'flow-ws', view: 'flow-ws', record: 'flow-start',
+    'record-start': 'flow-start', 'record-stop': 'flow-stop', download: 'flow-download',
+    extensions: 'product-start', 'workspace-example-code': 'flow-read', 'quick-call': 'flow-read' };
+  for (const [old, target] of Object.entries(aliases)) {
+    assert.equal(workspaceLocationTarget('', `#${old}`), target);
+    assert.equal(parseWorkspaceLocation('?tab=guide', `#${old}`).tab, 'start');
   }
-  assert.equal(workspaceStateForLocation(confirmed, query, '#product-debug').tab, 'debug');
-  assert.equal(workspaceStateForLocation(confirmed, '?product=glove&side=right', '#guide-code').sideConfirmed, false);
-  assert.equal(workspaceStateForLocation(confirmed, '?product=pad', '#guide-code').sideConfirmed, false);
+  assert.equal(parseWorkspaceLocation('', '#troubleshooting').tab, 'debug');
+  assert.equal(workspaceLocationTarget('', '#workspace-run'), 'guide-run');
+  assert.equal(parseWorkspaceLocation('', '#workspace-run').tab, 'guide');
+});
+
+test('navigation preserves confirmation for the same device and requires confirmation after changing product or side', () => {
+  const confirmed = { ...initialWorkspaceState, side: 'left' as const, sideConfirmed: true };
+  for (const [hash, tab] of [['#guide-connect', 'guide'], ['#record', 'start'], ['#product-debug', 'debug']] as const) {
+    const state = workspaceStateForLocation(confirmed, '?product=glove&side=left', hash);
+    assert.equal(state.sideConfirmed, true); assert.equal(state.tab, tab);
+  }
+  assert.equal(workspaceStateForLocation(confirmed, '?product=glove&side=right', '#flow-read').sideConfirmed, false);
+  assert.equal(workspaceStateForLocation(confirmed, '?product=pad', '#flow-read').sideConfirmed, false);
 });
 
 test('invalid and prototype URL values resolve to supported configurations', () => {
-  const invalid = parseWorkspaceLocation('?product=lefthand&side=auto&env=python&platform=unknown&tab=bad&codeKind=wrong');
-  assert.deepEqual(invalid, initialWorkspaceState);
+  assert.deepEqual(parseWorkspaceLocation('?product=lefthand&side=auto&env=python&platform=unknown&tab=bad&codeKind=wrong'), initialWorkspaceState);
   const old = parseWorkspaceLocation('', '#product=pad&env=node&platform=linux&tab=data&section=guide-verify');
-  assert.equal(old.product, 'pad');
-  assert.equal(old.env, 'node');
-  assert.equal(old.tab, 'data');
+  assert.equal(old.product, 'pad'); assert.equal(old.env, 'node'); assert.equal(old.tab, 'data');
   assert.equal(workspaceReady(old), true);
 });
 
-test('every product, side, runtime and platform shares the generator filename and matching commands', () => {
+test('every selected product exposes one connected five-step Node and browser flow', () => {
   for (const product of ['glove', 'pad'] as const) for (const side of ['left', 'right'] as const)
-    for (const env of ['web', 'node'] as const) for (const platform of ['windows', 'macos', 'linux'] as const) {
-      const state = { ...initialWorkspaceState, product, side, sideConfirmed: true, env, platform };
-      const options = { product, ...(product === 'glove' ? { side } : {}), env, platform };
-      const filename = getProductExampleFilename(options);
-      assert.equal(workspaceFilename(state), filename);
-      const source = createProductExample(options);
-      assert.match(source, /中文|授权|驱动/);
-      if (env === 'web') {
-        assert.equal(workspaceCommands(state), 'node start.mjs --no-open');
-        assert.match(source, /import \{ Shroom \} from '\.\/web\/index\.js'/);
-      } else {
-        assert.ok(workspaceCommands(state).includes(`node ${filename} `));
-        assert.match(workspaceCommands(state), /npm install/);
-        if (platform === 'windows') assert.match(workspaceCommands(state), /\$env:SHROOM_LICENSE_KEY/);
-        else assert.doesNotMatch(workspaceCommands(state), /\$env:/);
-      }
-      if (product === 'pad') assert.doesNotMatch(source, /"side":"(?:left|right)"/);
+    for (const platform of ['windows', 'macos', 'linux'] as const) {
+      const steps = workspaceFlow({ ...initialWorkspaceState, product, side, sideConfirmed: true, platform });
+      assert.deepEqual(steps.map(step => step.id), ['flow-read', 'flow-ws', 'flow-start', 'flow-stop', 'flow-download']);
+      const read = steps[0].blocks[0].code;
+      assert.match(read, /const device = await readProduct\(/);
+      assert.ok(read.includes(`product: '${product}'`));
+      assert.match(read, platform === 'windows' ? /COM3/ : platform === 'macos' ? /dev\/cu\.usbserial/ : /dev\/ttyUSB0/);
+      assert.deepEqual(steps[1].blocks.map(block => block.runtime), ['node', 'web']);
+      assert.match(steps[1].blocks[0].code, /createWS\(device/);
+      assert.match(steps[1].blocks[1].code, /const stream = await readProduct/);
+      assert.match(steps[2].blocks[0].code, /startRecording\(stream,/);
+      assert.match(steps[3].blocks[0].code, /const recording = await stopRecording\(stream\)/);
+      assert.match(steps[4].blocks[0].code, /downloadRecording\(stream,/);
+      assert.doesNotMatch(steps[4].blocks[0].code, /recording(?:\.id)?/, '下载无需访问停止按钮中的局部记录变量');
+      assert.doesNotMatch(steps[1].blocks[1].code, /let recording/, '连接步骤无需维护跨按钮记录变量');
+      assert.doesNotMatch(steps.flatMap(step => step.blocks.map(block => block.code)).join('\n'), /<!doctype|connectProduct|downloadUrl/);
     }
 });
 
-test('URL updates retain unrelated parameters, never serialize confirmation and use ordinary hashes', () => {
+test('URL updates retain unrelated parameters and never serialize confirmation', () => {
   const current = new URL('https://sdk.example/docs/quick-start?source=help#guide-prepare');
   const state = { ...initialWorkspaceState, side: 'left' as const, sideConfirmed: true };
-  const next = new URL(workspaceUrl(state, current, 'guide-code'), current);
-  assert.equal(next.searchParams.get('source'), 'help');
-  assert.equal(next.searchParams.get('side'), 'left');
-  assert.equal(next.searchParams.has('sideConfirmed'), false);
-  assert.equal(next.hash, '#guide-code');
+  const next = new URL(workspaceUrl(state, current, 'flow-stop'), current);
+  assert.equal(next.searchParams.get('source'), 'help'); assert.equal(next.searchParams.get('side'), 'left');
+  assert.equal(next.searchParams.has('sideConfirmed'), false); assert.equal(next.hash, '#flow-stop');
   assert.equal(new URL(workspaceUrl({ ...state, tab: 'downloads' }, next), current).hash, '#product-downloads');
   assert.equal(workspaceChapters.length, 6);
 });
 
-test('workspace stores have stable server snapshots, isolated subscribers and cleanup', () => {
+test('workspace stores isolate subscribers and have stable SSR snapshots', () => {
   const first = createWorkspaceStore(), second = createWorkspaceStore();
   let notifications = 0;
   const unsubscribe = first.subscribe(() => { notifications += 1; });
   first.replace({ ...initialWorkspaceState, product: 'pad' });
-  assert.equal(notifications, 1);
-  assert.equal(first.getSnapshot().product, 'pad');
-  assert.equal(first.getServerSnapshot(), initialWorkspaceState);
-  assert.equal(second.getSnapshot(), initialWorkspaceState);
-  unsubscribe();
-  first.replace(initialWorkspaceState);
-  assert.equal(notifications, 1);
-});
-
-test('default view exposes the complete runnable lifecycle before hardware confirmation', () => {
-  assert.equal(initialWorkspaceState.codeKind, 'complete');
-  assert.equal(parseWorkspaceLocation('').codeKind, 'complete');
-  assert.equal(parseWorkspaceLocation('?codeKind=snippet').codeKind, 'snippet', 'an explicit short-source choice remains available');
-  const before = structuredClone(initialWorkspaceState);
-  const preview = workspaceReadingPreview(initialWorkspaceState);
-  assert.match(preview, /尚未确认实物手侧/);
-  assert.match(preview, /activateLicense/);
-  assert.match(preview, /connectProduct\(/);
-  assert.match(preview, /onError/);
-  assert.match(preview, /\.close\(/);
-  assert.match(preview, /^<!-- .*尚未确认实物手侧.*-->\n<!doctype html>/i);
-  assert.deepEqual(initialWorkspaceState, before, 'reading an example never confirms a side');
-  assert.equal(workspaceReady(initialWorkspaceState), false);
-});
-
-test('confirmed preview and copyable source agree while complete downloads retain full lifecycle', () => {
-  for (const side of ['left', 'right'] as const) for (const env of ['web', 'node'] as const) {
-    const state = { ...initialWorkspaceState, side, sideConfirmed: true, env };
-    const options = { product: 'glove' as const, side, env, platform: state.platform };
-    assert.equal(workspaceReadingPreview(state), createProductExample({ ...options, kind: 'complete' }));
-    assert.equal(workspaceReadingPreview({ ...state, codeKind: 'snippet' }), createProductExample({ ...options, kind: 'snippet' }));
-    const unconfirmed = { ...state, sideConfirmed: false };
-    assert.match(workspaceReadingPreview(unconfirmed), /尚未确认实物手侧/);
-    assert.ok(workspaceReadingPreview(unconfirmed).endsWith(createProductExample({ ...options, kind: 'complete' })));
-    assert.equal(workspaceReady(unconfirmed), false);
-  }
+  assert.equal(notifications, 1); assert.equal(first.getSnapshot().product, 'pad');
+  assert.equal(first.getServerSnapshot(), initialWorkspaceState); assert.equal(second.getSnapshot(), initialWorkspaceState);
+  unsubscribe(); first.replace(initialWorkspaceState); assert.equal(notifications, 1);
 });

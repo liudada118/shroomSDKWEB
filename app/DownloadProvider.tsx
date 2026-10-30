@@ -86,7 +86,7 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
   function startDownload(target: DownloadTarget) {
     const a = document.createElement('a');
     a.href = target.url;
-    a.download = '';
+    a.download = target.fileName ?? '';
     document.body.appendChild(a);
     a.click();
     a.remove();

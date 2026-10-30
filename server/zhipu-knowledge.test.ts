@@ -258,9 +258,13 @@ test('the model is given the section catalog and the current page', async () => 
   assert.match(systemPrompt, /python--s1 \| 安装/);
   assert.match(systemPrompt, /用户当前正在阅读「Python SDK」文档页/);
   assert.match(systemPrompt, /serveDevice/);
-  assert.match(systemPrompt, /带标签会话录制及 CSV\/JSONL 下载/);
+  for (const method of ['readProduct', 'createWS', 'startRecording', 'stopRecording', 'downloadRecording']) {
+    assert.ok(systemPrompt.includes(method), `知识问答应知道快速函数 ${method}`);
+  }
+  assert.match(systemPrompt, /SQLite 中事务批量持久化/);
+  assert.match(systemPrompt, /从数据库生成 CSV\/JSONL/);
   assert.match(systemPrompt, /Python 当前只有基础串口/);
-  assert.match(systemPrompt, /不内置数据库、历史回放或力学标定/);
+  assert.match(systemPrompt, /业务数据库、历史回放或力学标定由应用实现/);
   assert.match(systemPrompt, /@@SECTIONS:/);
 });
 

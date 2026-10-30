@@ -38,9 +38,8 @@ export default async function DocDetail({ params, searchParams }: {
   const initialLanguage = doc.slug === 'backend' && (await searchParams).language === 'python' ? 'python' : 'node';
 
   if (doc.slug === 'quick-start') {
-    // 六章教程为交互视图；扩展内容继续由 SDK Markdown 构建，旧锚点保持可达。
-    const extensionsStart = doc.html.indexOf('<h2 id="extensions">');
-    return <ProductWorkspace raw={doc.raw} extensionHtml={extensionsStart >= 0 ? doc.html.slice(extensionsStart) : ''} />;
+    // 调用流程由 SDK 共享生成器提供，接入准备和字段参考各有独立面板。
+    return <ProductWorkspace />;
   }
 
   const content = (

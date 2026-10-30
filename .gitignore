@@ -50,11 +50,16 @@ next-env.d.ts
 # （git 里删掉也不会变小）。线上让 Nginx alias 到磁盘目录去发，
 # 只有 app/desktop-release.json 那份元数据进仓库。
 /public/downloads/
+/public/releases/sdk/
 /sdk/node_modules
 
 # SDK 用户采集记录不得随源码或下载包发布。
 .shroom-recordings/
 /sdk/recordings/
+/sdk/**/*.sqlite
+/sdk/**/*.sqlite-*
+/sdk/**/*.db
+/sdk/**/*.db-*
 
 # Python SDK local environments and build output
 __pycache__/

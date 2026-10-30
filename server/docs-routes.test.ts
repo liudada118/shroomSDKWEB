@@ -24,54 +24,28 @@ test('workflow and custom routes exist without replacing existing reference URLs
   assert.equal(catalog.filter((doc) => doc.area === 'backend' && !doc.hidden).length, 1);
 });
 
-test('quick guide exposes the complete product, transport, view, recording and download path', () => {
-  const quick = getDoc('quick-start')!;
-  assert.ok(quick);
-  for (const method of ['connectGlove', 'connectHandPad', 'serveDevice', 'connectStream', 'createProductView',
-    'startRecording', 'stopRecording', 'downloadRecording', 'listRecordings', 'getRecordingStatus']) {
-    assert.ok(quick.raw.includes(`${method}(`), method);
-  }
-  for (const id of ['demo', 'device', 'view', 'record', 'download', 'troubleshooting']) {
-    assert.ok(quick.toc.some((heading) => heading.id === id), id);
-    assert.ok(sectionCatalog.some((section) => section.href === `/docs/quick-start#${id}`));
-  }
-  assert.match(quick.raw, /node node\/quick-demo\.js --mock --port 19999/);
-  assert.match(quick.raw, /node start\.mjs/);
-  assert.match(quick.raw, /web\/quick-start\.html/);
-  assert.match(quick.raw, /一次会话对应一个标签/);
-  assert.match(quick.raw, /Python 当前提供基础串口/);
-  assert.match(quick.raw, /不是 3D/);
-});
-
-test('quick guide and product workspace share six unique ordered chapters before optional extensions', async () => {
+test('quick guide presents the requested five API steps and keeps the preparation outline consistent', async () => {
   const quick = getDoc('quick-start')!;
   const catalog = await definitions();
-  const chapters = catalog.find((doc) => doc.slug === 'quick-start')!.chapters!;
-  assert.equal(chapters.length, 6);
-  assert.deepEqual(chapters, workspaceChapters, 'navigation metadata and interactive chapter labels must agree');
-  assert.deepEqual(quick.toc.filter((heading) => heading.level === 2).slice(0, 6)
+  const steps = ['flow-read', 'flow-ws', 'flow-start', 'flow-stop', 'flow-download'];
+  assert.deepEqual(quick.toc.filter(heading => steps.includes(heading.id)).map(heading => heading.id), steps);
+  for (const method of ['readProduct', 'createWS', 'startRecording', 'stopRecording', 'downloadRecording']) {
+    assert.ok(quick.raw.includes(`${method}(`), method);
+  }
+  assert.match(quick.raw, /const recording = await stopRecording\(stream\)/);
+  assert.match(quick.raw, /downloadRecording\(stream,/);
+  assert.doesNotMatch(quick.raw, /<!doctype html|node node\/quick-demo|glove-left-example\.mjs/);
+  const chapters = catalog.find(doc => doc.slug === 'quick-start')!.chapters!;
+  assert.deepEqual(chapters, workspaceChapters);
+  assert.deepEqual(quick.toc.filter(heading => chapters.some(chapter => chapter.id === heading.id))
     .map(({ id, text }) => ({ id, label: text })), chapters);
-  for (const chapter of chapters) {
-    assert.equal(quick.toc.filter((heading) => heading.id === chapter.id).length, 1, chapter.id);
-    assert.equal(quick.raw.split(`{#${chapter.id}}`).length - 1, 1, 'anchors must be explicit and unique');
-    assert.ok(sectionCatalog.some((section) => section.href === `/docs/quick-start#${chapter.id}`));
-    const start = quick.raw.indexOf(`{#${chapter.id}}`);
-    const end = quick.raw.indexOf('\n## ', start);
-    const body = quick.raw.slice(start, end);
-    assert.match(body, /\*\*前置\*\*/, `${chapter.id}: prerequisites`);
-    assert.match(body, /\*\*操作[^\n]*\*\*/, `${chapter.id}: action`);
-    assert.match(body, /\*\*完成标志\*\*/, `${chapter.id}: completion criteria`);
+  for (const id of [...steps, ...chapters.map(chapter => chapter.id), 'device', 'demo', 'view', 'record', 'download', 'troubleshooting']) {
+    assert.equal(quick.toc.filter(heading => heading.id === id).length, 1, id);
+    assert.ok(sectionCatalog.some(section => section.href === `/docs/quick-start#${id}`), id);
   }
-  const extensionIndex = quick.toc.findIndex((heading) => heading.id === 'extensions');
-  assert.ok(extensionIndex >= 6);
-  for (const id of ['device', 'demo', 'view', 'record', 'download', 'troubleshooting']) {
-    assert.ok(quick.toc.findIndex((heading) => heading.id === id) > extensionIndex, `${id} remains an optional reference`);
-  }
-  assert.match(quick.raw, /node start\.mjs --no-open/);
-  assert.match(quick.raw, /glove-left-example\.mjs COM3/);
-  assert.match(quick.raw, /activateLicenseFromEnv\(\)/);
   assert.match(quick.raw, /CH341SER\.EXE/);
   assert.match(quick.raw, /CH34xVCPDriver\.zip/);
+  assert.match(quick.raw, /Python 当前提供基础串口/);
 });
 
 test('custom guide links to references and distinguishes the legacy backend from the standalone service', () => {
@@ -81,48 +55,25 @@ test('custom guide links to references and distinguishes the legacy backend from
     assert.ok(custom.html.includes(`href="/docs/${slug}`), slug);
   }
   assert.match(custom.raw, /Node\.js \/ Python/);
-  assert.match(custom.raw, /不是同一协议/);
+  assert.match(custom.raw, /(?:不是同一协议|使用不同协议)/);
   assert.match(custom.raw, /BackendSdkClient\.startCollection\(\)/);
   assert.match(custom.raw, /Python 目前只有基础串口/);
 });
 
-test('quick guide groups capture start and stop beneath one chapter and downloads separately', () => {
+test('stop and download remain distinct steps with the persisted ID managed by the SDK', () => {
   const quick = getDoc('quick-start')!;
-  const recordIndex = quick.toc.findIndex((heading) => heading.id === 'record');
-  const downloadIndex = quick.toc.findIndex((heading) => heading.id === 'download');
-  assert.ok(recordIndex >= 0 && downloadIndex > recordIndex);
-  assert.equal(quick.toc[recordIndex].level, 2);
-  assert.match(quick.toc[recordIndex].text, /数据采集/);
-  const controls = quick.toc.slice(recordIndex + 1, downloadIndex);
-  assert.equal(controls.length, 2);
-  assert.ok(controls.every((heading) => heading.level === 3));
-  assert.match(controls[0].text, /开始/);
-  assert.match(controls[1].text, /停止/);
-  assert.equal(quick.toc[downloadIndex].level, 2);
-  assert.doesNotMatch(quick.toc[downloadIndex].text, /停止/);
-  const captureStart = quick.raw.search(/^## [^\n]+\{#record\}$/m);
-  const downloadStart = quick.raw.search(/^## [^\n]+\{#download\}$/m);
-  const nextChapter = quick.raw.indexOf('\n## ', downloadStart);
-  assert.ok(captureStart >= 0 && downloadStart > captureStart && nextChapter > downloadStart);
-  const capture = quick.raw.slice(captureStart, downloadStart);
-  const download = quick.raw.slice(downloadStart, nextChapter);
-  assert.match(capture, /await stream\.startRecording\(/);
-  assert.match(capture, /await stream\.stopRecording\(/);
-  assert.doesNotMatch(download, /await stream\.stopRecording\(/);
-  assert.match(download, /stream\.downloadRecording\(recordingId,/);
-});
-
-test('download guides require an explicit recording ID and explain its origin and failure cases', () => {
-  for (const slug of ['quick-start', 'storage']) {
-    const raw = getDoc(slug)!.raw;
-    assert.match(raw, /采集记录 ID/);
-    assert.match(raw, /downloadRecording\(recordingId,/);
-    assert.match(raw, /不会默认下载最近一次记录/);
-    assert.match(raw, /404/);
-    assert.match(raw, /409/);
-  }
-  assert.match(getDoc('quick-start')!.raw, /session\.id/);
-  assert.match(getDoc('quick-start')!.raw, /startRecording\(\)/);
+  const stop = quick.raw.indexOf('{#flow-stop}');
+  const download = quick.raw.indexOf('{#flow-download}');
+  const after = quick.raw.indexOf('\n## ', download);
+  assert.ok(stop > 0 && download > stop && after > download);
+  assert.match(quick.raw.slice(stop, download), /const recording = await stopRecording\(stream\)/);
+  assert.match(quick.raw.slice(download, after), /downloadRecording\(stream,/);
+  assert.doesNotMatch(quick.raw.slice(download, after), /await (?:stream\.)?stopRecording\(/);
+  assert.doesNotMatch(quick.raw.slice(download, after), /downloadRecording\(recording\.id,/, '下载按钮不依赖停止按钮的局部变量');
+  const storage = getDoc('storage')!.raw;
+  for (const content of [/采集记录 ID/, /downloadRecording\(recordingId,/, /404/, /409/]) assert.match(storage, content);
+  assert.match(quick.raw, /session\.id/);
+  assert.match(quick.raw.slice(download, after), /下载[^\r\n]*(?:不等于|不代表)文件已保存完成/);
 });
 
 test('product navigation exposes task references and basic references remain on their own pages', async () => {
@@ -148,20 +99,21 @@ test('product navigation exposes task references and basic references remain on 
   const detail = await readFile(new URL('../app/docs/[slug]/page.tsx', import.meta.url), 'utf8');
   assert.match(detail, /doc\.slug === 'quick-start' \? <section aria-label="基础文档入口"/);
   assert.match(detail, /if \(doc\.slug === 'quick-start'\)/);
-  assert.match(detail, /return <ProductWorkspace raw=\{doc\.raw\}/);
-  assert.match(detail, /doc\.html\.slice\(extensionsStart\)/);
+  assert.match(detail, /return <ProductWorkspace \/>/);
   const siteNavigation = await readFile(new URL('../app/SiteNavigation.tsx', import.meta.url), 'utf8');
   assert.match(siteNavigation, /pathname === '\/docs\/quick-start' \? <ProductWorkspaceNavigation/);
   const productNavigation = await readFile(new URL('../app/docs/ProductWorkspaceNavigation.tsx', import.meta.url), 'utf8');
-  for (const task of ['start', 'data', 'debug', 'downloads']) assert.ok(productNavigation.includes(`tab: '${task}'`));
+  for (const task of ['start', 'guide', 'data', 'debug', 'downloads']) assert.ok(productNavigation.includes(`tab: '${task}'`));
   assert.doesNotMatch(productNavigation, /workspaceChapters\.map/);
-  assert.match(productNavigation, /href="#extensions"/);
+  assert.match(productNavigation, /label: '调用流程'/);
+  assert.match(productNavigation, /label: '接入准备'/);
+  assert.doesNotMatch(productNavigation, /完整示例|href="#extensions"/);
   assert.ok(getDoc('custom')!.toc.some((heading) => heading.id === 'guides'));
 });
 
 test('new workflow sections do not displace existing readme or storage anchors', () => {
   const readme = getDoc('readme')!;
-  assert.equal(readme.toc.find((heading) => heading.id === 's1')?.text, '30 秒跑起来');
+  assert.equal(readme.toc.find((heading) => heading.id === 's1')?.text, '五步调用概览');
   assert.equal(readme.toc.find((heading) => heading.id === 's14')?.text, '拿去问 AI');
   const storage = getDoc('storage')!;
   assert.equal(storage.toc.find((heading) => heading.id === 's1')?.text, '选择保存内容');

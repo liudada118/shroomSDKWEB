@@ -18,13 +18,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL('https://sdk.jq-industries.com'),
   title: 'Shroom Developer｜SDK 开发中心',
-  description: '通过 Shroom Skill 快速接入统一 SDK，并获取对应系统的 Shroom 上位机、驱动、网页调试和 Mapping 工具。',
+  description: '一个函数拿到产品数据。按语言下载 Shroom SDK，按平台获取上位机与串口驱动；通过文档中心按需接入采集和下载。',
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'Shroom Developer｜SDK 开发中心',
-    description: '用 AI Skill，更快接入统一 Shroom SDK。',
+    description: '调用 readProduct() 拿到产品数据，按需扩展网页传输、采集和下载。',
     type: 'website',
     url: '/',
     images: [

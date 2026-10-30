@@ -1,24 +1,23 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { createProductExample } from '../../sdk/examples/product-examples.js';
-import { workspaceReadingPreview } from './product-workspace-preview';
+import { workspaceFlow } from './product-workspace-preview';
+import type { ProductFlowStep } from '../../sdk/examples/product-flow.js';
 import {
-  createWorkspaceStore, parseWorkspaceLocation, workspaceChapters, workspaceCommands, workspaceFilename,
+  createWorkspaceStore, parseWorkspaceLocation, workspaceChapters,
   workspaceReady, workspaceStateForLocation, workspaceUrl, workspaceLocationTarget,
-  type WorkspaceState, type WorkspaceProduct, type WorkspaceSide, type WorkspaceEnvironment,
-  type WorkspacePlatform, type WorkspaceTab, type WorkspaceSection, type WorkspaceCodeKind,
+  type WorkspaceState, type WorkspaceProduct, type WorkspaceSide,
+  type WorkspacePlatform, type WorkspaceTab, type WorkspaceSection,
 } from './product-workspace-model';
 
 type WorkspaceContextValue = {
-  state: WorkspaceState; ready: boolean; filename: string; code: string; previewCode: string; commands: string;
+  state: WorkspaceState; ready: boolean;
+  flowSteps: ProductFlowStep[];
   setProduct: (product: WorkspaceProduct) => void;
   confirmSide: (side: WorkspaceSide) => void;
-  setEnvironment: (env: WorkspaceEnvironment) => void;
   setPlatform: (platform: WorkspacePlatform) => void;
   setTab: (tab: WorkspaceTab) => void;
   navigateChapter: (section: WorkspaceSection) => void;
-  setCodeKind: (kind: WorkspaceCodeKind) => void;
 };
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
@@ -77,23 +76,18 @@ export function ProductWorkspaceProvider({ children }: { children: ReactNode }) 
   const navigateChapter = useCallback((section: WorkspaceSection) => {
     if (!workspaceChapters.some(item => item.id === section)) return;
     pendingTarget.current = section;
-    change(previous => ({ ...previous, tab: 'start', section }), section);
-    // 教程默认折叠；先让正文展开对应说明，再在可见布局中定位章节。
+    change(previous => ({ ...previous, tab: 'guide', section }), section);
+    // 切换至接入准备面板，再在可见布局中定位章节。
     window.dispatchEvent(new CustomEvent('shroom:workspace-chapter', { detail: { section } }));
   }, [change]);
 
   const ready = workspaceReady(state);
-  const code = useMemo(() => ready ? createProductExample({
-    product: state.product, ...(state.product === 'glove' && state.side ? { side: state.side } : {}),
-    env: state.env, platform: state.platform, kind: state.codeKind,
-  }) : '// 请先在顶部按实物确认左手或右手，再生成对应示例。', [ready, state.product, state.side, state.env, state.platform, state.codeKind]);
-  const previewCode = useMemo(() => workspaceReadingPreview(state), [state]);
+  const flowSteps = useMemo(() => workspaceFlow(state), [state]);
 
   const value: WorkspaceContextValue = {
-    state, ready, filename: workspaceFilename(state), code, previewCode, commands: workspaceCommands(state),
+    state, ready, flowSteps,
     setProduct: product => change(previous => previous.product === product ? previous : { ...previous, product, side: null, sideConfirmed: false }),
     confirmSide: side => change(previous => ({ ...previous, side, sideConfirmed: true })),
-    setEnvironment: env => change(previous => ({ ...previous, env })),
     setPlatform: platform => change(previous => ({ ...previous, platform })),
     setTab: tab => {
       const target = tab === 'start' ? 'product-start' : `product-${tab}`;
@@ -101,7 +95,6 @@ export function ProductWorkspaceProvider({ children }: { children: ReactNode }) 
       change(previous => ({ ...previous, tab }), target);
     },
     navigateChapter,
-    setCodeKind: codeKind => change(previous => ({ ...previous, codeKind })),
   };
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

@@ -3,7 +3,7 @@
 import { ReactNode, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useDownload } from './DownloadProvider';
-import { DESKTOP_PLATFORMS, SDK_VARIANTS, SERIAL_DRIVERS } from './downloads';
+import { DESKTOP_PLATFORMS, SDK_VARIANTS, SERIAL_DRIVERS, SDK_SOURCE_URL } from './downloads';
 
 // 手套体验站独立部署，不属于当前站点布局。
 const GLOVE_LAB_URL = 'https://glove.jq-industries.io/';
@@ -58,23 +58,23 @@ const capabilities = [
   {
     index: '01',
     tag: 'DEVICE',
-    title: '统一设备接入',
-    description: '浏览器、Node 和 Python 支持基础串口直连；Node / 浏览器提供手套和手部检测垫快速方案，串联 WS、分区展示、标签录制与下载。',
-    meta: ['串口直连', 'HTTP / WebSocket', '浏览器 / Node / Python'],
+    title: '一步拿到产品数据',
+    description: '手套与手垫调用 readProduct()，直接收到产品数据。串口连接、产品协议和点位映射由 SDK 处理。',
+    meta: ['readProduct()', '产品数据回调', 'Node.js / 浏览器'],
   },
   {
     index: '02',
     tag: 'DATA',
     title: '稳定数据解析',
-    description: '从字节流切出一帧一帧并解码成统一结构。分隔符撞车切出的脏帧由帧长锁定挡掉，画面不会在方阵和横线之间闪。',
+    description: '将连续字节流解析为结构化数据，校验帧长，通过回调交给你的应用。',
     meta: ['协议解析', '帧长锁定', '实时回调'],
   },
   {
     index: '03',
-    tag: 'MOCK',
-    title: '没有硬件也能开发',
-    description: 'Shroom.mock() 生成的模拟设备与真实设备接口完全一致。界面先写完，设备到了改一行就切过去。',
-    meta: ['模拟数据源', '接口一致', '先写界面后接设备'],
+    tag: 'RECORDING',
+    title: '数据采集',
+    description: '调用开始、停止和下载三个函数，按标签保存采集记录。SDK 自动存入 SQLite，需要时导出 CSV 或 JSONL。',
+    meta: ['开始 / 停止采集', 'SQLite 存储', 'CSV / JSONL 下载'],
   },
   {
     index: '04',
@@ -85,112 +85,24 @@ const capabilities = [
   },
 ];
 
-const skillSteps = [
-  {
-    number: '01',
-    title: '把上下文发给 AI',
-    description: '复制 AI-CONTEXT.md 全文，或把 SDK 文件夹放进项目让 AI 先读它。',
-  },
-  {
-    number: '02',
-    title: '描述设备与目标',
-    description: '说明产品型号、数据用途和技术栈，不需要从零翻阅全部接口文档。',
-  },
-  {
-    number: '03',
-    title: '生成并验证接入',
-    description: '由 AI 生成连接、读取和展示代码，没有设备就先用 Shroom.mock() 跑通。',
-  },
-];
+const heroCode = `import { readProduct } from './quick-flow.js';
 
-const workflow = [
-  { number: '01', title: '安装驱动与 SDK', description: '确认已购型号、左右手与技术栈，安装对应系统串口驱动，再下载 SDK 并安装依赖。' },
-  { number: '02', title: '连接真实产品', description: '已支持的手套与手垫使用产品接口，协议和点位映射由 SDK 处理。' },
-  { number: '03', title: '接入自己的程序', description: '订阅结构化产品数据，理解原始值、分区和矩阵，再接入业务处理。' },
-  { number: '04', title: '验证连接与释放', description: '按指南处理连接异常、取消订阅和设备关闭，再按需要增加展示或录制。' },
-];
-
-// planned 为 true 的卡片渲染成不可点的灰态。宁可写「规划中」，
-// 也不要挂一个指回本页的假链接 —— 那种链接点下去毫无反应，比明说没做更糟。
-const tools = [
-  {
-    label: 'QUICK FLOW',
-    title: '展示与采集示例',
-    description: '先启动本机 Node 数据服务，再填写 WS 端口，一次跑通实时展示、标签录制与文件下载。',
-    action: '打开完整示例',
-    accent: 'bg-[#eff6ff] text-[#175cd3]',
-    href: '/quick-start.html',
-    external: true,
-  },
-  {
-    label: 'WEB LAB',
-    title: '网页测试台',
-    description: '先安装系统串口驱动，再用 Chrome / Edge 连接设备，实时查看压力热图与原始数据。',
-    action: '打开测试台',
-    accent: 'bg-[#eff6ff] text-[#175cd3]',
-    href: '/lab.html',
-    external: true,
-  },
-  {
-    label: 'GLOVE LAB',
-    title: '触觉手套体验站',
-    description: '双手触觉手套的完整采集端：力值热图与 3D 手部映射、陀螺仪、采集任务与回放、CSV 导出。独立部署，浏览器直连手套。',
-    action: '打开手套体验站',
-    accent: 'bg-[#f0f9ff] text-[#0369a1]',
-    href: GLOVE_LAB_URL,
-    external: true,
-  },
-  {
-    label: 'AI SKILL',
-    title: 'Shroom SDK Skill',
-    description: '一份写给 AI 的上下文文件，让它掌握 SDK 的接口和能力边界，直接辅助生成接入代码。',
-    action: '查看并复制给 AI',
-    accent: 'bg-[#faf5ff] text-[#7e22ce]',
-    href: '/docs/ai-context',
-  },
-  {
-    label: 'MAPPING',
-    title: '点位映射生成器',
-    description: '导入点位表与线序信息，自动生成可复用的 Mapping JSON 配置。',
-    action: '规划中',
-    accent: 'bg-[#f0fdf4] text-[#15803d]',
-    planned: true,
-  },
-  {
-    label: 'ENGINEERING',
-    title: '工程验证工具',
-    description: '力学校定、公式推导、疲劳测试与温湿度耐受性测试。标定相关能力不随公开 SDK 发放。',
-    action: '规划中',
-    accent: 'bg-[#fff7ed] text-[#c2410c]',
-    planned: true,
-  },
-];
-
-const heroCode = `import { Shroom } from './node/index.js';
-import { activateLicenseFromEnv } from './node/license-env.js';
-
-// 先设置 SHROOM_LICENSE_KEY；辅助模块自动保存并复用本机安装标识。
-await activateLicenseFromEnv();
-
-const device = await Shroom.connectGlove({
-  path: 'COM3', // 改为系统中实际识别的端口
-  side: 'left', // 按实物确认左右手，右手使用 right
-  // 已完成协议解析和映射，直接接入业务；ADC 不是物理压力单位。
-  onData: (data) => console.log(data.fingers, data.palm),
-  onError: (error) => console.error(error.code, error.message),
-});
-// 这是核心调用片段；完整错误恢复、断线与退出处理见接入教程。`;
-
-const quickStartCode = `${heroCode}
-
-// 结束使用时释放设备
-process.once('SIGINT', async () => {
-  await device.close();
-});`;
+// 完成驱动、依赖和 SDK 授权后调用
+let device; // 保留连接，结束使用时 await device.close()
+try {
+  device = await readProduct({
+    product: 'glove', side: 'left', // 按实物选择左右手
+    path: 'COM3', // 改为实际串口
+    onData: data => console.log(data.fingers, data.palm),
+    onError: error => console.error('运行异常', error),
+  });
+} catch (error) {
+  console.error('取数失败', error); // 连接或配置错误
+}`;
 
 
 // 页面上所有代码块都由这里染色，示例只写一份，不会出现几处 API 对不上的情况
-const CODE_TOKEN = /(\/\/[^\n]*)|('[^']*')|\b(import|from|const)\b|\b(await)\b|\b([A-Za-z_$][\w$]*)(?=\()/g;
+const CODE_TOKEN = /(\/\/[^\n]*)|('[^']*')|\b(import|from|const|let|try|catch)\b|\b(await)\b|\b([A-Za-z_$][\w$]*)(?=\()/g;
 const TOKEN_CLASS = ['text-[#64748b]', 'text-[#86efac]', 'text-[#7dd3fc]', 'text-[#c4b5fd]', 'text-[#fde68a]'];
 
 function highlight(code: string): ReactNode[] {
@@ -269,18 +181,18 @@ export default function Home() {
         <div className="home-container home-hero-grid">
           <div className="home-hero-copy">
             <p className="home-eyebrow">SHROOM · 设备开发支持</p>
-            <h1 className="home-hero-title">把设备数据，<span>接入你的应用。</span></h1>
-            <p className="home-hero-description">选择已购设备与技术栈，用产品接口获取结构化数据，再接入自己的程序。</p>
+            <h1 className="home-hero-title">一步拿到<span>产品数据。</span></h1>
+            <p className="home-hero-description">调用 <code>readProduct()</code>，直接收到解析好的产品数据。串口连接、协议解析和点位映射，SDK 帮你处理。</p>
             <div className="home-actions">
-              <Link href="/docs/quick-start" className="home-button home-button-primary">开始集成设备 <span aria-hidden="true">→</span></Link>
+              <Link href="/docs/quick-start" className="home-button home-button-primary">查看一步取数 <span aria-hidden="true">→</span></Link>
               <a href="#downloads" className="home-button home-button-secondary">下载 SDK</a>
             </div>
-            <p className="home-hero-note">手套与手垫提供产品级接口；Python 能力见对应指南。</p>
+            <p className="home-hero-note">先完成驱动、依赖和授权准备。手套与手垫支持此接口；Python 查看独立指南。</p>
             <a href="#desktop-downloads" className="home-text-link">只需查看和调试数据？获取上位机 <span aria-hidden="true">→</span></a>
           </div>
           <div className="home-code-preview">
             <div className="home-code-header">
-              <span>Node.js · 左手手套示例</span>
+              <span>一个函数，持续收到产品数据 · Node.js</span>
               <button type="button" onClick={copyCode} aria-label="复制设备接入示例">{copyStatus === 'copied' ? '已复制' : copyStatus === 'error' ? '复制失败' : '复制代码'}</button>
             </div>
             <pre><code>{highlight(heroCode)}</code></pre>
@@ -289,7 +201,7 @@ export default function Home() {
         </div>
         <div className="home-process-strip">
           <ol className="home-container" aria-label="设备集成主路径">
-            {['选择设备', '安装驱动与 SDK', '读取产品数据', '接入自己的应用'].map((step, index) => (
+            {['安装驱动与 SDK', '完成授权', '调用 readProduct()', '收到产品数据'].map((step, index) => (
               <li key={step}><span>{String(index + 1).padStart(2, '0')}</span>{step}</li>
             ))}
           </ol>
@@ -401,33 +313,15 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="skill" className="home-assist-section scroll-mt-24">
-        <div className="home-container">
-          <div className="home-assist-heading">
-            <div>
-              <p className="home-eyebrow">可选辅助 · SDK SKILL</p>
-              <h2>让 AI 理解你的 SDK 上下文</h2>
-              <p>将 SDK 中的 AI-CONTEXT.md 提供给 AI，辅助编写接入代码；生成结果仍需按指南验证。</p>
-            </div>
-            <Link href="/docs/ai-context" className="home-button home-button-secondary">查看 SDK Skill <span aria-hidden="true">→</span></Link>
-          </div>
-          <ol className="home-assist-steps">
-            {skillSteps.map((step) => <li key={step.number}><span>{step.number}</span><div><h3>{step.title}</h3><p>{step.description}</p></div></li>)}
-          </ol>
-        </div>
-      </section>
-
       <section id="downloads" className="scroll-mt-24 border-y border-[#e4e7ec] bg-[#f8fafc] py-24 sm:py-28">
         <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold text-[#2563eb]">SDK 与软件资源</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">SDK 按语言选择，上位机按平台下载。</h2>
-              <p className="mt-5 leading-7 text-[#667085]">先按项目语言选择 SDK；只需要设备调试和数据查看时，再选择对应系统的上位机。</p>
+              <p className="mt-5 leading-7 text-[#667085]">开发自己的应用，选择 SDK；直接查看和调试设备，选择上位机。</p>
             </div>
-            <p className="text-xs text-[#98a2b3]">
-              SDK 与 Windows / macOS / Linux 上位机均可下载，请按语言与平台选择
-            </p>
+            <Link href="/docs" className="home-text-link shrink-0">已下载？进入文档中心 <span aria-hidden="true">→</span></Link>
           </div>
 
           <section id="serial-driver-details" className="home-driver-panel scroll-mt-24" aria-labelledby="serial-drivers-title">
@@ -460,13 +354,14 @@ export default function Home() {
                   <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#eff4ff] font-mono text-base font-bold text-[#175cd3]" aria-hidden="true">{variant.sdkLanguage === 'python' ? 'PY' : 'JS'}</span>
                   <span className="rounded-md border border-[#e4e7ec] px-2.5 py-1 font-mono text-xs text-[#667085]">v{variant.sdkVersion} · ZIP</span>
                 </div>
-                <h3 id={`${variant.source}-title`} className="mt-5 text-2xl font-semibold tracking-tight">{variant.label} SDK</h3>
+                <h3 id={`${variant.source}-title`} className="mt-5 text-2xl font-semibold tracking-tight">{variant.sdkLanguage === 'node' ? 'JavaScript / TypeScript' : variant.label} SDK</h3>
                 <p className="mt-2 text-sm font-medium leading-6 text-[#344054]">{variant.description}</p>
                 <p className="mt-4 flex-1 text-sm leading-7 text-[#667085]">{variant.details}</p>
                 <p className="mt-5 border-t border-[#eaecf0] pt-4 text-xs leading-6 text-[#667085]">{variant.contents}</p>
                 <div className="mt-5 flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
                   <button type="button" onClick={() => openGate(variant)} className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-lg bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#175cd3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">下载 {variant.label} SDK</button>
                   <Link href={variant.guideHref} className="inline-flex min-h-11 items-center justify-center rounded-lg px-2 text-sm font-semibold text-[#175cd3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">{variant.label} 使用指南 <span aria-hidden="true" className="ml-1">→</span></Link>
+                  <a href={SDK_SOURCE_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-lg px-2 text-sm text-[#475467] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">查看源码 ↗</a>
                 </div>
               </article>
             ))}
@@ -477,9 +372,9 @@ export default function Home() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="font-mono text-[10px] font-semibold tracking-[0.15em] text-[#2563eb]">SHROOM DESKTOP</p>
-                <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">Shroom 上位机与驱动</h3>
+                <h3 className="mt-2 text-2xl font-semibold tracking-[-0.03em]">Shroom 上位机</h3>
               </div>
-              <p className="max-w-xl text-xs leading-6 text-[#667085]">按运行设备采集程序的电脑系统选择驱动；SDK 与上位机共用系统串口驱动。</p>
+              <p className="max-w-xl text-xs leading-6 text-[#667085]">按使用上位机的电脑系统选择安装包。</p>
             </div>
           </div>
 
@@ -557,117 +452,45 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="quick-start" className="scroll-mt-24 bg-[#0b1220] py-24 text-white sm:py-28">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold text-[#84adff]">标准集成路径</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">先完成产品取数，再接入自己的程序。</h2>
-            <p className="mt-5 leading-7 text-[#98a2b3]">下面以 Node.js 手套接口为例。产品协议与映射由 SDK 处理，网页展示和文件录制按任务选用。</p>
-            <Link href="/docs/quick-start" className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-[#84adff] hover:underline">查看完整安装与接入指南 →</Link>
-          </div>
-
-          <div className="mt-12 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-            <ol className="grid gap-3">
-              {workflow.map((step, index) => (
-                <li key={step.number} className={`rounded-xl border p-5 ${index === 0 ? 'border-[#2e90fa] bg-[#102a56]' : 'border-white/10 bg-white/[0.03]'}`}>
-                  <div className="flex gap-4">
-                    <span className={`font-mono text-xs font-bold ${index === 0 ? 'text-[#84adff]' : 'text-[#667085]'}`}>{step.number}</span>
-                    <div>
-                      <h3 className="text-sm font-semibold">{step.title}</h3>
-                      <p className="mt-1.5 text-xs leading-6 text-[#98a2b3]">{step.description}</p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#070c14] shadow-2xl">
-              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <div className="flex items-center gap-2 text-xs font-medium text-[#98a2b3]"><span className="h-2 w-2 rounded-full bg-[#12b76a]" /> device.mjs</div>
-                <span className="font-mono text-[10px] text-[#667085]">Node.js</span>
-              </div>
-              <pre className="overflow-x-auto p-6 font-mono text-[12px] leading-7 text-[#cbd5e1] sm:p-8 sm:text-[13px]">
-                <code>{highlight(quickStartCode)}</code>
-              </pre>
-              <div className="border-t border-white/10 bg-[#0d1524] px-6 py-4 font-mono text-[11px] text-[#86efac] sm:px-8">
-                示例代码 · 实际端口、数据与运行结果以设备为准
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="web-lab" className="home-lab-section scroll-mt-24">
+      <section id="docs" className="home-docs-section scroll-mt-24 bg-white" aria-labelledby="home-docs-title">
         <div className="home-container">
           <div className="home-assist-heading">
             <div>
-              <p className="home-eyebrow">设备与环境诊断</p>
-              <h2>用网页测试台检查设备数据</h2>
-              <p>在支持 Web Serial 的 Chrome / Edge 中连接串口。安装、连接或无数据时，都可以进入诊断。</p>
+              <p className="home-eyebrow">下载之后 · 开始接入</p>
+              <h2 id="home-docs-title">文档中心</h2>
+              <p>先用一个函数拿到产品数据。需要网页传输、采集或下载时，再继续后续调用。</p>
             </div>
-            <a href="/lab.html" target="_blank" rel="noreferrer" className="home-button home-button-secondary">打开测试台 <span aria-hidden="true">↗</span></a>
+            <Link href="/docs" className="home-button home-button-primary">进入文档中心 <span aria-hidden="true">→</span></Link>
           </div>
-          <details className="home-lab-preview">
-            <summary>在本页展开测试台</summary>
-            <iframe src="/lab.html" title="Shroom 网页测试台" allow="serial" loading="lazy" className="block h-[620px] w-full border-0 sm:h-[760px]" />
-          </details>
+          <div className="home-docs-links">
+            <Link id="quick-start" href="/docs/quick-start" className="home-docs-link scroll-mt-24">
+              <span className="home-eyebrow">JAVASCRIPT / TYPESCRIPT</span>
+              <h3>一步拿数据</h3>
+              <p>调用 readProduct()，通过 onData 接收产品数据。</p>
+              <span className="home-docs-action">开始接入 <span aria-hidden="true">→</span></span>
+            </Link>
+            <Link id="skill" href="/docs/ai-context" className="home-docs-link scroll-mt-24">
+              <span className="home-eyebrow">AI 接入指南</span>
+              <h3>让 AI 帮你接入</h3>
+              <p>先完成取数，再按需扩展采集与下载。</p>
+              <span className="home-docs-action">查看并复制给 AI <span aria-hidden="true">→</span></span>
+            </Link>
+            <Link href="/docs/backend?language=python" className="home-docs-link">
+              <span className="home-eyebrow">PYTHON</span>
+              <h3>Python 接入</h3>
+              <p>基础串口与逐帧读取；不提供五步函数。</p>
+              <span className="home-docs-action">查看 Python 指南 <span aria-hidden="true">→</span></span>
+            </Link>
+          </div>
+          <p className="home-docs-extension">需要保存数据？继续查看 <Link href="/docs/quick-start#flow-ws">创建 WS → 开始采集 → 停止采集 → 下载 <span aria-hidden="true">→</span></Link></p>
+          <nav id="tools" className="home-docs-tools scroll-mt-24" aria-label="辅助开发工具">
+            <span>辅助工具</span>
+            <a id="web-lab" href="/lab.html" target="_blank" rel="noreferrer" className="home-text-link scroll-mt-24">网页测试台 <span aria-hidden="true">↗</span></a>
+            <a href={GLOVE_LAB_URL} target="_blank" rel="noreferrer" className="home-text-link">手套体验站 <span aria-hidden="true">↗</span></a>
+            <Link href="/docs/ai-guide" className="home-text-link">如何向 AI 描述需求 <span aria-hidden="true">→</span></Link>
+          </nav>
         </div>
       </section>
-
-      <section id="tools" className="scroll-mt-24 border-y border-[#e4e7ec] bg-[#f8fafc] py-24 sm:py-28">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="max-w-2xl">
-            <p className="text-sm font-semibold text-[#2563eb]">开发者工具箱</p>
-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">按任务选择展示、诊断与辅助工具。</h2>
-            <p className="mt-5 leading-7 text-[#667085]">基础集成无需使用全部工具。诊断可随时进入，展示、采集和 AI 辅助按需选择；未开放工具单独标注。</p>
-          </div>
-          <div className="mt-12 grid gap-5 md:grid-cols-2">
-            {tools.map((tool) => (
-              <article
-                key={tool.title}
-                className={`rounded-2xl border p-7 transition sm:p-8 ${
-                  tool.planned
-                    ? 'border-dashed border-[#d0d5dd] bg-[#fcfcfd]'
-                    : 'border-[#e4e7ec] bg-white hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(16,24,40,0.07)]'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`inline-flex rounded-md px-2.5 py-1.5 font-mono text-[10px] font-semibold tracking-[0.12em] ${tool.accent}`}>{tool.label}</span>
-                  {tool.planned && (
-                    <span className="inline-flex rounded-md bg-[#f2f4f7] px-2.5 py-1.5 font-mono text-[10px] font-semibold tracking-[0.12em] text-[#98a2b3]">
-                      未开放
-                    </span>
-                  )}
-                </div>
-                <h3 className={`mt-6 text-xl font-semibold tracking-[-0.03em] ${tool.planned ? 'text-[#667085]' : ''}`}>{tool.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-[#667085]">{tool.description}</p>
-                {tool.planned ? (
-                  <span className="mt-7 inline-flex text-sm font-semibold text-[#98a2b3]">{tool.action}</span>
-                ) : (
-                  <a
-                    href={tool.href}
-                    {...(tool.external ? { target: '_blank', rel: 'noreferrer' } : {})}
-                    className="mt-7 inline-flex text-sm font-semibold text-[#175cd3] hover:underline"
-                  >
-                    {tool.action} <span className="ml-2">→</span>
-                  </a>
-                )}
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="docs" className="scroll-mt-24 bg-white py-24 sm:py-28">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-          <div className="max-w-2xl">
-            <h2 className="text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">文档中心</h2>
-            <p className="mt-5 leading-7 text-[#667085]">从最小产品取数示例开始，把数据接入自己的程序。需要网页展示、采集文件或新协议适配时，再查看对应扩展；Python 使用独立基础指南。</p>
-            <Link href="/docs" className="mt-7 inline-flex min-h-11 items-center rounded-lg bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#175cd3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">进入文档中心 <span aria-hidden="true" className="ml-2">→</span></Link>
-          </div>
-        </div>
-      </section>
-
       {/* 试用密钥申请：SDK 已改为点击直接下载，这块先下线，等正式发放流程接好再启用
       <section id="trial" className="scroll-mt-24 bg-[#0b1220] py-24 text-white sm:py-28">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-8 lg:grid-cols-[0.86fr_1.14fr] lg:px-10">

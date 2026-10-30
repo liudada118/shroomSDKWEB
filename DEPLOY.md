@@ -4,6 +4,8 @@
 当前安装包已在独立下载站提供，**无需把安装包上传到本站服务器或放入 `public/`**。
 页面本身怎么写、SDK 怎么用不在这里，看 [ARCHITECTURE.md](ARCHITECTURE.md) 和 [sdk/README.md](sdk/README.md)。
 
+本站是 [shroomSDKWEB](https://github.com/liudada118/shroomSDKWEB)，`sdk/` 由独立 [shroomSDK](https://github.com/liudada118/shroomSDK) 仓库提供，官网记录固定提交。SDK 升版和 Release 在 SDK 仓库执行，官网如何升级所引用的版本见 [SDK 同步指南](SDK-RELEASING.md)。
+
 ---
 
 ## 1. 构建与启动
@@ -13,14 +15,18 @@ SDK 授权需先发布共用后台 `E:/key` 的产品隔离更新并执行其 `d
 取消 SDK 设备型号限制不新增数据库迁移；若上述 0023 尚未执行，仍需先完成产品隔离迁移。先更新后台使 SDK 统一覆盖全部型号，再发布同步的 Node/Web/Python SDK。串口驱动仅提供外部下载链接，安装在实际连接 USB 设备的采集电脑上，见[驱动安装](sdk/docs/DRIVERS.md)。
 
 ```bash
+git clone --recurse-submodules https://github.com/liudada118/shroomSDKWEB.git
+cd shroomSDKWEB
 npm ci
-npm run build     # = 打 SDK zip + 预渲染文档 + vinext build
+npm run build     # = 镜像固定 SDK 的包与网页资源 + 预渲染文档 + vinext build
 npm run start     # 默认 3000，用 PORT=3001 npm run start 改端口
 ```
 
+已有检出目录在 `git pull` 后执行 `git submodule update --init --recursive`，再运行构建。不要加 `--remote`，否则会脱离官网锁定的 SDK 提交。缺少子模块或提交错位时，构建会停止并提示修复方式。官网正常构建只需安装官网依赖，无需安装 SDK 的原生串口/SQLite 模块或 Python 测试环境。
+
 `npm run build` 会顺带做两件容易被忘的事：
 
-- `pack:sdk` 把 `sdk/` 打成 Python / Node.js 独立 ZIP 与兼容完整包 `public/shroom-sdk.zip`（含单文件 bundle，且保留 `start.sh` 的可执行位）
+- `pack:sdk` 调用 SDK 自己的构建/打包工具，将 `sdk/dist/` 的三份 ZIP 与 SDK 网页资源镜像到 `public/`；原下载 URL 保持兼容。SDK 打包规则不在官网复制维护
 - `build:docs` 把 `sdk/*.md` 预渲染成 HTML 塞进产物 —— **文档站是构建期生成的**，
   运行时不读磁盘，所以服务器上没有 `sdk/` 目录也不影响 `/docs`
 
@@ -28,13 +34,13 @@ npm run start     # 默认 3000，用 PORT=3001 npm run start 改端口
 
 ## 1.1 PM2 托管
 
-源码更新到服务器上（`git pull` / `rsync`）之后，**只需要一条命令**：
+通过 Git 更新官网源码到服务器上后，**只需要一条命令**：
 
 ```bash
 ./deploy.sh
 ```
 
-它依次做：环境检查 → `npm ci` → `npm run build` → `pm2 startOrRestart` → 健康检查。
+它依次做：环境检查 → 初始化官网锁定的 SDK 子模块 → `npm ci` → `npm run build` → `pm2 startOrRestart` → 健康检查。源码部署需保留官网 Git 元数据及子模块配置；单独 rsync 一份不含 Git 信息的源码目录无法通过 SDK 来源检查。若只部署已构建的 `dist/`，运行服务不需要 SDK 源码。
 任何一步失败都会退出且**不会去动正在跑的进程**，构建失败时还会把上一版 `dist/` 放回去
 （`vinext build` 开头会清空 `dist/`，失败了线上连静态资源都读不到）。
 

@@ -5,14 +5,15 @@ import { useProductWorkspace } from './product-workspace-state';
 import { workspaceProducts, type WorkspaceProduct, type WorkspaceTab } from './product-workspace-model';
 import styles from './ProductWorkspaceNavigation.module.css';
 
-/** 产品工作台按任务导航，教程章节由正文的完整说明按需展开。 */
+/** 产品工作台按调用流程、准备和参考任务导航。 */
 export default function ProductWorkspaceNavigation({ onNavigate }: { onNavigate: () => void }) {
   const { state, setProduct, setTab } = useProductWorkspace();
   const references: { tab: WorkspaceTab; label: string }[] = [
-    { tab: 'start', label: '产品接入' },
+    { tab: 'start', label: '调用流程' },
+    { tab: 'guide', label: '接入准备' },
     { tab: 'data', label: '数据字段与映射' },
     { tab: 'debug', label: '问题排查' },
-    { tab: 'downloads', label: 'SDK 与示例下载' },
+    { tab: 'downloads', label: 'SDK 与驱动下载' },
   ];
 
   return <nav aria-label="产品接入文档目录" className={`docs-navigation ${styles.navigation}`}>
@@ -41,8 +42,7 @@ export default function ProductWorkspaceNavigation({ onNavigate }: { onNavigate:
       <Link href="/docs/license" onClick={onNavigate} className="docs-menu-link">SDK 授权说明</Link>
     </div>
     <div className="docs-menu-group">
-      <p className="docs-menu-caption">按需扩展</p>
-      <a href="#extensions" onClick={onNavigate} className="docs-menu-link">网页展示、采集与下载</a>
+      <p className="docs-menu-caption">开发参考</p>
       <Link href="/docs/custom" onClick={onNavigate} className="docs-menu-link">基础与自定义 API →</Link>
     </div>
     <div className="docs-menu-help"><Link href="/knowledge" onClick={onNavigate} className="docs-menu-link">AI 文档助手 ↗</Link></div>
