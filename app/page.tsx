@@ -189,7 +189,7 @@ export default function Home() {
               <Link href="/docs/quick-start" className="home-button home-button-primary">查看一步取数 <span aria-hidden="true">→</span></Link>
               <a href="#downloads" className="home-button home-button-secondary">下载 SDK</a>
             </div>
-            <p className="home-hero-note">先完成驱动、依赖和授权准备。手套与手垫支持此接口；Python 查看独立指南。</p>
+            <p className="home-hero-note">先安装驱动与 SDK，搜索并选择串口，再完成授权。手套与手垫支持此接口；Python 查看独立指南。</p>
             <a href="#desktop-downloads" className="home-text-link">只需查看和调试数据？获取上位机 <span aria-hidden="true">→</span></a>
           </div>
           <div className="home-code-preview">
@@ -203,7 +203,7 @@ export default function Home() {
         </div>
         <div className="home-process-strip">
           <ol className="home-container" aria-label="设备集成主路径">
-            {['安装驱动与 SDK', '完成授权', '调用 readProduct()', '收到产品数据'].map((step, index) => (
+            {['安装驱动与 SDK', '搜索串口 · 激活授权', '调用 readProduct()', '收到产品数据'].map((step, index) => (
               <li key={step}><span>{String(index + 1).padStart(2, '0')}</span>{step}</li>
             ))}
           </ol>

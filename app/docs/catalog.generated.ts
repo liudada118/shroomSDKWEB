@@ -113,6 +113,14 @@ export const sectionCatalog = [
     "keywords": "quick-start 5 步调用"
   },
   {
+    "anchor": "quick-start--flow-ports",
+    "label": "接入前：搜索并选择串口",
+    "href": "/docs/quick-start#flow-ports",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 接入前：搜索并选择串口"
+  },
+  {
     "anchor": "quick-start--flow-read",
     "label": "1. 取数",
     "href": "/docs/quick-start#flow-read",
@@ -591,6 +599,14 @@ export const sectionCatalog = [
     "page": "backend",
     "description": "后端文档",
     "keywords": "backend node Shroom.connect(options) 连接串口设备"
+  },
+  {
+    "anchor": "backend--node-reconnect",
+    "label": "Node 自动重连与 device.onStateChange(handler)",
+    "href": "/docs/backend?language=node#node-reconnect",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node Node 自动重连与 device.onStateChange(handler)"
   },
   {
     "anchor": "backend--node-mock",
@@ -1657,6 +1673,14 @@ export const sectionCatalog = [
     "keywords": "ai-context 接入前确认"
   },
   {
+    "anchor": "ai-context--flow-ports",
+    "label": "接入前：搜索并选择串口",
+    "href": "/docs/ai-context#flow-ports",
+    "page": "ai-context",
+    "description": "给 AI 的上下文",
+    "keywords": "ai-context 接入前：搜索并选择串口"
+  },
+  {
     "anchor": "ai-context--flow-read",
     "label": "1. 取数：readProduct",
     "href": "/docs/ai-context#flow-read",
@@ -1770,32 +1794,56 @@ export const sectionCatalog = [
   },
   {
     "anchor": "changelog--s1",
-    "label": "[0.1.0] - 2026-10-29",
+    "label": "[0.2.0] - 2026-11-03",
     "href": "/docs/changelog#s1",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog [0.2.0] - 2026-11-03"
+  },
+  {
+    "anchor": "changelog--s2",
+    "label": "Node.js 串口与快速流程",
+    "href": "/docs/changelog#s2",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog Node.js 串口与快速流程"
+  },
+  {
+    "anchor": "changelog--s3",
+    "label": "兼容范围",
+    "href": "/docs/changelog#s3",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog 兼容范围"
+  },
+  {
+    "anchor": "changelog--s4",
+    "label": "[0.1.0] - 2026-10-29",
+    "href": "/docs/changelog#s4",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.1.0] - 2026-10-29"
   },
   {
-    "anchor": "changelog--s2",
+    "anchor": "changelog--s5",
     "label": "Node.js 与浏览器",
-    "href": "/docs/changelog#s2",
+    "href": "/docs/changelog#s5",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 与浏览器"
   },
   {
-    "anchor": "changelog--s3",
+    "anchor": "changelog--s6",
     "label": "Python",
-    "href": "/docs/changelog#s3",
+    "href": "/docs/changelog#s6",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Python"
   },
   {
-    "anchor": "changelog--s4",
+    "anchor": "changelog--s7",
     "label": "发布管理",
-    "href": "/docs/changelog#s4",
+    "href": "/docs/changelog#s7",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 发布管理"

@@ -65,6 +65,7 @@ export default function ProductWorkspace() {
     ? "$env:SHROOM_LICENSE_KEY = '你的 SDK 产品密钥'"
     : "export SHROOM_LICENSE_KEY='你的 SDK 产品密钥'";
   const activationCode = "import { Shroom } from 'shroom-sdk/node';\n\n// 在第 1 步取数前激活；deviceId 必须是本机持久保存的安装标识。\nawait Shroom.activateLicense(process.env.SHROOM_LICENSE_KEY, {\n  deviceId: process.env.SHROOM_DEVICE_ID,\n});";
+  const portSearchCode = "import { listPorts } from 'shroom-sdk/node';\n\n// 查询可用串口，不打开设备，也不需要先激活密钥。\nconst ports = await listPorts();\nconsole.table(ports); // 按实际设备选择 path，填入第 1 步。";
   const tabs: { key: WorkspaceTab; label: string; id: string }[] = [
     { key: 'start', label: '调用流程', id: 'product-start' },
     { key: 'guide', label: '接入准备', id: 'product-guide' },
@@ -142,7 +143,12 @@ export default function ProductWorkspace() {
     <p className={styles.notice} role="status" aria-live="polite">{notice}</p>
 
     <section id="product-start" hidden={state.tab !== 'start'} aria-label="五步 API 调用流程">
-      <div className={styles.prerequisite}><span>先安装 SDK 并激活密钥，再执行下面的调用。</span><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-run')}>安装与授权 →</button></div>
+      <div className={styles.prerequisite}><span>先安装驱动与 SDK；取数前完成密钥激活。</span><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-run')}>安装与授权 →</button></div>
+      <section className={styles.preparation} aria-labelledby="port-search-title">
+        <h2 id="port-search-title">接入前：搜索并选择串口</h2>
+        <CodeBlock runtime="node" code={portSearchCode} onCopy={() => void copy(portSearchCode, '串口搜索代码')} />
+        <p>从列表中选择设备对应的 <code>path</code>，替换下方示例中的 <code>{portExample}</code>。没有端口时检查驱动与接线；多个端口时不要默认选择第一个。</p>
+      </section>
       <div className={styles.flow}>
         {flowSteps.map((step, index) => <section id={step.id} key={step.id} className={styles.flowStep} aria-labelledby={`${step.id}-title`} tabIndex={-1}>
           <div className={styles.stepHeading}><span aria-hidden="true">{index + 1}</span><h2 id={`${step.id}-title`}>{step.title}</h2></div>
@@ -157,8 +163,8 @@ export default function ProductWorkspace() {
       <Preparation id="guide-config" title="确认产品与串口"><p>当前产品：<strong>{productName}</strong>{glove ? `，${state.sideConfirmed ? `已确认${sideName}` : '手侧待按实物确认'}` : '，32 × 32 矩阵'}。将第 1 步的 <code>path</code> 替换为真实串口，当前系统格式示意为 <code>{portExample}</code>。</p><p>第 1–2 步的 Node 代码放在同一进程；第 2 步的浏览器连接只建立一次，后续三步复用同一个 <code>stream</code>。</p></Preparation>
       <Preparation id="guide-run" title="安装 SDK"><p>复制命令，在自己的项目目录执行。SDK 会自动下载并安装，无需先保存压缩包。</p><SdkInstall /><p><button type="button" className={styles.textLink} onClick={() => openDownload(jsDownload)}>下载安装包 →</button></p></Preparation>
       <Preparation id="guide-connect" title="激活 SDK 授权"><p>使用 Shroom SDK 产品密钥。<button type="button" className={styles.textLink} onClick={requestLicense}>申请 SDK 密钥 →</button></p><p>在启动 Node 程序的终端中设置密钥：</p><CodeBlock runtime="terminal" code={keyCommand} onCopy={() => void copy(keyCommand, '密钥设置命令')} /><p>在同一 Node 程序中，先激活，再执行第 1 步取数：</p><CodeBlock runtime="node" code={activationCode} onCopy={() => void copy(activationCode, '授权调用')} /><p className={styles.secondaryText}>限定电脑名额的密钥需要设置 <code>SHROOM_DEVICE_ID</code>；同一安装保持不变，不要每次启动生成新值。<Link href="/docs/license">安装标识与离线授权说明 →</Link></p></Preparation>
-      <Preparation id="guide-verify" title="验证取数与采集"><p><code>onData</code> 持续返回帧，触按位置与产品分区一致。开始采集返回会话 ID，停止采集返回本次 <code>recording.id</code>；下载使用此 ID。停止采集只停止保存记录，设备与 WS 仍保持连接。</p></Preparation>
-      <Preparation id="guide-code" title="接入自己的页面"><p>本页统一从 <code>shroom-sdk/quick-flow</code> 导入。Node 代码使用 ES 模块（如 <code>.mjs</code>）；网页工程通过 Vite 等构建工具解析包名。普通 HTML 无构建工具时，请使用源码 ZIP 的相对路径示例。</p><p>将第 3–5 步放进各自按钮的点击处理，捕获调用失败；同一网页复用 <code>stream</code>，不要在初始化时连续执行开始和停止。</p><p>退出时关闭浏览器的 <code>stream</code>，并在 Node 端关闭 <code>server</code> 释放设备。</p><button type="button" className={styles.textLink} onClick={() => setTab('start')}>返回五步调用流程 →</button></Preparation>
+      <Preparation id="guide-verify" title="验证取数与采集"><p><code>onData</code> 持续返回帧，触按位置与产品分区一致。开始采集返回会话 ID，停止采集返回本次 <code>recording.id</code>；下载使用此 ID。停止采集只停止保存记录，设备与 WS 仍保持连接。</p><p>SDK 0.2.0 起，Node 产品连接意外断开后默认每 3 秒重连原串口，最多尝试 3 次；<code>reconnect: false</code> 可关闭。断线中的采集记录以 <code>error</code> 收尾，恢复取数后需重新开始采集。</p></Preparation>
+      <Preparation id="guide-code" title="接入自己的页面"><p>五步函数从 <code>shroom-sdk/quick-flow</code> 导入，串口搜索从 <code>shroom-sdk/node</code> 导入。Node 代码使用 ES 模块（如 <code>.mjs</code>）；网页工程通过 Vite 等构建工具解析包名。普通 HTML 无构建工具时，请使用源码 ZIP 的相对路径示例。</p><p>将第 3–5 步放进各自按钮的点击处理，捕获调用失败；同一网页复用 <code>stream</code>，不要在初始化时连续执行开始和停止。</p><p>退出时关闭浏览器的 <code>stream</code>，并在 Node 端关闭 <code>server</code> 释放设备。</p><button type="button" className={styles.textLink} onClick={() => setTab('start')}>返回五步调用流程 →</button></Preparation>
     </section>
 
     <section id="product-data" hidden={state.tab !== 'data'} className={styles.referencePanel} aria-labelledby="product-data-title" tabIndex={-1}>
@@ -169,8 +175,9 @@ export default function ProductWorkspace() {
     <section id="product-debug" hidden={state.tab !== 'debug'} className={styles.referencePanel} aria-labelledby="product-debug-title" tabIndex={-1}>
       <h2 id="product-debug-title">按失败步骤排查</h2>
       <details className={styles.issue} open><summary>第 1 步：找不到串口或没有数据</summary><p>核对数据线、驱动、真实串口路径和端口占用。{glove ? '确认设备输出整包手套协议，并按实物选择 left / right。' : '确认设备使用 hand 协议和 32 × 32 数据尺寸。'}</p><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-prepare')}>查看准备要求 →</button></details>
+      <details className={styles.issue}><summary>设备断开后如何恢复</summary><p>SDK 0.2.0 起，Node 产品连接默认重试原 <code>path</code>，期间可用 <code>onStateChange</code> 显示重连状态。主动关闭、首次连接失败、授权或解析错误不会自动重连；COM 号改变后需重新搜索并选择。浏览器 WS 和 Web Serial 不自动重连。</p><p>重连恢复实时取数，不会继续写入已中断的采集记录。确认重新收到数据后，再开始一条新记录。</p></details>
       <details className={styles.issue}><summary>第 2 步：浏览器连不上 WS</summary><p>先确认 Node 已执行 <code>createWS(device)</code>，核对输出的 <code>server.url</code> 与浏览器连接端口。默认 <code>ws://127.0.0.1:19999</code> 仅供同机使用，网页使用 <code>http://localhost</code>。</p><p>HTTPS 页面不能直接套用本机明文 WS 配置；部署时需配置 <code>wss://</code>、HTTPS 下载地址及允许的网页来源，不能只改页面协议。</p></details>
-      <details className={styles.issue}><summary>授权失败或功能不可用</summary><p>先在 Node 调用 <code>activateLicenseFromEnv()</code>。核对 SDK 产品密钥、在线 / 离线模式、有效期、电脑名额，以及串口、流服务、录制功能权限。密钥不会自动激活。</p><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-connect')}>查看授权调用 →</button></details>
+      <details className={styles.issue}><summary>授权失败或功能不可用</summary><p>先在 Node 调用 <code>Shroom.activateLicense()</code>。核对 SDK 产品密钥、在线 / 离线模式、有效期、电脑名额，以及串口、流服务、录制功能权限。密钥不会自动激活。</p><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-connect')}>查看授权调用 →</button></details>
       <details className={styles.issue}><summary>第 3–4 步：采集没有开始或停止失败</summary><p>复用第 2 步返回的 <code>stream</code>，等待每个操作的 Promise 完成，并在按钮处理中捕获错误。<code>onData</code> 收到帧不代表已经保存记录；不要立即连续执行开始和停止。</p></details>
       <details className={styles.issue}><summary>第 5 步：无法下载</summary><p>先完成一次开始和停止采集，用停止返回的 <code>recording.id</code> 下载。不要默认挑最近记录。触发浏览器下载不代表文件已经保存完成。</p></details>
       <button type="button" className={styles.secondaryButton} onClick={() => void copy(diagnostics(), '配置与排查问题')}>复制配置与排查问题</button>

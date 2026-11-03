@@ -6,7 +6,7 @@
 
 官网与 SDK 分属两个 Git 仓库：[shroomSDKWEB](https://github.com/liudada118/shroomSDKWEB) 维护页面、在线文档和下载入口，[shroomSDK](https://github.com/liudada118/shroomSDK) 维护 SDK 源码、测试、构建与版本发布。官网的 `sdk/` 是固定提交的 Git 子模块；以下 SDK 路径表示子模块内的文件，不再属于官网直接维护的源码。
 
-Shroom Developer 面向已购设备、需要快速集成自有应用的客户。首页主张“一步拿到产品数据”：准备驱动、依赖和授权后，调用 readProduct() 即持续通过 onData 收到结构化数据。页面按“驱动与开发概览 → 产品资源 → SDK 能力 → 按语言下载 SDK / 按平台下载上位机 → 文档中心”组织。能力第三项明确为数据采集；下载后直接进入文档中心，一步取数为主入口，创建 WS/采集/停止/下载按需展开，AI 和 Python 指南独立。测试台与手套体验站保留为紧凑辅助入口，首页不再重复长接入教程、嵌入测试台或展示未开放工具卡。旧 #quick-start/#skill/#tools/#web-lab 锚点落在相应新入口。
+Shroom Developer 面向已购设备、需要快速集成自有应用的客户。首页主张“一步拿到产品数据”：准备驱动与依赖、搜索并选择串口、完成授权后，调用 readProduct() 即持续通过 onData 收到结构化数据。页面按“驱动与开发概览 → 产品资源 → SDK 能力 → 按语言下载 SDK / 按平台下载上位机 → 文档中心”组织。能力第三项明确为数据采集；下载后直接进入文档中心，一步取数为主入口，创建 WS/采集/停止/下载按需展开，AI 和 Python 指南独立。测试台与手套体验站保留为紧凑辅助入口，首页不再重复长接入教程、嵌入测试台或展示未开放工具卡。旧 #quick-start/#skill/#tools/#web-lab 锚点落在相应新入口。
 
 首页、文档中心、文档详情和 `/knowledge` 问答页通过根布局共用 `SiteShell`：统一 72px 顶栏、左侧导航、正文区域和页脚；窄屏通过同一个“目录”按钮展开导航。首页与问答侧栏为 240px，文档侧栏为 288px。文档分类和当前文档的章节/API 全部并入左侧层级树，正文不再分出右侧目录；文档顶栏仅显示品牌与当前位置，开发首页、下载和问答入口放在左侧。首页 `.home-shell` / `.home-page` 与文档 `.docs-shell` 使用独立阅读样式，下载登记和既有路由保持兼容。独立的 `/lab.html` 测试台不套用网站布局。
 
@@ -14,7 +14,7 @@ Shroom Developer 面向已购设备、需要快速集成自有应用的客户。
 
 - **按语言获取 SDK** —— JavaScript / TypeScript 主入口提供 `npm install shroom-sdk`，从 npm 注册表安装到客户 node_modules；另有官网 TGZ 下载与源码 ZIP 备用入口。Python 保留独立 ZIP 和 pip 指南。SDK 下载免登记，真实设备另行申请并激活产品密钥；上位机仍使用原下载登记。官网展示版本读取固定 SDK 提交，发布时确认 npm latest 与其一致；备用 TGZ URL 含版本与 SHA256，历史包随官网源码保留。
 - **三平台上位机** —— 首页通过 `app/downloads.ts` 提供用户指定的 Shroom 安装包：Windows 1.1.36 EXE、macOS 1.1.37 ARM64 DMG（仅 Apple Silicon）、Linux 1.1.38 amd64 DEB（仅支持 DEB 的 x86_64 系统）。三个平台均可下载；版本来自文件名，体积来自 2026-10-13 的 HTTPS HEAD 响应。安装包由 `shroom.jq-industries.com/shroom1/` 独立提供，不进入本站 Git 或构建产物。页面不复用旧 Monitor ZIP 的日期、更新日志、签名或授权说明；当前包的功能/授权不由基础 SDK 边界推定。旧 `desktop-release.json` 与同步脚本仅保留用于历史 Monitor 流程，不再驱动首页。
-- **文档中心** —— `/docs` 主入口直达 `/docs/quick-start` 的五步调用流程：取数、创建 WS、开始采集、停止采集、下载。Node 负责设备与服务，网页通过同一个 `stream` 控制采集并按返回的记录 ID 下载；驱动、授权与依赖集中在“接入准备”。字段、排查、SDK 下载独立，产品选择和驱动保持可见。`/docs/custom` 承接基础自定义，后端参考统一在 `/docs/backend`；旧链接兼容。`sdk/docs/catalog.json` 维护文档来源与导航元数据，构建期预渲染成 HTML。
+- **文档中心** —— `/docs` 主入口直达 `/docs/quick-start`：先直接展示 `listPorts()` 搜索和用户选择串口，再进入取数、创建 WS、开始采集、停止采集、下载五步。搜索使用 `shroom-sdk/node` 基础 API，不新增第六个快速函数。Node 负责设备与服务，网页通过同一个 `stream` 控制采集并按返回的记录 ID 下载；驱动、授权与依赖集中在“接入准备”。字段、排查、SDK 下载独立，产品选择和驱动保持可见。`/docs/custom` 承接基础自定义，后端参考统一在 `/docs/backend`；旧链接兼容。`sdk/docs/catalog.json` 维护文档来源与导航元数据，构建期预渲染成 HTML。
 - **完整快速方案** —— Node数据服务广播标准产品帧，浏览器自动分区展示，按标签录制到服务端磁盘并下载CSV/JSONL；页面刷新可找回记录。提供真实与合成产品示例，source明确区分模拟数据；细节见4.9。
 - **网页测试台** —— `public/lab.html`，浏览器直连串口看数据。
 - **串口接入可靠性** —— SDK 按查询 → 配置/连接 → 自动分帧/解码组织接入，配置在打开端口前校验；Node.js / 浏览器和 Python 提供结构化错误、生命周期与诊断快照。JS 额外提供运行时 `onError()`，Python 保持同步异常，不新增后台线程、自动重连或传感器型号识别。
@@ -339,10 +339,10 @@ flowchart TD
 
 ### 4.13 正式产品接入文档与调用流程
 
-- `/docs/quick-start` 使用 `ProductWorkspace` 和共享 `SiteShell`，侧栏提供调用流程、接入准备、字段、排查、SDK 与驱动下载。首屏依次直接展示五步代码，不折叠、不生成完整界面工程；代码可分块复制。固定为 Node 取数 + 网页 WS 的同一条流程，系统选择用于生成真实平台的串口路径。
+- `/docs/quick-start` 使用 `ProductWorkspace` 和共享 `SiteShell`，侧栏提供调用流程、接入准备、字段、排查、SDK 与驱动下载。首屏先展示“接入前：搜索并选择串口”，随后依次展示五步代码，不折叠、不生成完整界面工程；代码可分块复制。搜索片段仅调用 `listPorts()` 并输出列表，不打开设备、不要求授权，不默认选择第一个端口。固定为 Node 取数 + 网页 WS 的同一条流程，系统选择只生成串口格式示意，实际 `path` 由客户从搜索结果选择。
 - `sdk/examples/product-flow.js`（配 `.d.ts`）是五步调用展示的事实源，统一从公开包入口 `shroom-sdk/quick-flow` 导入五个函数：Node `readProduct` 取数、`createWS` 建服务，浏览器 `readProduct({ url })` 订阅；后三步分别放入按钮，调用 `startRecording(stream, options)`、`stopRecording(stream)`、`downloadRecording(stream, options)`。停止等待文件写入并由入口记住 ID，设备与 WS 保持连接；下载触发请求，不表示文件已保存。
 - `product-workspace-state.tsx` 仅生成 `flowSteps`，不再加载旧完整源码或例程文件名/运行命令。SSR 快照固定，挂载后读取 URL；确认实物手侧的守卫和同一设备切换时的确认保留。历史 `env/codeKind` URL 参数只作兼容，不改变五步运行端。
-- “接入准备”保留六个 `guide-*` 锚点，提供简短的驱动、端口、依赖、`activateLicenseFromEnv()`、验收与接入说明。`QUICK-START.md`、README、AI 上下文和目录标签同步该路线。旧步骤锚点映射对应 `flow-*`，排查转排查面板，`workspace-run` 转依赖准备。手套只公开原始压力、五指、手掌和 IMU 标准字段，检测垫保持 32×32 矩阵，运行时兼容层未删除。
+- “接入准备”保留六个 `guide-*` 锚点，提供简短的驱动、端口、依赖、`Shroom.activateLicense()`、验收与接入说明。准备与排查区明确 SDK 0.2.0 的 Node 产品连接默认按原 `path` 每 3 秒重试、最多 3 次，可通过 `reconnect: false` 关闭；重连不自动续录，断线记录以 `error` 收尾。首次连接失败、主动关闭、授权/解析错误及 COM 改号不被描述为可自动恢复；浏览器 WS / Web Serial 不承诺重连。`QUICK-START.md`、README、AI 上下文和目录标签同步该路线。旧步骤锚点映射对应 `flow-*`，排查转排查面板，`workspace-run` 转依赖准备。手套只公开原始压力、五指、手掌和 IMU 标准字段，检测垫保持 32×32 矩阵，运行时兼容层未删除。
 - 原生产品选择器的标签、完整边框、48px 点击高度与箭头由独立 CSS 模块提供。双平台驱动始终可达；JS SDK 使用既有下载登记和 ZIP，Python 独立能力边界保留。旧 `product-examples.js` 与六个 SDK 完整例程继续由 `pack:sdk` 打包，不作为文档主流程入口。
 - 验证包括共享片段经过真实本机 WS、模拟产品帧、开始/停止录制与按本次 ID 下载 CSV 的链路；并覆盖产品配置/旧链接、文档锚点、DOM/VM、TypeScript、ESLint 和生产构建。`scripts/check-product-workspace.mjs` 检查 SSR 五步顺序、真实 API、无完整工程展示、准备锚点、原生下拉生产样式、4个页面及3个ZIP后清理自有服务。未部署，未做真实硬件或浏览器视觉验收。
 
@@ -529,6 +529,7 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-10-30 | SDK 官网直接安装与密钥申请 | 官网复制一条命令即可安装，固定内容地址保留历史；申请密钥与下载分离，严格确认后台保存结果 |
 | 2026-11-03 | SDK 源码目录归类同步 | 官网采用 src 运行源码、examples 演示与 docs 文档的新位置；兼容 ZIP 和公开导入由独立 SDK 保持 |
 | 2026-11-03 | npm 包名安装入口 | 官网统一显示 npm install shroom-sdk，安装命令压缩为单行；保留官网 TGZ 备用下载、历史锁文件地址及独立密钥申请 |
+| 2026-11-03 | 串口搜索前置与重连说明 | 快速接入直接展示 listPorts 查询及实际 path 选择，保留原五步；首页准备路径同步，按 SDK 0.2.0 标明 Node 重连与采集中断边界 |
 
 ## 9. 更新日志
 
@@ -599,6 +600,7 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-10-30 | 优化重构 | 新增官网 npm 安装入口、精简包历史归档与 HTTP 安装验证；SDK 免登记获取，原表单改为独立密钥申请并同步后台呈现 |
 | 2026-11-03 | 优化重构 | 同步 SDK 目录整理后的资产复制、声明验证和维护文档，保留固定提交来源与原客户接入入口 |
 | 2026-11-03 | 优化重构 | 安装入口改为 npm 包名命令，移除 origin 订阅与多行地址框；更新 SSR/命令契约检查和发布顺序说明，保留 HTTP TGZ 安装回归 |
+| 2026-11-03 | 文档更新 | 五步调用前补独立串口搜索代码与明确选择提示；准备/排查说明原端口有限重连、停止重试和不自动续录，更新生产 SSR 顺序检查 |
 
 ---
 

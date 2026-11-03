@@ -120,7 +120,14 @@ try {
         assert.ok(position > previous, `${id} follows the preceding step`);
         previous = position;
       }
-      assert.equal((flow.match(/复制代码/g) ?? []).length, 6, 'five steps use six focused code blocks');
+      const portSearch = flow.indexOf('id="port-search-title"');
+      assert.ok(portSearch >= 0 && portSearch < flow.indexOf('id="flow-read"'), '串口搜索必须在第一个取数调用之前直接展示');
+      assert.match(flow, /接入前：搜索并选择串口/);
+      assert.match(flow, /await listPorts\(\)/);
+      assert.match(flow, /console\.table\(ports\)/);
+      assert.match(flow, /shroom-sdk\/node/);
+      assert.doesNotMatch(flow, /ports\[0\]/, '多个端口必须由客户选择，不默认选第一个');
+      assert.equal((flow.match(/复制代码/g) ?? []).length, 7, '串口准备加一个代码块，原五步仍使用六个代码块');
       for (const call of ['readProduct({', 'createWS(device,', 'startRecording(stream,', 'stopRecording(stream)', 'downloadRecording(stream,']) {
         assert.ok(flow.includes(call), `actual SDK API: ${call}`);
       }
