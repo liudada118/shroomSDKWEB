@@ -87,7 +87,7 @@ export async function syncSdkAssets({ root = WEBSITE_ROOT, bundleOnly = false } 
   }
   const after = await inspectSdkSource(root);
   if (after.commit !== sdk.commit) throw new Error('构建期间 SDK 提交发生变化，请重新构建官网。');
-  const assets = [['web/index.html', 'lab.html'], ['web/shroom.bundle.js', 'shroom.bundle.js'], ['web/quick-start.html', 'quick-start.html']];
+  const assets = [['examples/web/index.html', 'lab.html'], ['examples/web/shroom.bundle.js', 'shroom.bundle.js'], ['examples/web/quick-start.html', 'quick-start.html']];
   if (!bundleOnly) for (const file of ['shroom-sdk.zip', 'shroom-sdk-node.zip', 'shroom-sdk-python.zip']) assets.push([`dist/${file}`, file]);
   await mkdir(join(root, 'public'), { recursive: true });
   for (const [source, destination] of assets) await copyFile(join(sdk.root, source), join(root, 'public', destination));

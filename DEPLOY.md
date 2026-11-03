@@ -147,7 +147,7 @@ HTTP 与 HTTPS 在 2026-10-13 的 HEAD 检查中均返回 200，Content-Length�
 ```bash
 cd /c/project/ShroomConstruction/shroom-monitor
 npm run build
-# = 先把站点的 sdk/web/shroom.bundle.js 同步进 renderer/vendor/，再 electron-builder --win --x64
+# = 先把站点的 sdk/examples/web/shroom.bundle.js 同步进 renderer/vendor/，再 electron-builder --win --x64
 # 产出：dist/ShroomMonitor-<版本>-win-x64.zip
 ```
 
@@ -279,7 +279,7 @@ ZHIPU_MODEL=glm-4.7-flash
 
 不要添加 `NEXT_PUBLIC_` 前缀，不要把真实密钥提交到 Git、浏览器代码或 SDK 包。修改后重启服务；如果使用 PM2 注入进程变量，应以更新后的环境重新加载进程。无配置时接口返回 503，网站下载和文档不受影响。
 
-知识库需上传并处理当前 `sdk/README.md`、`sdk/AI-CONTEXT.md`、`sdk/python/README.md` 等资料。本地构建不会自动上传到智谱；旧分支的 Backend 文档与当前基础 SDK 能力不同，应更新知识库版本。
+知识库需上传并处理当前 `sdk/README.md`、`sdk/docs/AI-CONTEXT.md`、`sdk/python/README.md` 等资料。本地构建不会自动上传到智谱；旧分支的 Backend 文档与当前基础 SDK 能力不同，应更新知识库版本。
 
 接口为流式 SSE，反向代理应关闭该路由的响应缓冲并允许至少 60 秒读取。公网部署前配置网关限流、智谱用量预算和必要的访问控制，避免公开接口被滥用。本次恢复没有部署上线，也没有调用真实智谱凭据。
 

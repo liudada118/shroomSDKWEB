@@ -1,6 +1,6 @@
 # 架构文档
 
-> 本文档由 Codex 自动生成和维护。最后更新于：2026-10-30
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-11-03
 
 ## 1. 项目概述
 
@@ -30,7 +30,7 @@ Shroom Developer 面向已购设备、需要快速集成自有应用的客户。
 页面 **不提供、也不会提供** kPa / 牛顿等物理单位换算 —— SDK 直连串口给到的是 0~1 相对值，后端客户端则保留后端的原始 JSON 与单位语义，
 标定曲线逐台设备不同，不在公开 SDK 范围内，能力边界在 SDK 文档中说明。
 
-AI 接入资料以 `sdk/AI-CONTEXT.md` 与 `sdk/怎么用AI开发.md` 为事实源，围绕五步函数、调用异常、运行期错误、采集状态与资源释放组织；构建后同时进入在线文档、问答检索和 SDK 下载包。知识问答提示同步五函数优先与 Python 独立能力边界，停止成功返回仍检查记录状态，下载触发不代表保存完成。
+AI 接入资料以 `sdk/docs/AI-CONTEXT.md` 与 `sdk/docs/怎么用AI开发.md` 为事实源，围绕五步函数、调用异常、运行期错误、采集状态与资源释放组织；构建后同时进入在线文档、问答检索和 SDK 下载包。知识问答提示同步五函数优先与 Python 独立能力边界，停止成功返回仍检查记录状态，下载触发不代表保存完成。
 
 ## 2. 技术栈
 
@@ -89,50 +89,27 @@ shroomSDKWEB/
 │  ├─ build-docs.mjs        # SDK Markdown（含 Python README）→ 预渲染 HTML，供 /docs 使用
 │  └─ sync-desktop-release.mjs  # 历史 Monitor 同步；不修改当前三平台下载配置
 ├─ sdk/                     # shroomSDK 独立仓库的固定提交子模块
-│  ├─ package.json / package-lock.json # SDK 版本唯一来源与独立 JS 依赖锁
-│  ├─ .github/workflows/    # SDK 三平台检查、标签驱动 Release 草稿
-│  ├─ scripts/             # SDK 自己的构建、版本、测试、打包与发布工具
-│  ├─ dist/                # SDK 构建包与 releases/<版本>/，Git 忽略
-│  ├─ SDK-RELEASING.md      # SDK 维护环境、升版、制品与正式发布指南
-│  ├─ CHANGELOG.md          # 各版本能力、语言差异和兼容说明；生成 /docs/changelog
-│  ├─ core/version.js       # 生成的 Node/Web 版本常量
-│  ├─ quick-flow.js         # readProduct/createWS/startRecording/stopRecording/downloadRecording
-│  ├─ quick-flow.d.ts       # 五函数快速入口的参数、返回类型与运行环境
-│  ├─ flow/runtime.js       # 五函数编排、本次录制 ID、串口与服务关闭管理
-│  ├─ core/errors.js        # ShroomError、稳定串口错误码、原始异常映射
-│  ├─ core/license.js       # SDK产品许可、RSA验签、短时在线复核与运行期失效通知
-│  ├─ core/serial-config.js # 连接前参数检查与分配上限
-│  ├─ core/serial-diagnostics.js # 查询式诊断快照，与 Mock 共用
-│  ├─ core/product.js       # 产品连接准备，委托注册表中的适配器校验与解析
-│  ├─ core/products/        # registry、glove/pad 适配器、tail-parser/stream-utils 与扩展指南
-│  ├─ core/glove.js         # 整包手套 256 点压力/195 点展开映射与 IMU 字节拆分
-│  ├─ core/glove-regions.js # 用户左右手点位表：五指、独立指腹、非齐行手掌
-│  ├─ core/stream-codec.js  # 版本化产品帧JSON编码/TypedArray恢复与校验
-│  ├─ core/recording-url.js # Node/Web 共用 UUID、格式校验与下载 URL 生成
-│  ├─ node/quick-server.js  # 同端口WS数据、录制控制和HTTP下载
-│  ├─ node/recording.js     # 有界采集队列、事务提交、JSONL/CSV导出与旧记录兼容
-│  ├─ node/recording-sqlite.js # SQLite表结构、事务、目录互斥与分页读取
-│  ├─ node/quick-demo.js    # 完整真实/合成产品快速服务示例
-│  ├─ web/stream.js         # 标准WS客户端、远程录制与附件下载
-│  ├─ web/product-view.js   # 自动订阅的二维产品分区展示
-│  ├─ web/quick-start.html  # 连接/展示/标签录制/历史下载操作页
-│  ├─ node/product-demo.js  # 整包手套、手部检测垫的单函数接入示例
-│  ├─ node/license-env.js   # CLI示例授权输入与稳定安装标识，不持久化密钥
-│  ├─ examples/product-examples.js # 网页与下载包共用的中文注释示例事实源及类型
-│  ├─ examples/generate-product-examples.mjs # 生成根目录六个完整HTML/MJS例程
-│  ├─ examples/product-call.js / .d.ts # 单个产品函数取数的短调用，复用现有SDK接口
-│  ├─ glove-left-example.html / .mjs # 左手套；右手与手垫同级文件，按实物明确选择
-│  ├─ backend/              # 环境无关 HTTP/WS 客户端、TypeScript 契约
-│  ├─ node/backend.js       # Node 适配器：原生 WebSocket / 按需加载 ws
-│  ├─ node/backend-demo.js  # 只读示例，不自动开串口或采集
-│  ├─ tests/               # HTTP/WS 回归、真实本地网络、经典脚本及类型测试
-│  ├─ BACKEND.md            # 后端通讯 API 参考，生成 /docs/backend-api
-│  ├─ docs/                 # 后端统一指南及 Node、串口、存储、前端通讯、渲染参考
-│  │  ├─ BACKEND-GUIDE.md   # 双语言串口/通讯/存储 API 参考，生成 /docs/backend
-│  │  ├─ LICENSE.md         # 不限型号的SDK产品许可、电脑名额与期限，生成 /docs/license
-│  │  ├─ DRIVERS.md         # Windows/macOS驱动链接、安装前置与串口排查，生成 /docs/drivers
-│  │  └─ catalog.json       # 构建与页面侧栏共用的轻量文档元数据
-│  └─ python/               # Python 独立包：pyproject.toml、src/shroom_sdk、examples、tests、README
+│  ├─ package.json / package-lock.json # 公开入口、SDK 版本与依赖锁
+│  ├─ src/                 # SDK 运行实现与类型
+│  │  ├─ quick-flow.js / .d.ts # 五个快速函数及其类型
+│  │  ├─ flow/             # 五函数编排、录制 ID 与资源释放
+│  │  ├─ core/             # 产品适配器、协议、数据结构、错误与授权
+│  │  ├─ node/             # 串口、WS/HTTP、SQLite 采集和导出
+│  │  ├─ web/              # 浏览器串口、WS 控制与二维展示
+│  │  └─ backend/          # 已有主项目后端的 HTTP/WS 客户端
+│  ├─ examples/
+│  │  ├─ products/         # 左右手套、手垫的 HTML/MJS 示例
+│  │  ├─ node/             # 命令行示例与示例授权环境配置
+│  │  ├─ web/              # 测试台模板、生成页面与经典脚本 bundle
+│  │  └─ product-*.js      # 官网及交付调用示例生成器
+│  ├─ docs/                # 接入、API、AI 上下文和发布指南
+│  │  └─ catalog.json      # 站点文档与导航事实源
+│  ├─ scripts/             # 启动器与 SDK 构建、版本、打包和发布工具
+│  ├─ tests/               # JS、协议、网络、采集和类型测试
+│  ├─ python/              # Python 独立包、示例、测试和文档
+│  ├─ .github/workflows/   # SDK 三平台检查与 Release 草稿
+│  ├─ dist/                # ZIP/TGZ 和版本制品，Git 忽略
+│  └─ README.md / ARCHITECTURE.md / CHANGELOG.md / MIGRATION.md
 ├─ public/
 │  ├─ favicon.svg           # 站点图标
 │  ├─ og.png                # 1200×630 社交分享卡片
@@ -176,7 +153,7 @@ C:/project/ShroomConstruction/
    └─ dist/                 # ShroomMonitor-<版本>-win-x64.zip
 ```
 
-历史 Monitor 和本站靠 `sdk/web/shroom.bundle.js` 连着：该脚本现由独立 SDK 仓库生成，官网与历史 Monitor 消费同一份 SDK 实现。
+历史 Monitor 和本站靠 `sdk/examples/web/shroom.bundle.js` 连着：该脚本现由独立 SDK 仓库生成，官网与历史 Monitor 消费同一份 SDK 实现。
 
 ### 关键目录说明
 
@@ -267,11 +244,11 @@ flowchart TD
 
 ### 4.5 已有后端连接客户端
 
-- 从 `E:/ShroomSDK/src/backend/BackendSdkClient.js` 的 HTTP/WS 契约适配为 `sdk/backend/client.js` ES 模块。浏览器使用原生 fetch/WebSocket 和轻量事件监听器，不引入 Node EventEmitter；`sdk/node/backend.js` 为旧版 Node 按需选择可选 `ws`。`sdk/web/index.js`、`sdk/node/index.js` 具名导出，包子路径为 `shroom-sdk/backend`，经典脚本入口为 `Shroom.BackendSdkClient`。
+- 从 `E:/ShroomSDK/src/backend/BackendSdkClient.js` 的 HTTP/WS 契约适配为 `sdk/src/backend/client.js` ES 模块。浏览器使用原生 fetch/WebSocket 和轻量事件监听器，不引入 Node EventEmitter；`sdk/src/node/backend.js` 为旧版 Node 按需选择可选 `ws`。`sdk/src/web/index.js`、`sdk/src/node/index.js` 具名导出，包子路径为 `shroom-sdk/backend`，经典脚本入口为 `Shroom.BackendSdkClient`。
 - HTTP 默认 `http://127.0.0.1:19245`，WS 默认 `ws://127.0.0.1:19999`，分别由调用方显式配置；不读取网站环境变量或智谱密钥，也不自动启动后端。Monitor 和开发者网站本身不提供这组设备接口。
 - `getContract()` 缓存后端契约并加载接口路径；显式 routes 覆盖不会在刷新时丢失。支持状态查询、设备与展示系统元数据、开关串口和启停采集，控制方法仅显式调用时发送。HTTP 支持 JSON 业务错误、AbortSignal 和默认 10 秒超时；写操作不自动重试。
 - 实时连接完成后订阅通道，JSON 批量帧逐条分发，数据不截断、不归一化、不重新排列。后端帧不等于串口 `Frame`，图形接入需按实际后端协议显式适配。断开清理监听与握手定时器，丢弃过时连接事件；可复用客户端，但不自动重连或重放控制命令。
-- Node 只读示例 `node node/backend-demo.js` 读取契约/串口状态并订阅，结束时释放连接，不触发设备或采集控制。`npm run test:sdk` 构建经典脚本并运行测试；真实网络测试只使用临时回环 HTTP/WS 服务，不操作实际设备。未验证生产后端、跨域代理与真机链路。
+- Node 只读示例 `npm run demo:backend` 读取契约/串口状态并订阅，结束时释放连接，不触发设备或采集控制。`npm run test:sdk` 构建经典脚本并运行测试；真实网络测试只使用临时回环 HTTP/WS 服务，不操作实际设备。未验证生产后端、跨域代理与真机链路。
 - 构建将本模块和指南打入 Node ZIP 与兼容完整 ZIP，Python ZIP 不增加任何 JS 文件或依赖。浏览器需由后端允许 CORS/Origin，HTTPS 页面配置 HTTPS/WSS；公网鉴权、授权和设备权限由后端负责，本客户端不实现付费许可。
 
 ### 4.6 文档分类与生成
@@ -304,8 +281,8 @@ flowchart TD
 
 - 用户确认本轮先接入 `handGloveFullPacket` 整包手套与 `hand` 手部检测垫。只读复用 `E:/shroom1` 的现行 profile、实际串口链路与纯映射，不修改该工程，也不搬入授权、存储、算法或完整后端。
 - 快速入口为 `readProduct({ product, path, side, onData, onError })`；既有 `Shroom.connectGlove()`、`connectHandPad()`、`connectProduct()` 保留。浏览器直连串口在用户手势中选择授权端口，可传 port/filters，不使用 OS path；五步流程的浏览器则用 `readProduct({ url, onData, onError })` 订阅 WS。`listDeviceProducts()` 仅列出已适配直连协议的产品，与旧 `listProducts()` 通用线序/展示菜单不同。
-- `core/products/registry.js` 静态登记各产品适配器；连接接受 `glove / pad` 别名和 `handGloveFullPacket / hand` 正式 ID，输出帧和 WS 校验只使用正式 ID。适配器集中提供 profile、专用参数校验、连接元数据、解析器和 WS 字段校验；`core/product.js` 与 `core/stream-codec.js` 委托同一注册表，不再分别维护产品条件分支。
-- `core/products/glove.js / pad.js` 分别实现产品协议，同尾分隔协议复用 `tail-parser.js`，新协议实现独立 `push/reset/droppedCount/frameLength` 解析器。公开类型集中登记在 `sdk/index.d.ts` 的 `DeviceProductTypes`（names/frame/node/web），Node/Web 产品连接与快速读取自动推导。新增产品须同步运行时与类型登记、WS 校验、回归和文档，详见 `sdk/core/products/README.md`。经典 bundle 构建从入口递归发现本地静态 import 并排序，注册的新模块自动进入依赖图；循环、重名或不支持的导入形式在写产物前报错。
+- `src/core/products/registry.js` 静态登记各产品适配器；连接接受 `glove / pad` 别名和 `handGloveFullPacket / hand` 正式 ID，输出帧和 WS 校验只使用正式 ID。适配器集中提供 profile、专用参数校验、连接元数据、解析器和 WS 字段校验；`src/core/product.js` 与 `src/core/stream-codec.js` 委托同一注册表，不再分别维护产品条件分支。
+- `src/core/products/glove.js / pad.js` 分别实现产品协议，同尾分隔协议复用 `tail-parser.js`，新协议实现独立 `push/reset/droppedCount/frameLength` 解析器。公开类型集中登记在 `sdk/src/index.d.ts` 的 `DeviceProductTypes`（names/frame/node/web），Node/Web 产品连接与快速读取自动推导。新增产品须同步运行时与类型登记、WS 校验、回归和文档，详见 `sdk/src/core/products/README.md`。经典 bundle 构建从入口递归发现本地静态 import 并排序，注册的新模块自动进入依赖图；循环、重名或不支持的导入形式在写产物前报错。
 - 手部检测垫使用 1,000,000 波特率、1024 字节 uint8 数据、32×32，沿用现有 `mat32`，与主项目实际 `jqbed` 线序同构。整包手套使用 921,600 波特率，274 字节载荷依次为帧号1字节、包类型1字节、压力256字节、IMU16字节。两产品都按主项目的 `AA 55 03 99` 尾分隔符拆包，再校验长度，不把分隔符纳入 payload；支持跨 chunk 和粘包，超长片段丢弃后在下个尾分隔恢复，缓存有界。
 - 手套手侧必须明确传 left/right。主项目现行整包处理不依据 packetType 自动判断手侧，USB 串口信息也不足以证明型号；Node 产品入口未指定 path 时仅单一端口自动选，多端口返回 PORT_AMBIGUOUS。旧通用串口选第一个端口的行为保持不变。不新增扫描所有端口、猜产品或自动发送未知命令的行为。
 - 产品层固化波特率、分帧和线序，不接受对应参数覆盖；配置错误在串口打开前拒绝。回调在打开/启动读取前注册，避免首帧丢失。产品设备增加 `onData()`（onFrame 别名），复用既有状态、诊断、订阅异常隔离与幂等关闭。底层串口生命周期只有一份，产品层只替换解析器和元数据。
@@ -319,18 +296,18 @@ flowchart TD
 ### 4.9 产品快速接入、标签录制与下载
 
 - 面向现有产品提供五个快速函数：`readProduct → createWS → startRecording → stopRecording → downloadRecording`。Node 读取设备并创建 WS，浏览器用 `readProduct({ url })` 连接一次，后三步共享同一 stream；二维展示按需使用原始 `createProductView`。Python 仍为基础串口与矩阵接口，既有通用串口与 BackendSdkClient 保持独立兼容。
-- `sdk/quick-flow.js` 只导出五个函数，`flow/runtime.js` 管理调用编排与当前记录，`quick-flow.d.ts` 声明参数及返回类型；按环境动态导入 Node/Web 模块，仍依赖完整 SDK 目录。Node `readProduct` 返回设备，`createWS` 返回服务；创建失败释放设备，返回服务的 `close()` 一并释放服务与设备。SDK 授权仍由调用方先在 Node 完成。
+- `sdk/src/quick-flow.js` 只导出五个函数，`src/flow/runtime.js` 管理调用编排与当前记录，`src/quick-flow.d.ts` 声明参数及返回类型；按环境动态导入 Node/Web 模块，仍依赖完整 SDK 目录。Node `readProduct` 返回设备，`createWS` 返回服务；创建失败释放设备，返回服务的 `close()` 一并释放服务与设备。SDK 授权仍由调用方先在 Node 完成。
 - 五函数只调用基础文档公开的 API：Node `connectProduct / serveDevice`、网页 `connectStream`、目标的 `startRecording / stopRecording`，下载使用网页 `downloadRecording` 或 Node `getRecordingUrl`。`sdk/docs/CUSTOM.md#quick-to-base` 维护对应关系，Node、前端通讯和存储基础页提供参数与生命周期参考；产品适配器保持内部扩展层。
-- `sdk/core/recording-url.js` 为 Node `server.getRecordingUrl` 与网页 `stream.getRecordingUrl` 共用 UUID、CSV/JSONL 格式和同主机同端口地址规则；生成 URL 不检查文件存在、不发起下载。网页 `downloadRecording` 在基础 URL 方法之上触发浏览器链接，Node 快速下载只返回该基础方法生成的地址。
+- `sdk/src/core/recording-url.js` 为 Node `server.getRecordingUrl` 与网页 `stream.getRecordingUrl` 共用 UUID、CSV/JSONL 格式和同主机同端口地址规则；生成 URL 不检查文件存在、不发起下载。网页 `downloadRecording` 在基础 URL 方法之上触发浏览器链接，Node 快速下载只返回该基础方法生成的地址。
 - 三个采集函数接受浏览器 stream 或 Node server，内部按目标保存本次停止结果的 ID；成功开始新记录清除旧 ID，起停期间拒绝重复控制和下载。浏览器下载同步触发附件请求并返回 URL；Node 下载只返回 HTTP URL。需要历史记录时仍用原始列表和显式 ID API，不改变服务端记录协议。
-- `sdk/core/stream-codec.js` 定义 `shroom.frame.v1`，先验证通用帧，再委托注册的产品适配器验证额外字段；按白名单将 TypedArray 转为普通 JSON 数组、接收时恢复类型，保留五指、指腹、72点非齐行手掌、原扫描数据、旧195点展示矩阵和原始IMU。传输只做快照与校验，不重新线序映射、标定或猜左右手；单帧上限16384点，损坏形状/非有限值在绘图和分配前拒绝。
-- `sdk/node/quick-server.js` 的 `serveDevice(device, options)` 订阅调用者已有设备，同一端口提供 WS 数据、录制控制和 HTTP 附件下载。服务关闭等待录制写完并解除订阅，不关闭调用者拥有的设备。默认仅绑定127.0.0.1，校验Origin与Host，拒绝默认file:null和远程网页；跨机须显式host/allowedOrigins，Origin不是公网身份鉴权，公网仍需外部认证及HTTPS/WSS代理。
-- `sdk/node/recording.js` 对齐 `C:/code/shroom1.0` 的 SQLite 采集核心：一次录制一个不可变 label 与 UUID，采集帧入有界队列，每批最多 200 条或等待 250ms 后事务提交，停止先拒绝新帧，再等待待写队列排空。`recording-sqlite.js` 使用 better-sqlite3 在 `recordingsDir/recordings.sqlite` 中保存 sessions 与 frames，计数只在事务成功后增加；同目录只允许一个录制服务，辅助 owner SQLite 连接持有独占事务，崩溃时由操作系统释放锁，不删除未知锁文件。浏览器断开不停止录制；默认队列 1000 帧、16MiB，溢出或写入/设备故障明确标为 error，重启后将未正常结束的会话标为中断并按已提交帧恢复计数。
+- `sdk/src/core/stream-codec.js` 定义 `shroom.frame.v1`，先验证通用帧，再委托注册的产品适配器验证额外字段；按白名单将 TypedArray 转为普通 JSON 数组、接收时恢复类型，保留五指、指腹、72点非齐行手掌、原扫描数据、旧195点展示矩阵和原始IMU。传输只做快照与校验，不重新线序映射、标定或猜左右手；单帧上限16384点，损坏形状/非有限值在绘图和分配前拒绝。
+- `sdk/src/node/quick-server.js` 的 `serveDevice(device, options)` 订阅调用者已有设备，同一端口提供 WS 数据、录制控制和 HTTP 附件下载。服务关闭等待录制写完并解除订阅，不关闭调用者拥有的设备。默认仅绑定127.0.0.1，校验Origin与Host，拒绝默认file:null和远程网页；跨机须显式host/allowedOrigins，Origin不是公网身份鉴权，公网仍需外部认证及HTTPS/WSS代理。
+- `sdk/src/node/recording.js` 对齐 `C:/code/shroom1.0` 的 SQLite 采集核心：一次录制一个不可变 label 与 UUID，采集帧入有界队列，每批最多 200 条或等待 250ms 后事务提交，停止先拒绝新帧，再等待待写队列排空。`recording-sqlite.js` 使用 better-sqlite3 在 `recordingsDir/recordings.sqlite` 中保存 sessions 与 frames，计数只在事务成功后增加；同目录只允许一个录制服务，辅助 owner SQLite 连接持有独占事务，崩溃时由操作系统释放锁，不删除未知锁文件。浏览器断开不停止录制；默认队列 1000 帧、16MiB，溢出或写入/设备故障明确标为 error，重启后将未正常结束的会话标为中断并按已提交帧恢复计数。
 - CSV / JSONL 是从 SQLite 按 UUID 和帧序分页读取后流式生成的导出格式，不再作为新采集的底层持久化文件。已结束会话不可变，导出不保持整场下载事务，避免慢速客户端下载阻止 WAL 回收；取消下载会关闭只读连接。旧 `{uuid}.meta.json + .jsonl` 会话保留读取和下载兼容，不原地迁移或覆盖；上位机原有按产品分库、matrix 表、展示系统和 Electron 环境不直接复制。参考项目的首帧门槛、5 秒断流监控、2GiB 预留策略本次不引入，SDK 保持既有错误上报与采集生命周期。
 - CSV按帧流式输出，含sessionId、label、帧序、时间戳、产品/手侧及原始数据和分区JSON，使用UTF-8 BOM、CSV引号和公式注入防护；JSONL保存原始标签和完整帧。下载显式传入服务端生成的采集记录UUID（start/stop返回值或历史记录的id），不能用产品ID、标签或端口代替，也不默认选择最新一场。客户端拒绝缺少/无效ID，服务端仅允许已知UUID文件，记录不存在返回404、尚在录制或未写完返回409；不接受任意路径。HTTP附件下载由浏览器接收，不将整场数据堆入浏览器Blob或内存数组。
-- `sdk/web/stream.js` 封装ready握手、版本校验、typed-array恢复、带关联ID和超时的录制控制、状态订阅和下载。断线会拒绝在途请求，不自动重连、不重放开始/停止命令，不把浏览器断线当成后端停止成功。
-- `sdk/web/product-view.js` 提供自动订阅数据源的产品视图。手套绘制左右手命名分区及独立指腹、手掌真实行长；手垫复用32×32热力图。为二维分区展示而非三维手模。destroy只释放本视图的订阅、画布和刷新/resize任务，不影响连接或采集。
-- `sdk/node/quick-demo.js --mock` 生成经过实际产品解码器的合成手套/手垫帧，真实串口通过明确path切换；`sdk/web/quick-start.html` 提供端口连接、标签、起停、记录列表及下载闭环。`sdk/start.mjs` 提供本机静态网页，默认5178与WS默认19999为不同用途的端口。构建同步 `/quick-start.html` 和经典脚本，保留旧 `/lab.html` 直连试用。
+- `sdk/src/web/stream.js` 封装ready握手、版本校验、typed-array恢复、带关联ID和超时的录制控制、状态订阅和下载。断线会拒绝在途请求，不自动重连、不重放开始/停止命令，不把浏览器断线当成后端停止成功。
+- `sdk/src/web/product-view.js` 提供自动订阅数据源的产品视图。手套绘制左右手命名分区及独立指腹、手掌真实行长；手垫复用32×32热力图。为二维分区展示而非三维手模。destroy只释放本视图的订阅、画布和刷新/resize任务，不影响连接或采集。
+- `sdk/examples/node/quick-demo.js --mock` 生成经过实际产品解码器的合成手套/手垫帧，真实串口通过明确path切换；`sdk/examples/web/quick-start.html` 提供端口连接、标签、起停、记录列表及下载闭环。`sdk/scripts/start.mjs` 提供本机静态网页，默认5178与WS默认19999为不同用途的端口。构建同步 `/quick-start.html` 和经典脚本，保留旧 `/lab.html` 直连试用。
 - 文档新增 `/docs/quick-start` 与 `/docs/custom` 两条入口，基础路线保留后端语言选择与旧API深链接；README、AI上下文、存储章节、站点介绍和问答能力提示同步。智谱云端知识库仍须管理员另行更新，构建不会上传。`.shroom-recordings/`、SDK内recordings目录加入Git忽略和打包排除，用户采集文件不得进入源码或ZIP。
 - 文档阅读层级进一步收拢为“快速接入文档”与“基础文档”：快速页正文完整展开，侧栏DocOutline使用collapsible=false展示全部流程，基础文档仅作为独立跨页入口并在正文底部提供跳转；后端/前端/辅助目录只在基础与参考页展示。基础页继续使用 `/docs/custom`，保留所有旧参考路径和语言切换。参考E盘SDK的常展开分组与独立页面方式，未改来源工程。
 - 快速示例页与文档将“开始采集 / 停止采集”归在同一“数据采集”分类，下载作为独立分类；下载仍按用户选中的采集记录ID取文件，不与停止操作绑定。快速文档用同一二级采集章节下的两个三级标题展示起停，保留record/download锚点，侧栏完整展开两者。
@@ -340,7 +317,7 @@ flowchart TD
 ### 4.10 共用后台与 SDK 产品许可
 
 - 统一使用 `E:/key` 的签发、到期、停用与电脑名额管理，产品字段为 `shroom-desktop` / `shroom-sdk`。旧记录默认 desktop；SDK 拒绝缺少或不匹配产品字段。后台新增 `0023_license_product_types.sql`，只生成迁移，不自动连接生产数据库。SDK 在线载荷使用 `sdkFile`、离线使用 version 5 `boundSensorTypes`，旧桌面端无法把 SDK 码按原 `file` / `sensorTypes` 识别；在线校验也在激活、异常标记及占用电脑名额前拒绝跨产品请求。
-- JS `core/license.js` 对外提供 `activateLicense(key, options)`、`getLicenseStatus()`、`clearLicense()`，Node/Web/经典 bundle 与类型声明一致。在线请求 `/licenseCheck`，限定数量 RSA 码请求 `/api/license/devices/check`，均传 `productType` 和可选稳定 `deviceId`。权威响应必须含 SDK 产品、明确 features 与期限，型号范围不再作为许可判断依据；约 30 秒续验，单次最长 60 秒，按服务端时间加保守网络往返耗时和单调时钟判断，不作无限离线回退。清除或更换授权需重新连接设备。
+- JS `src/core/license.js` 对外提供 `activateLicense(key, options)`、`getLicenseStatus()`、`clearLicense()`，Node/Web/经典 bundle 与类型声明一致。在线请求 `/licenseCheck`，限定数量 RSA 码请求 `/api/license/devices/check`，均传 `productType` 和可选稳定 `deviceId`。权威响应必须含 SDK 产品、明确 features 与期限，型号范围不再作为许可判断依据；约 30 秒续验，单次最长 60 秒，按服务端时间加保守网络往返耗时和单调时钟判断，不作无限离线回退。清除或更换授权需重新连接设备。
 - RSA-SHA256 验签覆盖 Base64 payload 文本，仅内置或应用配置的可信公钥参与验证；公钥与共用后台默认发行者一致，不复制 AES 私密常量。无限数量离线码可本地使用，限定数量码持续联网核对名额，不实现七天设备租约缓存；签名中的有效期、电脑数量要求及独立功能仍约束结果，旧型号范围忽略，通用串口与产品入口统一受serial授权控制。新SDK签发的boundSensorTypes为all。纯本地吊销和重启后的时钟高水位不由本版保证。
 - SDK 授权不限制传感器型号；后台新签发统一使用 all 并授予通用串口，旧 SDK 密钥中的型号范围也不再拦截。Node/Web/Python 核心将有效 SDK 产品许可表示为 allProducts=true / products=[]，产品与通用串口均检查 serial，通用入口的 serial.raw 不再按型号另行限制；stream/recording 的独立功能校验保留。产品密钥类型、有效期、电脑名额及停用仍校验。打开前、异步等待后、每帧交付及空闲失效通知均检查；失效关闭串口。真实设备授权需求存 WeakMap；许可错误采用 `ShroomError` 的 `license` 阶段。放开型号许可不增加协议适配、自动识别或Python手套入口。
 - `serveDevice` 检查设备原授权及 `stream`，自定义外部 source 要求 `serial.raw`，录制起点另需 `recording`。授权失效中断录制并保留数据，历史查询和下载继续开放，重新授权后重新创建服务。仅工厂创建且方法冻结的模拟源可无许可运行，不能通过伪造 `info.source` 或替换订阅方法转入免费路径。解析、渲染和独立 BackendSdkClient 原服务鉴权边界保持独立。
@@ -363,7 +340,7 @@ flowchart TD
 ### 4.13 正式产品接入文档与调用流程
 
 - `/docs/quick-start` 使用 `ProductWorkspace` 和共享 `SiteShell`，侧栏提供调用流程、接入准备、字段、排查、SDK 与驱动下载。首屏依次直接展示五步代码，不折叠、不生成完整界面工程；代码可分块复制。固定为 Node 取数 + 网页 WS 的同一条流程，系统选择用于生成真实平台的串口路径。
-- `sdk/examples/product-flow.js`（配 `.d.ts`）是五步调用展示的事实源，统一从 `quick-flow.js` 导入五个函数：Node `readProduct` 取数、`createWS` 建服务，浏览器 `readProduct({ url })` 订阅；后三步分别放入按钮，调用 `startRecording(stream, options)`、`stopRecording(stream)`、`downloadRecording(stream, options)`。停止等待文件写入并由入口记住 ID，设备与 WS 保持连接；下载触发请求，不表示文件已保存。
+- `sdk/examples/product-flow.js`（配 `.d.ts`）是五步调用展示的事实源，统一从公开包入口 `shroom-sdk/quick-flow` 导入五个函数：Node `readProduct` 取数、`createWS` 建服务，浏览器 `readProduct({ url })` 订阅；后三步分别放入按钮，调用 `startRecording(stream, options)`、`stopRecording(stream)`、`downloadRecording(stream, options)`。停止等待文件写入并由入口记住 ID，设备与 WS 保持连接；下载触发请求，不表示文件已保存。
 - `product-workspace-state.tsx` 仅生成 `flowSteps`，不再加载旧完整源码或例程文件名/运行命令。SSR 快照固定，挂载后读取 URL；确认实物手侧的守卫和同一设备切换时的确认保留。历史 `env/codeKind` URL 参数只作兼容，不改变五步运行端。
 - “接入准备”保留六个 `guide-*` 锚点，提供简短的驱动、端口、依赖、`activateLicenseFromEnv()`、验收与接入说明。`QUICK-START.md`、README、AI 上下文和目录标签同步该路线。旧步骤锚点映射对应 `flow-*`，排查转排查面板，`workspace-run` 转依赖准备。手套只公开原始压力、五指、手掌和 IMU 标准字段，检测垫保持 32×32 矩阵，运行时兼容层未删除。
 - 原生产品选择器的标签、完整边框、48px 点击高度与箭头由独立 CSS 模块提供。双平台驱动始终可达；JS SDK 使用既有下载登记和 ZIP，Python 独立能力边界保留。旧 `product-examples.js` 与六个 SDK 完整例程继续由 `pack:sdk` 打包，不作为文档主流程入口。
@@ -372,7 +349,7 @@ flowchart TD
 
 ### 4.14 SDK 中文源码注释
 
-- `sdk/core`、`node`、`web`、`backend` 的模块和公开入口补充中文职责、参数、返回值及关键内部流程说明；类型声明同步说明产品帧、录制 ID、授权和资源生命周期。注释保留协议名称与 API 标识，不逐行复述语句。
+- `sdk/src/core`、`sdk/src/node`、`sdk/src/web`、`sdk/src/backend` 的模块和公开入口补充中文职责、参数、返回值及关键内部流程说明；类型声明同步说明产品帧、录制 ID、授权和资源生命周期。注释保留协议名称与 API 标识，不逐行复述语句。
 - `sdk/python/src/shroom_sdk` 与两个 Python 示例的 docstring/关键注释中文化，覆盖同步读取、分帧、模拟、授权续验与绘图；两个示例的 `--help` 描述随模块 docstring 更新，参数及执行逻辑不变。
 - `sdk/README.md#source-map` 提供目录与五步调用的实现定位。生成文件继续由模块、网页模板和示例生成器产出，不手工维护 bundle；Windows 批处理保留 ASCII 兼容要求，中文用途在 README 说明。
 - 本次通过去注释后的 JS/类型声明/HTML 脚本比较及去 docstring 后的 Python AST 比较，确认运行语句、字面量和接口结构不变；沿用 SDK 回归与构建检查验证生成包。修正的注释边界包括非平方矩阵的默认单行形状、归一化不裁剪、受限电脑离线码联网复核、停止录制与关闭连接的区别。
@@ -385,7 +362,7 @@ flowchart TD
 - SDK 的 `pack:sdk` 生成 `dist/*.zip`；`sdk:release` 在 `dist/releases/<版本>/` 生成三份版本化 ZIP、manifest.json、SHA256SUMS 和 RELEASE-NOTES.md。同版本不得被不同内容或来源覆盖，正式发布仍要求匹配版本标签和干净工作区。制品来源提交属于 SDK 仓库。客户包沿用交付白名单、固定排序/时间戳和 LF 文本，不包含测试、维护工具、缓存或采集数据。
 - SDK 仓库的 `.github/workflows/sdk-ci.yml` 负责 Windows/macOS/Linux 检查；`sdk-release.yml` 在 `sdk-v<版本>` 标签触发时创建经过校验的 Release 草稿。旧 `shroom-backend-sdk@0.2.0` 与当前五步 `shroom-sdk@0.1.0` 是不同包，替换边界与旧版位置见 SDK 的 `MIGRATION.md`。发布 SDK 不会自动部署官网。
 - 官网 `pack:sdk` 委托子模块工具生成包，再把三份 ZIP 和网页资源镜像到 `public/`；`build:docs` 继续读取同一提交的 SDK Markdown。兼容 URL `/shroom-sdk.zip`、`/shroom-sdk-node.zip`、`/shroom-sdk-python.zip` 保持不变，下载文件名和页面版本来自该子模块。首页另提供 SDK 源码仓库入口；已发布的历史包通过 SDK GitHub Release 定位。
-- 官网 `.github/workflows/site-ci.yml` 拉取固定子模块后执行 `npm run verify`，覆盖来源校验、文档、站点测试、TypeScript、生产构建与下载检查。官网的 `sdk:verify` 仅转调独立 SDK 门禁；升版与发布需在 SDK 仓库执行，详情见 [SDK 发布指南](sdk/SDK-RELEASING.md)。
+- 官网 `.github/workflows/site-ci.yml` 拉取固定子模块后执行 `npm run verify`，覆盖来源校验、文档、站点测试、TypeScript、生产构建与下载检查。官网的 `sdk:verify` 仅转调独立 SDK 门禁；升版与发布需在 SDK 仓库执行，详情见 [SDK 发布指南](sdk/docs/SDK-RELEASING.md)。
 
 ### 4.16 官网直接安装与密钥申请
 
@@ -394,6 +371,12 @@ flowchart TD
 - 官网调用示例通过 `importStyle: package` 使用 `shroom-sdk/quick-flow`，授权使用公开的 `shroom-sdk/node`。ZIP 示例仍支持相对路径；浏览器包导入需构建工具，稳定 deviceId 规则不变。
 - `DownloadProvider` 的 `useLicenseRequest()` 打开独立申请表，不受既有下载登记缓存跳过。`license-request.ts` 严格验证后台响应，申请失败不假报成功；后台 E:/key 将来源显示为 SDK 密钥申请，人工联系并按现有发钥规则处理。
 - 集成检查覆盖不可覆盖/历史包保留、HTTP TGZ 哈希与公开入口、实际通过官网 URL 安装，以及申请的 HTTP/业务/网络失败。浏览器检查复制、SDK 免登记下载、申请弹窗与窄屏布局，不向生产后台发送测试资料。
+
+### 4.17 SDK 源码目录归类
+
+- 固定子模块的运行实现与类型集中在 `sdk/src/`。命令行/网页/产品演示位于 `sdk/examples/`，启动器位于 `sdk/scripts/`，AI、后端和发布说明位于 `sdk/docs/`。
+- `scripts/sdk-source.mjs` 从 `examples/web/` 复制测试台、经典脚本和快速演示；官网验证读取 `src/backend/client.d.ts`。文档生成仍按 `docs/catalog.json` 定位源文件，站内文档 slug 和五个函数调用不变。
+- SDK 打包器把新源码目录映射为既有 ZIP 路径，并重算导入与文档链接。客户 npm 包继续通过公开包名入口使用，官网无需维护重复源码或额外兼容分支。
 
 ## 5. API 端点
 
@@ -544,6 +527,7 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-10-30 | 下载登记弹窗布局修复 | 输入框按网格列宽收缩，消除姓名与手机号重叠和横向滚动；验证手机、桌面及单项报错布局 |
 
 | 2026-10-30 | SDK 官网直接安装与密钥申请 | 官网复制一条命令即可安装，固定内容地址保留历史；申请密钥与下载分离，严格确认后台保存结果 |
+| 2026-11-03 | SDK 源码目录归类同步 | 官网采用 src 运行源码、examples 演示与 docs 文档的新位置；兼容 ZIP 和公开导入由独立 SDK 保持 |
 
 ## 9. 更新日志
 
@@ -612,6 +596,7 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-10-30 | 修复缺陷 | 为下载登记输入框和字段网格补齐宽度约束与顶部对齐，修复双列字段重叠、横向滚动和单侧报错错位；保留原登记校验与下载行为 |
 
 | 2026-10-30 | 优化重构 | 新增官网 npm 安装入口、精简包历史归档与 HTTP 安装验证；SDK 免登记获取，原表单改为独立密钥申请并同步后台呈现 |
+| 2026-11-03 | 优化重构 | 同步 SDK 目录整理后的资产复制、声明验证和维护文档，保留固定提交来源与原客户接入入口 |
 
 ---
 

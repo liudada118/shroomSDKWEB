@@ -2,7 +2,7 @@
 
 官网位于 [shroomSDKWEB](https://github.com/liudada118/shroomSDKWEB)，SDK 源码、测试和版本发布位于独立的 [shroomSDK](https://github.com/liudada118/shroomSDK)。官网的 `sdk/` 是固定提交的 Git 子模块。
 
-**修改 SDK、升版或发布包，请进入 SDK 仓库，按 [SDK 发布指南](sdk/SDK-RELEASING.md) 操作。** 本页只说明官网如何取得、升级和回退 SDK。
+**修改 SDK、升版或发布包，请进入 SDK 仓库，按 [SDK 发布指南](sdk/docs/SDK-RELEASING.md) 操作。** 本页只说明官网如何取得、升级和回退 SDK。
 
 ## 初始化
 
@@ -56,6 +56,8 @@ git diff --cached --submodule=log -- sdk
 官网普通构建只需官网自己的 npm 依赖。它读取 SDK 源码并执行不依赖硬件的打包工具，不需要 Python 或 SDK 的原生串口/SQLite 依赖。SDK 门禁的环境要求由 SDK 发布指南维护。
 
 SDK 先生成 `sdk/dist/shroom-sdk.zip`、`sdk/dist/shroom-sdk-node.zip`、`sdk/dist/shroom-sdk-python.zip`，官网再镜像到 `public/`，保留现有三个下载 URL。网页版本和下载文件名取自 `sdk/package.json`；文档及代码示例也来自同一个 SDK 提交。
+
+SDK 仓库的运行实现位于 `sdk/src/`，演示页面和经典脚本产物位于 `sdk/examples/web/`，AI 与发布说明位于 `sdk/docs/`。官网从这些目录读取资源；旧源码 ZIP 的扁平目录由 SDK 打包器映射，官网无需另维护一份兼容源码。
 
 官网的 JavaScript 主路径使用 npm 安装包。构建调用固定 SDK 的 `pack-npm.mjs`，校验 TGZ 内容后保存到 `public/sdk-packages/<版本>/<SHA256>/shroom-sdk-<版本>.tgz`，并生成 `app/sdk-package.generated.json`。页面根据当前站点域名组合安装命令，客户直接执行命令即可下载到 `node_modules`，不需要先手动解压或复制源码。构建依赖的 esbuild 由官网显式锁定。
 

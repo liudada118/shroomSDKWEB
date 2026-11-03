@@ -80,7 +80,7 @@ test('relative API links preserve anchors and every generated document anchor ex
 });
 
 test('BackendSdkClient reference covers every declared public method', async () => {
-  const declarations = await readFile(new URL('../sdk/backend/client.d.ts', import.meta.url), 'utf8');
+  const declarations = await readFile(new URL('../sdk/src/backend/client.d.ts', import.meta.url), 'utf8');
   const reference = getDoc('backend-api')!;
   const methods = [...declarations.matchAll(/^  (\w+)(?:<[^\n]+>)?\(/gm)]
     .map((match) => match[1]).filter((method) => method !== 'constructor');

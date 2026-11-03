@@ -54,7 +54,7 @@ const productFamilies = [
   },
 ];
 
-// 能力按实际语言与交付模块说明，与 sdk/AI-CONTEXT.md 保持一致。
+// 能力按实际语言与交付模块说明，与 sdk/docs/AI-CONTEXT.md 保持一致。
 const capabilities = [
   {
     index: '01',
