@@ -339,7 +339,7 @@ flowchart TD
 
 ### 4.13 正式产品接入文档与调用流程
 
-- `/docs/quick-start` 使用 `ProductWorkspace` 和共享 `SiteShell`，侧栏提供调用流程、接入准备、字段、排查、SDK 与驱动下载。首屏先展示“接入前：搜索并选择串口”，随后依次展示五步代码，不折叠、不生成完整界面工程；代码可分块复制。搜索片段仅调用 `listPorts()` 并输出列表，不打开设备、不要求授权，不默认选择第一个端口。固定为 Node 取数 + 网页 WS 的同一条流程，系统选择只生成串口格式示意，实际 `path` 由客户从搜索结果选择。
+- `/docs/quick-start` 使用 `ProductWorkspace` 和共享 `SiteShell`，侧栏与横向导航依次提供接入准备、调用流程、字段、排查、SDK 与驱动下载；`/docs` 的准备入口同样位于调用流程入口之前。仅调整导航顺序，默认仍打开调用流程。首屏先展示“接入前：搜索并选择串口”，随后依次展示五步代码，不折叠、不生成完整界面工程；代码可分块复制。搜索片段仅调用 `listPorts()` 并输出列表，不打开设备、不要求授权，不默认选择第一个端口。固定为 Node 取数 + 网页 WS 的同一条流程，系统选择只生成串口格式示意，实际 `path` 由客户从搜索结果选择。
 - `sdk/examples/product-flow.js`（配 `.d.ts`）是五步调用展示的事实源，统一从公开包入口 `shroom-sdk/quick-flow` 导入五个函数：Node `readProduct` 取数、`createWS` 建服务，浏览器 `readProduct({ url })` 订阅；后三步分别放入按钮，调用 `startRecording(stream, options)`、`stopRecording(stream)`、`downloadRecording(stream, options)`。停止等待文件写入并由入口记住 ID，设备与 WS 保持连接；下载触发请求，不表示文件已保存。
 - `product-workspace-state.tsx` 仅生成 `flowSteps`，不再加载旧完整源码或例程文件名/运行命令。SSR 快照固定，挂载后读取 URL；确认实物手侧的守卫和同一设备切换时的确认保留。历史 `env/codeKind` URL 参数只作兼容，不改变五步运行端。
 - “接入准备”保留六个 `guide-*` 锚点，提供简短的驱动、端口、依赖、`Shroom.activateLicense()`、验收与接入说明。准备与排查区明确 SDK 0.2.0 的 Node 产品连接默认按原 `path` 每 3 秒重试、最多 3 次，可通过 `reconnect: false` 关闭；重连不自动续录，断线记录以 `error` 收尾。首次连接失败、主动关闭、授权/解析错误及 COM 改号不被描述为可自动恢复；浏览器 WS / Web Serial 不承诺重连。`QUICK-START.md`、README、AI 上下文和目录标签同步该路线。旧步骤锚点映射对应 `flow-*`，排查转排查面板，`workspace-run` 转依赖准备。手套只公开原始压力、五指、手掌和 IMU 标准字段，检测垫保持 32×32 矩阵，运行时兼容层未删除。
@@ -530,6 +530,7 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-11-03 | SDK 源码目录归类同步 | 官网采用 src 运行源码、examples 演示与 docs 文档的新位置；兼容 ZIP 和公开导入由独立 SDK 保持 |
 | 2026-11-03 | npm 包名安装入口 | 官网统一显示 npm install shroom-sdk，安装命令压缩为单行；保留官网 TGZ 备用下载、历史锁文件地址及独立密钥申请 |
 | 2026-11-03 | 串口搜索前置与重连说明 | 快速接入直接展示 listPorts 查询及实际 path 选择，保留原五步；首页准备路径同步，按 SDK 0.2.0 标明 Node 重连与采集中断边界 |
+| 2026-11-03 | 接入准备导航前置 | 文档侧栏、横向导航和文档中心入口均先准备后调用；默认面板、五步内容与深链保持不变 |
 
 ## 9. 更新日志
 
@@ -601,6 +602,7 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-11-03 | 优化重构 | 同步 SDK 目录整理后的资产复制、声明验证和维护文档，保留固定提交来源与原客户接入入口 |
 | 2026-11-03 | 优化重构 | 安装入口改为 npm 包名命令，移除 origin 订阅与多行地址框；更新 SSR/命令契约检查和发布顺序说明，保留 HTTP TGZ 安装回归 |
 | 2026-11-03 | 文档更新 | 五步调用前补独立串口搜索代码与明确选择提示；准备/排查说明原端口有限重连、停止重试和不自动续录，更新生产 SSR 顺序检查 |
+| 2026-11-03 | 优化重构 | 将接入准备移到调用流程之前，统一文档侧栏、横向导航与文档中心入口顺序，不修改默认打开面板及五步示例 |
 
 ---
 

@@ -5,12 +5,12 @@ import { useProductWorkspace } from './product-workspace-state';
 import { workspaceProducts, type WorkspaceProduct, type WorkspaceTab } from './product-workspace-model';
 import styles from './ProductWorkspaceNavigation.module.css';
 
-/** 产品工作台按调用流程、准备和参考任务导航。 */
+/** 产品工作台按接入准备、调用流程和参考任务导航。 */
 export default function ProductWorkspaceNavigation({ onNavigate }: { onNavigate: () => void }) {
   const { state, setProduct, setTab } = useProductWorkspace();
   const references: { tab: WorkspaceTab; label: string }[] = [
-    { tab: 'start', label: '调用流程' },
     { tab: 'guide', label: '接入准备' },
+    { tab: 'start', label: '调用流程' },
     { tab: 'data', label: '数据字段与映射' },
     { tab: 'debug', label: '问题排查' },
     { tab: 'downloads', label: 'SDK 与驱动下载' },

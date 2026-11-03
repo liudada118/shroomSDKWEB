@@ -67,8 +67,8 @@ export default function ProductWorkspace() {
   const activationCode = "import { Shroom } from 'shroom-sdk/node';\n\n// 在第 1 步取数前激活；deviceId 必须是本机持久保存的安装标识。\nawait Shroom.activateLicense(process.env.SHROOM_LICENSE_KEY, {\n  deviceId: process.env.SHROOM_DEVICE_ID,\n});";
   const portSearchCode = "import { listPorts } from 'shroom-sdk/node';\n\n// 查询可用串口，不打开设备，也不需要先激活密钥。\nconst ports = await listPorts();\nconsole.table(ports); // 按实际设备选择 path，填入第 1 步。";
   const tabs: { key: WorkspaceTab; label: string; id: string }[] = [
-    { key: 'start', label: '调用流程', id: 'product-start' },
     { key: 'guide', label: '接入准备', id: 'product-guide' },
+    { key: 'start', label: '调用流程', id: 'product-start' },
     { key: 'data', label: '字段', id: 'product-data' },
     { key: 'debug', label: '排查', id: 'product-debug' },
     { key: 'downloads', label: 'SDK 与驱动下载', id: 'product-downloads' },

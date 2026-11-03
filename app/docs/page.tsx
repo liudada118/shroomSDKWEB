@@ -39,6 +39,7 @@ export default function DocsIndex() {
           <p className="docs-start-eyebrow">推荐起点</p>
           <h2 id="quick-title">从取数到下载，五步调用</h2>
           <p className="mt-3 text-sm leading-7 text-[#475467]">Node.js 读取设备并创建 WS，网页控制采集与下载。协议与点位映射由 SDK 处理。</p>
+          <Link href="/docs/quick-start?tab=guide" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#175cd3] hover:underline">首次使用：驱动、依赖与授权准备 →</Link>
           <div className="docs-start-actions">
             <Link href="/docs/quick-start" className="inline-flex min-h-11 items-center justify-center gap-3 rounded-lg bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#175cd3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">
               查看调用流程 <span aria-hidden="true">→</span>
@@ -57,7 +58,6 @@ export default function DocsIndex() {
               <p>{task.description}</p>
             </li>)}
           </ol>
-          <Link href="/docs/quick-start?tab=guide" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#175cd3] hover:underline">首次使用：驱动、依赖与授权准备 →</Link>
           <p className="docs-support-note">浏览器 JavaScript 与 Node.js 均提供手套和手垫产品示例；Python 提供通用串口与矩阵解析，尚无整包手套专用协议。<Link href="/docs/backend?language=python" className="font-semibold text-[#175cd3] hover:underline">查看 Python 用法 →</Link></p>
         </section>
 
