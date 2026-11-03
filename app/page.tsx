@@ -2,7 +2,8 @@
 
 import { ReactNode, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useDownload } from './DownloadProvider';
+import { useDownload, useLicenseRequest } from './DownloadProvider';
+import SdkInstall from './SdkInstall';
 import { DESKTOP_PLATFORMS, SDK_VARIANTS, SERIAL_DRIVERS, SDK_SOURCE_URL } from './downloads';
 
 // 手套体验站独立部署，不属于当前站点布局。
@@ -85,7 +86,7 @@ const capabilities = [
   },
 ];
 
-const heroCode = `import { readProduct } from './quick-flow.js';
+const heroCode = `import { readProduct } from 'shroom-sdk/quick-flow';
 
 // 完成驱动、依赖和 SDK 授权后调用
 let device; // 保留连接，结束使用时 await device.close()
@@ -130,6 +131,7 @@ export default function Home() {
   const [productQuery, setProductQuery] = useState('');
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const openGate = useDownload();
+  const requestLicense = useLicenseRequest();
 
   const selectedPlatform = useMemo(
     () => DESKTOP_PLATFORMS.find((platform) => platform.id === activePlatform) ?? DESKTOP_PLATFORMS[0],
@@ -352,21 +354,25 @@ export default function Home() {
               <article key={variant.source} aria-labelledby={`${variant.source}-title`} className="flex min-w-0 flex-col rounded-2xl border border-[#d0d5dd] bg-white p-6 sm:p-8">
                 <div className="flex items-center justify-between gap-3">
                   <span className="grid h-12 w-12 place-items-center rounded-xl bg-[#eff4ff] font-mono text-base font-bold text-[#175cd3]" aria-hidden="true">{variant.sdkLanguage === 'python' ? 'PY' : 'JS'}</span>
-                  <span className="rounded-md border border-[#e4e7ec] px-2.5 py-1 font-mono text-xs text-[#667085]">v{variant.sdkVersion} · ZIP</span>
+                  <span className="rounded-md border border-[#e4e7ec] px-2.5 py-1 font-mono text-xs text-[#667085]">v{variant.sdkVersion} · {variant.sdkLanguage === 'node' ? 'npm' : 'ZIP'}</span>
                 </div>
                 <h3 id={`${variant.source}-title`} className="mt-5 text-2xl font-semibold tracking-tight">{variant.sdkLanguage === 'node' ? 'JavaScript / TypeScript' : variant.label} SDK</h3>
                 <p className="mt-2 text-sm font-medium leading-6 text-[#344054]">{variant.description}</p>
                 <p className="mt-4 flex-1 text-sm leading-7 text-[#667085]">{variant.details}</p>
                 <p className="mt-5 border-t border-[#eaecf0] pt-4 text-xs leading-6 text-[#667085]">{variant.contents}</p>
+                {variant.sdkLanguage === 'node' && <div className="mt-4"><SdkInstall /></div>}
                 <div className="mt-5 flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-4">
-                  <button type="button" onClick={() => openGate(variant)} className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-lg bg-[#2563eb] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#175cd3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">下载 {variant.label} SDK</button>
+                  <button type="button" onClick={() => openGate(variant)} className={`inline-flex min-h-11 cursor-pointer items-center justify-center rounded-lg px-5 py-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb] ${variant.sdkLanguage === 'node' ? 'border border-[#d0d5dd] bg-white text-[#344054] hover:bg-[#f8fafc]' : 'bg-[#2563eb] text-white hover:bg-[#175cd3]'}`}>{variant.sdkLanguage === 'node' ? '下载安装包' : '下载 Python SDK'}</button>
                   <Link href={variant.guideHref} className="inline-flex min-h-11 items-center justify-center rounded-lg px-2 text-sm font-semibold text-[#175cd3] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">{variant.label} 使用指南 <span aria-hidden="true" className="ml-1">→</span></Link>
                   <a href={SDK_SOURCE_URL} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center rounded-lg px-2 text-sm text-[#475467] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">查看源码 ↗</a>
                 </div>
               </article>
             ))}
           </div>
-          <p className="mt-4 text-sm leading-7 text-[#667085]">下载包包含源码、示例和 AI 接入指南，不包含上位机。Node.js 与 Python 的产品能力不同，请先查看对应指南中的环境与支持范围。</p>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d0d5dd] bg-white px-5 py-4">
+            <p className="text-sm leading-6 text-[#475467]">SDK 可直接安装和下载。连接真实设备前，需要 Shroom SDK 产品密钥。</p>
+            <button type="button" onClick={requestLicense} className="inline-flex min-h-11 cursor-pointer items-center rounded-lg px-4 py-2 text-sm font-semibold text-[#175cd3] hover:bg-[#eff4ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2563eb]">申请 SDK 密钥 →</button>
+          </div>
 
           <div id="desktop-downloads" className="mt-12 scroll-mt-24">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DESKTOP_PLATFORMS, SDK_VARIANTS, SERIAL_DRIVERS } from '../app/downloads.ts';
+import npmPackage from '../app/sdk-package.generated.json' with { type: 'json' };
+import { sdkInstallCommand } from '../app/sdk-install.ts';
 
 test('each desktop platform has its own published installer and registration target', () => {
   const expected = [
@@ -44,11 +46,19 @@ test('installation hints reflect actual package architectures and do not reuse M
   }
 });
 
-test('Python and Node SDK downloads remain independent local ZIP packages', () => {
+test('Node installs the immutable npm package while Python keeps its independent ZIP', () => {
   assert.deepEqual(SDK_VARIANTS.map(({ url, source, sdkLanguage }) => ({ url, source, sdkLanguage })), [
+    { url: npmPackage.url, source: 'sdk-node', sdkLanguage: 'node' },
     { url: '/shroom-sdk-python.zip', source: 'sdk-python', sdkLanguage: 'python' },
-    { url: '/shroom-sdk-node.zip', source: 'sdk-node', sdkLanguage: 'node' },
   ]);
+  assert.ok(npmPackage.url.includes(npmPackage.sha256));
+  assert.match(npmPackage.url, /\.tgz$/);
+});
+
+test('install command uses the active HTTP site and a stable artifact URL', () => {
+  assert.equal(sdkInstallCommand(), `npm install --save-exact "https://sdk.jq-industries.com${npmPackage.url}"`);
+  assert.equal(sdkInstallCommand('http://localhost:3000/path'), `npm install --save-exact "http://localhost:3000${npmPackage.url}"`);
+  assert.throws(() => sdkInstallCommand('file:///C:/sdk'), /HTTP/);
 });
 
 test('serial drivers link directly to the supplied Windows EXE and macOS ZIP', () => {

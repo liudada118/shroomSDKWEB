@@ -1,6 +1,38 @@
 // 由 scripts/build-docs.mjs 自动生成，供问答章节定位使用。
 export const sectionCatalog = [
   {
+    "anchor": "npm--s1",
+    "label": "安装到自己的项目",
+    "href": "/docs/npm#s1",
+    "page": "npm",
+    "description": "安装 JavaScript SDK",
+    "keywords": "npm 安装到自己的项目"
+  },
+  {
+    "anchor": "npm--s2",
+    "label": "只导入需要的函数",
+    "href": "/docs/npm#s2",
+    "page": "npm",
+    "description": "安装 JavaScript SDK",
+    "keywords": "npm 只导入需要的函数"
+  },
+  {
+    "anchor": "npm--s3",
+    "label": "接入前确认",
+    "href": "/docs/npm#s3",
+    "page": "npm",
+    "description": "安装 JavaScript SDK",
+    "keywords": "npm 接入前确认"
+  },
+  {
+    "anchor": "npm--s4",
+    "label": "安装包与源码",
+    "href": "/docs/npm#s4",
+    "page": "npm",
+    "description": "安装 JavaScript SDK",
+    "keywords": "npm 安装包与源码"
+  },
+  {
     "anchor": "drivers--s1",
     "label": "下载对应系统的驱动",
     "href": "/docs/drivers#s1",
@@ -154,11 +186,11 @@ export const sectionCatalog = [
   },
   {
     "anchor": "quick-start--guide-run",
-    "label": "安装 SDK 依赖",
+    "label": "安装 SDK",
     "href": "/docs/quick-start#guide-run",
     "page": "quick-start",
     "description": "快速接入文档",
-    "keywords": "quick-start 安装 SDK 依赖"
+    "keywords": "quick-start 安装 SDK"
   },
   {
     "anchor": "quick-start--guide-connect",
@@ -1807,6 +1839,14 @@ export const sectionCatalog = [
     "page": "readme",
     "description": "SDK 说明与排错",
     "keywords": "readme 选择接入方式"
+  },
+  {
+    "anchor": "readme--maintain",
+    "label": "维护 SDK",
+    "href": "/docs/readme#maintain",
+    "page": "readme",
+    "description": "SDK 说明与排错",
+    "keywords": "readme 维护 SDK"
   },
   {
     "anchor": "readme--source-map",

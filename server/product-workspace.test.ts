@@ -61,6 +61,7 @@ test('every selected product exposes one connected five-step Node and browser fl
       assert.deepEqual(steps.map(step => step.id), ['flow-read', 'flow-ws', 'flow-start', 'flow-stop', 'flow-download']);
       const read = steps[0].blocks[0].code;
       assert.match(read, /const device = await readProduct\(/);
+      assert.match(read, /from 'shroom-sdk\/quick-flow'/);
       assert.ok(read.includes(`product: '${product}'`));
       assert.match(read, platform === 'windows' ? /COM3/ : platform === 'macos' ? /dev\/cu\.usbserial/ : /dev\/ttyUSB0/);
       assert.deepEqual(steps[1].blocks.map(block => block.runtime), ['node', 'web']);

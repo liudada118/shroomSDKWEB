@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { useDownload } from '../DownloadProvider';
+import { useDownload, useLicenseRequest } from '../DownloadProvider';
+import SdkInstall from '../SdkInstall';
 import { SERIAL_DRIVERS, SDK_VARIANTS } from '../downloads';
 import { useProductWorkspace } from './product-workspace-state';
 import type { WorkspaceSection, WorkspaceTab } from './product-workspace-model';
@@ -49,6 +50,7 @@ function FieldsTable({ rows }: { rows: FieldRow[] }) {
 export default function ProductWorkspace() {
   const { state, ready, flowSteps, setProduct, confirmSide, setPlatform, setTab, navigateChapter } = useProductWorkspace();
   const openDownload = useDownload();
+  const requestLicense = useLicenseRequest();
   const jsDownload = SDK_VARIANTS.find(target => target.source === 'sdk-node')!;
   const pythonDownload = SDK_VARIANTS.find(target => target.source === 'sdk-python')!;
   const [notice, setNotice] = useState('');
@@ -62,7 +64,7 @@ export default function ProductWorkspace() {
   const keyCommand = state.platform === 'windows'
     ? "$env:SHROOM_LICENSE_KEY = '你的 SDK 产品密钥'"
     : "export SHROOM_LICENSE_KEY='你的 SDK 产品密钥'";
-  const activationCode = "import { activateLicenseFromEnv } from './node/license-env.js';\n\n// 在第 1 步取数前激活；复用稳定的本机安装标识。\nawait activateLicenseFromEnv();";
+  const activationCode = "import { Shroom } from 'shroom-sdk/node';\n\n// 在第 1 步取数前激活；deviceId 必须是本机持久保存的安装标识。\nawait Shroom.activateLicense(process.env.SHROOM_LICENSE_KEY, {\n  deviceId: process.env.SHROOM_DEVICE_ID,\n});";
   const tabs: { key: WorkspaceTab; label: string; id: string }[] = [
     { key: 'start', label: '调用流程', id: 'product-start' },
     { key: 'guide', label: '接入准备', id: 'product-guide' },
@@ -140,7 +142,7 @@ export default function ProductWorkspace() {
     <p className={styles.notice} role="status" aria-live="polite">{notice}</p>
 
     <section id="product-start" hidden={state.tab !== 'start'} aria-label="五步 API 调用流程">
-      <div className={styles.prerequisite}><span>先完成 SDK 授权，再执行下面的调用。</span><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-connect')}>接入准备 →</button></div>
+      <div className={styles.prerequisite}><span>先安装 SDK 并激活密钥，再执行下面的调用。</span><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-run')}>安装与授权 →</button></div>
       <div className={styles.flow}>
         {flowSteps.map((step, index) => <section id={step.id} key={step.id} className={styles.flowStep} aria-labelledby={`${step.id}-title`} tabIndex={-1}>
           <div className={styles.stepHeading}><span aria-hidden="true">{index + 1}</span><h2 id={`${step.id}-title`}>{step.title}</h2></div>
@@ -153,10 +155,10 @@ export default function ProductWorkspace() {
     <section id="product-guide" hidden={state.tab !== 'guide'} aria-label="接入准备">
       <Preparation id="guide-prepare" title="安装驱动与运行环境"><p>使用 Node.js 18+。CH34x 设备安装上方驱动后重新插拔，确认系统串口可见；关闭占用端口的上位机。本机浏览器页面使用 <code>http://localhost</code>，连接示例中的本机 WS。</p></Preparation>
       <Preparation id="guide-config" title="确认产品与串口"><p>当前产品：<strong>{productName}</strong>{glove ? `，${state.sideConfirmed ? `已确认${sideName}` : '手侧待按实物确认'}` : '，32 × 32 矩阵'}。将第 1 步的 <code>path</code> 替换为真实串口，当前系统格式示意为 <code>{portExample}</code>。</p><p>第 1–2 步的 Node 代码放在同一进程；第 2 步的浏览器连接只建立一次，后续三步复用同一个 <code>stream</code>。</p></Preparation>
-      <Preparation id="guide-run" title="安装 SDK 依赖"><p>下载并解压 JavaScript SDK，在包含 <code>package.json</code> 的 SDK 根目录执行：</p><CodeBlock runtime="terminal" code="npm install" onCopy={() => void copy('npm install', '安装命令')} /><button type="button" className={styles.textLink} onClick={() => openDownload(jsDownload)}>下载 JavaScript SDK →</button></Preparation>
-      <Preparation id="guide-connect" title="激活 SDK 授权"><p>使用 Shroom SDK 产品密钥。在启动 Node 程序的终端中设置密钥：</p><CodeBlock runtime="terminal" code={keyCommand} onCopy={() => void copy(keyCommand, '密钥设置命令')} /><p>在同一 Node 程序中，先激活，再执行第 1 步取数：</p><CodeBlock runtime="node" code={activationCode} onCopy={() => void copy(activationCode, '授权调用')} /><p className={styles.secondaryText}>辅助模块复用用户目录中的 <code>.shroom-sdk/device-id</code>。可通过 <code>SHROOM_LICENSE_FILE</code> 读取密钥文件；离线码另设 <code>SHROOM_LICENSE_MODE=offline</code>。</p></Preparation>
+      <Preparation id="guide-run" title="安装 SDK"><p>复制命令，在自己的项目目录执行。SDK 会自动下载并安装，无需先保存压缩包。</p><SdkInstall /><p><button type="button" className={styles.textLink} onClick={() => openDownload(jsDownload)}>下载安装包 →</button></p></Preparation>
+      <Preparation id="guide-connect" title="激活 SDK 授权"><p>使用 Shroom SDK 产品密钥。<button type="button" className={styles.textLink} onClick={requestLicense}>申请 SDK 密钥 →</button></p><p>在启动 Node 程序的终端中设置密钥：</p><CodeBlock runtime="terminal" code={keyCommand} onCopy={() => void copy(keyCommand, '密钥设置命令')} /><p>在同一 Node 程序中，先激活，再执行第 1 步取数：</p><CodeBlock runtime="node" code={activationCode} onCopy={() => void copy(activationCode, '授权调用')} /><p className={styles.secondaryText}>限定电脑名额的密钥需要设置 <code>SHROOM_DEVICE_ID</code>；同一安装保持不变，不要每次启动生成新值。<Link href="/docs/license">安装标识与离线授权说明 →</Link></p></Preparation>
       <Preparation id="guide-verify" title="验证取数与采集"><p><code>onData</code> 持续返回帧，触按位置与产品分区一致。开始采集返回会话 ID，停止采集返回本次 <code>recording.id</code>；下载使用此 ID。停止采集只停止保存记录，设备与 WS 仍保持连接。</p></Preparation>
-      <Preparation id="guide-code" title="接入自己的页面"><p>本页导入路径以 SDK 根目录为起点，放入自己的工程时按实际目录调整。Node 入口使用 ES 模块（如 <code>.mjs</code>）；网页使用 <code>&lt;script type=&quot;module&quot;&gt;</code> 或工程的模块入口。</p><p>将第 3–5 步放进各自按钮的点击处理，捕获调用失败；让 <code>stream</code> 和 <code>recording</code> 保留在同一模块作用域，不要在初始化时连续执行开始和停止。</p><p>退出时关闭浏览器的 <code>stream</code>，并在 Node 端关闭 <code>server</code> 和 <code>device</code>。</p><button type="button" className={styles.textLink} onClick={() => setTab('start')}>返回五步调用流程 →</button></Preparation>
+      <Preparation id="guide-code" title="接入自己的页面"><p>本页统一从 <code>shroom-sdk/quick-flow</code> 导入。Node 代码使用 ES 模块（如 <code>.mjs</code>）；网页工程通过 Vite 等构建工具解析包名。普通 HTML 无构建工具时，请使用源码 ZIP 的相对路径示例。</p><p>将第 3–5 步放进各自按钮的点击处理，捕获调用失败；同一网页复用 <code>stream</code>，不要在初始化时连续执行开始和停止。</p><p>退出时关闭浏览器的 <code>stream</code>，并在 Node 端关闭 <code>server</code> 释放设备。</p><button type="button" className={styles.textLink} onClick={() => setTab('start')}>返回五步调用流程 →</button></Preparation>
     </section>
 
     <section id="product-data" hidden={state.tab !== 'data'} className={styles.referencePanel} aria-labelledby="product-data-title" tabIndex={-1}>
@@ -176,8 +178,10 @@ export default function ProductWorkspace() {
 
     <section id="product-downloads" hidden={state.tab !== 'downloads'} className={styles.referencePanel} aria-labelledby="product-downloads-title" tabIndex={-1}>
       <h2 id="product-downloads-title">SDK 与驱动下载</h2>
+      <SdkInstall />
       <div className={styles.resources}>
-        <article><div><h3>JavaScript SDK · v{jsDownload.sdkVersion}</h3><p>包含 Node 串口、WS 服务和浏览器采集控制接口。</p></div><button type="button" className={styles.primaryButton} onClick={() => openDownload(jsDownload)}>下载 JavaScript SDK</button></article>
+        <article><div><h3>JavaScript SDK · v{jsDownload.sdkVersion}</h3><p>下载 npm 安装包；包含 Node 串口、WS 服务和浏览器入口。</p><a className={styles.textLink} href="/shroom-sdk-node.zip" download>源码与示例 ZIP →</a></div><button type="button" className={styles.secondaryButton} onClick={() => openDownload(jsDownload)}>下载安装包</button></article>
+        <article><div><h3>Shroom SDK 产品密钥</h3><p>安装与下载无需申请，连接真实设备前需要激活。</p></div><button type="button" className={styles.primaryButton} onClick={requestLicense}>申请 SDK 密钥</button></article>
         {SERIAL_DRIVERS.map(driver => <article key={driver.id}><div><h3>{driver.label} 串口驱动 · {driver.format}</h3><p>{driver.installNote}</p></div><a className={styles.secondaryButton} href={driver.url}>下载驱动</a></article>)}
         <article><div><h3>Python SDK</h3><p>通用串口与矩阵路线，不包含本页的 Node / Web WS 采集控制链，也不支持整包手套。</p><Link className={styles.textLink} href="/docs/backend?language=python">查看 Python 支持范围 →</Link></div><button type="button" className={styles.secondaryButton} onClick={() => openDownload(pythonDownload)}>下载 Python SDK</button></article>
       </div>

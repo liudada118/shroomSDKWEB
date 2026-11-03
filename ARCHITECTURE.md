@@ -12,7 +12,7 @@ Shroom Developer 面向已购设备、需要快速集成自有应用的客户。
 
 **当前版本的下载与文档都是真实可用的，不再是骨架**：
 
-- **按语言获取 SDK** —— 首页下载区直接平铺 Python 与 Node.js 两张卡片，各自展示适用场景、下载按钮和使用指南；桌面双列、手机单列。顶栏“获取 SDK”跳至 `/#downloads`，不再弹出语言选择。点击具体语言按钮后复用下载登记。构建从 `sdk/` 生成 `shroom-sdk-python.zip` 和 `shroom-sdk-node.zip`；Node 包含浏览器入口和 Python 说明，但不含 Python 源码。Python 包包含 `python/` 源码、示例、README 和专用 AI 上下文，Python 3.10+ 用 pip 安装；客户包排除开发测试、生成器和缓存，附带更新日志。旧的 `shroom-sdk.zip` 完整包继续保留，兼容已有链接。不按操作系统分 SDK 包；官网版本号和下载文件名读取统一 SDK 版本，受版本保护的制品另见 4.15。
+- **按语言获取 SDK** —— JavaScript / TypeScript 主入口提供一条可复制的 npm 安装命令，直接从当前官网拉取精简 TGZ 并安装到客户 node_modules；另有 TGZ 下载与源码 ZIP 备用入口。Python 保留独立 ZIP 和 pip 指南。SDK 下载免登记，真实设备另行申请并激活产品密钥；上位机仍使用原下载登记。版本读取固定 SDK 提交，TGZ URL 含版本与 SHA256，历史包随官网源码保留。
 - **三平台上位机** —— 首页通过 `app/downloads.ts` 提供用户指定的 Shroom 安装包：Windows 1.1.36 EXE、macOS 1.1.37 ARM64 DMG（仅 Apple Silicon）、Linux 1.1.38 amd64 DEB（仅支持 DEB 的 x86_64 系统）。三个平台均可下载；版本来自文件名，体积来自 2026-10-13 的 HTTPS HEAD 响应。安装包由 `shroom.jq-industries.com/shroom1/` 独立提供，不进入本站 Git 或构建产物。页面不复用旧 Monitor ZIP 的日期、更新日志、签名或授权说明；当前包的功能/授权不由基础 SDK 边界推定。旧 `desktop-release.json` 与同步脚本仅保留用于历史 Monitor 流程，不再驱动首页。
 - **文档中心** —— `/docs` 主入口直达 `/docs/quick-start` 的五步调用流程：取数、创建 WS、开始采集、停止采集、下载。Node 负责设备与服务，网页通过同一个 `stream` 控制采集并按返回的记录 ID 下载；驱动、授权与依赖集中在“接入准备”。字段、排查、SDK 下载独立，产品选择和驱动保持可见。`/docs/custom` 承接基础自定义，后端参考统一在 `/docs/backend`；旧链接兼容。`sdk/docs/catalog.json` 维护文档来源与导航元数据，构建期预渲染成 HTML。
 - **完整快速方案** —— Node数据服务广播标准产品帧，浏览器自动分区展示，按标签录制到服务端磁盘并下载CSV/JSONL；页面刷新可找回记录。提供真实与合成产品示例，source明确区分模拟数据；细节见4.9。
@@ -21,8 +21,8 @@ Shroom Developer 面向已购设备、需要快速集成自有应用的客户。
 - **按产品直接取数** —— Node.js / 浏览器新增 `connectGlove()`（整包触觉手套）与 `connectHandPad()`（手部检测垫），内置对应波特率、分帧与点位映射，通过一次调用中的 `onData` 直接收取已解析产品数据。保留通用 `connect()` 作为进阶入口；Python 当前仍为通用矩阵 SDK，不宣称已支持手套专用协议。
 - **后端连接 SDK** —— Node.js / 浏览器新增 `BackendSdkClient`，通过 HTTP/WS 查询和控制已运行的主项目后端，接收原始实时 JSON 帧；不是内置采集服务器，也不要求 Shroom Monitor 提供 HTTP 接口。下载包内包含源码、类型、只读示例与 `BACKEND.md`，API 参考入口为 `/docs/backend-api`，后端统一指南为 `/docs/backend`；Python 包本次不变。
 - **手套体验站** —— 外链到独立部署的 <https://glove.jq-industries.io/>。
-- **获取登记** —— 下载前弹窗收集姓名/手机，POST 到密钥系统的 `/sdk-requests`；
-  **登记失败不挡下载**，这不是审批流程。
+- **密钥申请与上位机登记** —— 首页和接入文档单独提供“申请 SDK 密钥”，提交姓名、电话、邮箱、机构到既有 `/sdk-requests`，来源为 `sdk-license`。只有 HTTP 成功且后台返回 `ok: true` 才显示已提交；失败保留输入并支持重试，不自动发钥或下载。
+  上位机保留原下载登记，登记失败仍可下载；SDK 安装与下载不调用申请接口。
 - **智谱知识问答** —— 从 `ld` 分支恢复检索、流式回答、来源引用和章节跳转，适配当前布局与文档。入口为侧栏/文档中心 `/knowledge` 及全站右下角“问文档”。运行需要服务端智谱配置；当前本地尚未配置真实凭据，未配置时明确返回 503。
 
 「点位映射生成器」与「工程验证工具（含力学标定）」尚未开放，首页不再展示占位卡。
@@ -235,6 +235,7 @@ flowchart TD
 5. **下载登记**
    - 根布局的 `DownloadProvider` 管理 SDK 与三平台上位机共用登记弹窗，首页语言卡片与上位机按钮通过 `useDownload()` 触发；首页与问答顶栏、文档左侧菜单的获取 SDK 入口定位下载区。`downloads.ts` 统一维护语言卡片与下载目标（`gateTarget` 记住是谁触发的），
      标题、副标题、登记来源 `source` 随触发方切换。
+   - 登记字段使用可收缩的单列网格与全宽输入框；640px 起姓名和手机号并排，窄屏单列。字段顶部对齐，单项报错不会拉伸同排输入框；弹窗按内容纵向滚动，不产生表单横向溢出。
    - 提交后 POST 到密钥系统的 `/sdk-requests`，来源为 `sdk-python` / `sdk-node` / `desktop-win` / `desktop-macos` / `desktop-linux`，上位机版本沿用 `sdkVersion` 字段。**登记成功失败均放行下载**（8 秒超时），写入 `localStorage` 后下次点击具体版本直接下载。原生 dialog 约束焦点、阻止背景交互，支持 Esc / 关闭；关闭后可在下载区选另一版本，并保留本次表单草稿。跨域安装包的实际下载行为由下载站响应头决定。
 6. **全站导航与响应式布局**
    - 首页与问答页的 `SiteNavigation` 按“了解 SDK / 接入与下载 / 工具与文档”组织入口，首页概览 → 产品 → 能力 → Skill → SDK 下载 → 上位机 → 快速开始 → 工具按正文位置滚动高亮；文档中心是直接进入 `/docs` 的路由链接，不混入页内滚动目录。`/docs` 和所有详情页切换到 `DocsNavigation` 的快速接入/基础与自定义路线树，后端/前端为基础路线的参考分类，保持共用布局与移动端目录交互。
@@ -386,16 +387,24 @@ flowchart TD
 - 官网 `pack:sdk` 委托子模块工具生成包，再把三份 ZIP 和网页资源镜像到 `public/`；`build:docs` 继续读取同一提交的 SDK Markdown。兼容 URL `/shroom-sdk.zip`、`/shroom-sdk-node.zip`、`/shroom-sdk-python.zip` 保持不变，下载文件名和页面版本来自该子模块。首页另提供 SDK 源码仓库入口；已发布的历史包通过 SDK GitHub Release 定位。
 - 官网 `.github/workflows/site-ci.yml` 拉取固定子模块后执行 `npm run verify`，覆盖来源校验、文档、站点测试、TypeScript、生产构建与下载检查。官网的 `sdk:verify` 仅转调独立 SDK 门禁；升版与发布需在 SDK 仓库执行，详情见 [SDK 发布指南](sdk/SDK-RELEASING.md)。
 
+### 4.16 官网直接安装与密钥申请
+
+- `scripts/sdk-source.mjs` 对固定且干净的 SDK 提交调用 `pack-npm.mjs`，校验归档后保存到 `public/sdk-packages/<version>/<sha256>/`；同一地址不同内容拒绝覆盖，历史 TGZ 随网站源码保留。`app/sdk-package.generated.json` 记录版本、路径、校验值与来源提交。官网显式锁定 esbuild 构建依赖，不安装 SDK 原生运行依赖。
+- `SdkInstall` 与 `sdk-install.ts` 在首页/接入准备/下载区复用当前站点的完整 HTTP 安装命令；复制失败提供选中内容的手动复制方式。无需先下载文件，不输出维护者本机路径，也不将尚未发布的 npm 包名作为可安装命令。
+- 官网调用示例通过 `importStyle: package` 使用 `shroom-sdk/quick-flow`，授权使用公开的 `shroom-sdk/node`。ZIP 示例仍支持相对路径；浏览器包导入需构建工具，稳定 deviceId 规则不变。
+- `DownloadProvider` 的 `useLicenseRequest()` 打开独立申请表，不受既有下载登记缓存跳过。`license-request.ts` 严格验证后台响应，申请失败不假报成功；后台 E:/key 将来源显示为 SDK 密钥申请，人工联系并按现有发钥规则处理。
+- 集成检查覆盖不可覆盖/历史包保留、HTTP TGZ 哈希与公开入口、实际通过官网 URL 安装，以及申请的 HTTP/业务/网络失败。浏览器检查复制、SDK 免登记下载、申请弹窗与窄屏布局，不向生产后台发送测试资料。
+
 ## 5. API 端点
 
 首页与交互组件为客户端组件，文档内容在服务端渲染，共享根布局。下载登记由浏览器直接跨域提交；知识问答通过站内 API 在服务端调用智谱：
 
 | 方法 | 地址 | 用途 |
 | :--- | :--- | :--- |
-| `POST` | `${NEXT_PUBLIC_SDK_REGISTRY_URL}`（默认 `https://shroom.jq-industries.com/sdk-requests`） | 提交下载登记线索，由密钥系统的 CORS 接口接住 |
+| `POST` | `${NEXT_PUBLIC_SDK_REGISTRY_URL}`（默认 `https://shroom.jq-industries.com/sdk-requests`） | 提交 SDK 密钥申请（source: sdk-license）或上位机下载登记，由密钥后台接收并人工跟进 |
 | `POST` | `/api/knowledge` | 接受 question / history / page，返回 sources / delta / sections / done / error SSE 事件；调用智谱检索与聊天接口 |
 
-下载登记不参与鉴权，也不阻塞下载。问答的上游鉴权密钥仅在服务端使用。
+申请记录不等于许可证，提交成功不自动激活 SDK。SDK 安装免登记；上位机下载登记不参与鉴权。问答的上游鉴权密钥仅在服务端使用。
 
 SDK 后端连接是调用方到**外部主项目后端**的请求，不是新增的网站 API。默认读取 `/api/sdk/contract`、`/api/channels`、`/api/ws/status`、`/api/display-systems`、`/api/serial/ports`、`/api/serial/status`、`/api/sensor/current`；显式控制请求使用 `/api/sensor/type`、`/api/serial/open`、`/api/serial/close`、`/api/collection/start`、`/api/collection/stop`。路径可由后端契约或调用方覆盖。
 
@@ -532,6 +541,9 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-10-29 | SDK 采集改为 SQLite | 参考 shroom1.0 事务批写与停止排空，保持五函数和 CSV/JSONL 下载；增加目录互斥、恢复、旧记录兼容与真实 SQLite 验证 |
 | 2026-10-29 | SDK 版本与发布管理 | 统一版本、JS/Python 依赖锁、先测试后打包、版本制品与 SHA256、三平台 CI 和 GitHub Release 草稿；精简交付目录并同步官网版本 |
 | 2026-10-30 | 官网与 SDK 分仓库 | 官网改为固定提交的 SDK 子模块；SDK 独立维护测试与发布，官网保留资源镜像、文档生成及集成检查 |
+| 2026-10-30 | 下载登记弹窗布局修复 | 输入框按网格列宽收缩，消除姓名与手机号重叠和横向滚动；验证手机、桌面及单项报错布局 |
+
+| 2026-10-30 | SDK 官网直接安装与密钥申请 | 官网复制一条命令即可安装，固定内容地址保留历史；申请密钥与下载分离，严格确认后台保存结果 |
 
 ## 9. 更新日志
 
@@ -597,6 +609,9 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-10-29 | 优化重构 | Node 采集持久化由 JSONL 改为 SQLite 会话/帧表与事务队列，停止等待提交、导出按页读取；保留旧 JSONL 历史，更新依赖、文档、问答提示和下载包 |
 | 2026-10-29 | 新增功能 | 建立 SDK 统一版本与依赖锁、发布门禁和不可覆盖的版本 ZIP/来源清单/校验值，新增多平台 CI、标签驱动 Release 草稿、更新日志与维护指南；官网和运行时版本统一，客户包排除测试与开发文件 |
 | 2026-10-30 | 优化重构 | 将 SDK 源码及发布工具独立到 shroomSDK 仓库，官网通过固定提交的 sdk 子模块消费；增加来源校验、官网集成 CI、资源镜像与源码入口，部署初始化子模块，拆分两边发布文档 |
+| 2026-10-30 | 修复缺陷 | 为下载登记输入框和字段网格补齐宽度约束与顶部对齐，修复双列字段重叠、横向滚动和单侧报错错位；保留原登记校验与下载行为 |
+
+| 2026-10-30 | 优化重构 | 新增官网 npm 安装入口、精简包历史归档与 HTTP 安装验证；SDK 免登记获取，原表单改为独立密钥申请并同步后台呈现 |
 
 ---
 

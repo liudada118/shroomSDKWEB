@@ -1,9 +1,64 @@
-/** 正式构建的非浏览器检查：启动生产服务，验证SSR入口与交付ZIP后清理自有进程。 */
-import { spawn } from 'node:child_process';
+/** 启动生产服务，验证页面、下载及客户通过官网 HTTP 安装 npm 包后清理自有进程。 */
+import { execFile, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { access, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { basename, dirname, join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createServer } from 'node:net';
+import { verifyNpmArchive } from '../sdk/scripts/npm-archive.mjs';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+const runFile = promisify(execFile);
+const npmPackage = JSON.parse(await readFile(join(root, 'app/sdk-package.generated.json'), 'utf8'));
+
+async function npmCli() {
+  const binary = dirname(process.execPath);
+  for (const candidate of [process.env.npm_execpath,
+    join(binary, 'node_modules/npm/bin/npm-cli.js'),
+    resolve(binary, '../lib/node_modules/npm/bin/npm-cli.js')].filter(Boolean)) {
+    try { await access(candidate); return candidate; } catch { /* 继续检查当前 Node 的 npm 安装位置。 */ }
+  }
+  throw new Error('找不到 npm CLI；请使用 npm run verify 执行官网安装检查。');
+}
+
+/** 真实 HTTP 安装验证下载地址可被 npm 消费；硬件与原生依赖由独立 SDK 门禁验证。 */
+async function checkHttpInstall(url) {
+  const base = await realpath(tmpdir());
+  const directory = await mkdtemp(join(base, 'shroom-site-npm-install-'));
+  try {
+    await writeFile(join(directory, 'package.json'), JSON.stringify({ name: 'shroom-site-consumer', private: true, type: 'module' }));
+    const env = { ...process.env, npm_config_cache: join(directory, '.npm-cache'),
+      npm_config_fetch_retries: '1', npm_config_fetch_timeout: '30000', npm_config_update_notifier: 'false' };
+    const execute = async args => {
+      try { return await runFile(process.execPath, args, { cwd: directory, env, timeout: 120000, maxBuffer: 2 * 1024 * 1024, windowsHide: true }); }
+      catch (error) { throw new Error('官网 HTTP npm 安装检查失败：' + [error.stdout, error.stderr, error.message].filter(Boolean).join('\n'), { cause: error }); }
+    };
+    await execute([await npmCli(), 'install', '--save-exact', '--omit=optional', '--no-audit', '--no-fund', '--loglevel=error', url]);
+    const lock = JSON.parse(await readFile(join(directory, 'package-lock.json'), 'utf8'));
+    const installed = lock.packages['node_modules/shroom-sdk'];
+    assert.equal(installed.version, npmPackage.version);
+    assert.equal(installed.resolved, url, '客户锁文件必须保留官网稳定 URL');
+    assert.ok(installed.integrity, '客户锁文件必须记录包完整性');
+    await writeFile(join(directory, 'smoke.mjs'), `import assert from 'node:assert/strict';
+import * as flow from 'shroom-sdk/quick-flow';
+import { Shroom } from 'shroom-sdk/node';
+assert.deepEqual(Object.keys(flow).sort(), ['createWS', 'downloadRecording', 'readProduct', 'startRecording', 'stopRecording']);
+assert.equal(Shroom.version, ${JSON.stringify(npmPackage.version)});
+console.log('官网 HTTP 安装及五函数包导入通过');\n`);
+    const result = await execute(['smoke.mjs']);
+    console.log(result.stdout.trim());
+  } finally {
+    const target = resolve(directory);
+    assert.equal(dirname(target), base);
+    assert.ok(basename(target).startsWith('shroom-site-npm-install-'));
+    await rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  }
+}
 
 const probe = createServer();
 await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve));
@@ -32,6 +87,11 @@ try {
     assert.equal(response.status, 200, path);
     const html = await response.text();
     assert.ok(!html.includes('Product workspace requires ProductWorkspaceProvider'), path);
+    if (path === '/' || path === '/docs/quick-start') {
+      assert.match(html, /复制安装命令/);
+      assert.match(html, /申请(?:\s*SDK\s*)?密钥/);
+      assert.ok(html.includes(npmPackage.url), '页面应使用当前固定内容的 npm 下载地址');
+    }
     if (path === '/docs/quick-start') {
       assert.match(html, /<h1[^>]*>触觉手套<\/h1>/);
       const productSelect = html.match(/<select\b[^>]*\bid="workspace-navigation-product"[^>]*>/)?.[0];
@@ -66,6 +126,8 @@ try {
       }
       assert.doesNotMatch(flow, /let recording|downloadRecording\(recording\.id,/, 'SDK 管理本次下载 ID，无需跨按钮维护变量');
       assert.match(flow, /onData/);
+      assert.match(flow, /shroom-sdk\/quick-flow/);
+      assert.doesNotMatch(flow, /\.\/quick-flow\.js/);
       assert.match(flow, /data\.fingers/);
       assert.match(flow, /Node\.js/);
       assert.match(flow, /浏览器 JavaScript/);
@@ -74,7 +136,8 @@ try {
       assert.doesNotMatch(html, /&lt;!doctype|下载完整示例|复制完整示例|示例内容|glove-left-example/);
       const panelTag = html.slice(preparationPanel, html.indexOf('>', preparationPanel) + 1);
       assert.match(panelTag, /\shidden(?:\s|=|>)/, 'preparation is a separate task');
-      assert.match(html.slice(preparationPanel), /activateLicenseFromEnv/);
+      assert.match(html.slice(preparationPanel), /Shroom\.activateLicense/);
+      assert.doesNotMatch(html.slice(preparationPanel), /\.\/node\/license-env\.js/);
       assert.match(html.slice(preparationPanel), /npm install/);
       const productTable = [...html.matchAll(/<table\b[\s\S]*?<\/table>/g)]
         .map(([table]) => table).find(table => table.includes('<caption>产品返回字段</caption>'));
@@ -98,6 +161,14 @@ try {
     assert.ok(archive.length > 10000 && archive.readUInt32LE(0) === 0x04034b50, file);
     console.log(`下载 200: ${file}`);
   }
+  const installUrl = new URL(npmPackage.url, origin).href;
+  const response = await fetch(installUrl);
+  assert.equal(response.status, 200, npmPackage.url);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), npmPackage.sha256);
+  verifyNpmArchive(bytes, npmPackage.version);
+  console.log(`npm 下载 200：${npmPackage.fileName}`);
+  await checkHttpInstall(installUrl);
 } finally {
   if (server.exitCode === null) {
     const exited = once(server, 'exit');

@@ -1,7 +1,7 @@
 # 部署与发布
 
 这份文档说明本站的构建、PM2 / Nginx 部署，以及三平台 Shroom 上位机下载链接的更新流程。
-当前安装包已在独立下载站提供，**无需把安装包上传到本站服务器或放入 `public/`**。
+当前上位机安装包已在独立下载站提供，**无需把上位机安装包上传到本站服务器或放入 `public/`**。精简 SDK npm 包由本站构建和托管。
 页面本身怎么写、SDK 怎么用不在这里，看 [ARCHITECTURE.md](ARCHITECTURE.md) 和 [sdk/README.md](sdk/README.md)。
 
 本站是 [shroomSDKWEB](https://github.com/liudada118/shroomSDKWEB)，`sdk/` 由独立 [shroomSDK](https://github.com/liudada118/shroomSDK) 仓库提供，官网记录固定提交。SDK 升版和 Release 在 SDK 仓库执行，官网如何升级所引用的版本见 [SDK 同步指南](SDK-RELEASING.md)。
@@ -26,11 +26,13 @@ npm run start     # 默认 3000，用 PORT=3001 npm run start 改端口
 
 `npm run build` 会顺带做两件容易被忘的事：
 
-- `pack:sdk` 调用 SDK 自己的构建/打包工具，将 `sdk/dist/` 的三份 ZIP 与 SDK 网页资源镜像到 `public/`；原下载 URL 保持兼容。SDK 打包规则不在官网复制维护
+- `pack:sdk` 调用 SDK 自己的构建/打包工具，将三份 ZIP 与 SDK 网页资源镜像到 `public/`，并生成供一条命令安装的 npm TGZ；原 ZIP URL 保持兼容。SDK 打包规则不在官网复制维护
 - `build:docs` 把 `sdk/*.md` 预渲染成 HTML 塞进产物 —— **文档站是构建期生成的**，
   运行时不读磁盘，所以服务器上没有 `sdk/` 目录也不影响 `/docs`
 
 生产上不要手敲这两条，用 PM2 守住进程、只监听 `127.0.0.1`、外面套 Nginx，见下一节。
+
+npm TGZ 位于 `public/sdk-packages/<版本>/<SHA256>/shroom-sdk-<版本>.tgz`，当前入口记录在 `app/sdk-package.generated.json`。它们随官网仓库和构建产物部署，不能按“仅保留最新版”清理历史 TGZ，否则客户已提交的 npm 锁文件无法重装。这里存放精简 SDK，不使用被部署脚本限制的上位机 `public/downloads/` 目录。上线前运行 `npm run verify`；该检查会从临时生产服务通过 HTTP 实际执行 npm 安装，验证页面命令对应的文件可用。页面上的安装和下载不申请密钥，密钥通过独立表单提交申请；提交成功也不代表已签发授权。
 
 ## 1.1 PM2 托管
 

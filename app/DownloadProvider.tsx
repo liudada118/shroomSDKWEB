@@ -1,9 +1,10 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { SDK_VARIANTS, type DownloadTarget } from './downloads';
+import { SDK_LICENSE_REQUEST, SDK_VARIANTS, type DownloadTarget } from './downloads';
+import { submitSdkLicenseRequest } from './license-request';
 
-// 只登记下载线索，不是付费鉴权；所有页面复用同一流程。
+// SDK 直接下载；密钥单独申请。上位机保留原有下载登记，均不自动激活授权。
 const SDK_REGISTRY_URL = process.env.NEXT_PUBLIC_SDK_REGISTRY_URL ?? 'https://shroom.jq-industries.com/sdk-requests';
 const REGISTERED_KEY = 'shroom-sdk-registered';
 const DownloadContext = createContext<((target: DownloadTarget) => void) | null>(null);
@@ -27,7 +28,7 @@ function normalizePhone(raw: string) {
 type GateErrors = { name?: string; phone?: string; email?: string; organization?: string };
 
 const FIELD_BASE =
-  'h-11 rounded-lg border px-3.5 text-base font-normal outline-none transition placeholder:text-[#98a2b3]';
+  'h-11 w-full min-w-0 rounded-lg border px-3.5 text-base font-normal outline-none transition placeholder:text-[#98a2b3]';
 const FIELD_OK = 'border-[#d0d5dd] focus:border-[#84adff] focus:ring-4 focus:ring-[#eff4ff]';
 const FIELD_BAD = 'border-[#fda29b] focus:border-[#f04438] focus:ring-4 focus:ring-[#fee4e2]';
 
@@ -54,6 +55,11 @@ export function useDownload() {
   return openDownload;
 }
 
+export function useLicenseRequest() {
+  const openDownload = useDownload();
+  return () => openDownload(SDK_LICENSE_REQUEST);
+}
+
 export default function DownloadProvider({ children }: { children: ReactNode }) {
   const [gateOpen, setGateOpen] = useState(false);
   const [gateTarget, setGateTarget] = useState<DownloadTarget>(SDK_VARIANTS[0]);
@@ -62,6 +68,8 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
   const triggerRef = useRef<HTMLElement | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [gateErrors, setGateErrors] = useState<GateErrors>({});
+  const [submitError, setSubmitError] = useState('');
+  const [applicationSubmitted, setApplicationSubmitted] = useState(false);
 
   // 原生模态框隔离背景、约束键盘焦点，并在关闭后还原触发按钮焦点。
   useEffect(() => {
@@ -80,10 +88,11 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     if (gateOpen) dialogRef.current?.querySelector<HTMLElement>('[data-initial-focus]')?.focus();
-  }, [gateOpen]);
+  }, [gateOpen, applicationSubmitted]);
 
   // 同源 SDK 使用 download；跨域安装包由下载站的响应头决定下载行为。
   function startDownload(target: DownloadTarget) {
+    if (target.requestLicense) return;
     const a = document.createElement('a');
     a.href = target.url;
     a.download = target.fileName ?? '';
@@ -93,10 +102,24 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
   }
 
   function openGate(target: DownloadTarget) {
+    if (submitting) return;
     triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setGateTarget(target);
     // 上次没填完就关掉的，这次重新打开是干净的
     setGateErrors({});
+    setSubmitError('');
+    setApplicationSubmitted(false);
+    // SDK 下载与申请互不依赖；不会因未登记而拦住安装包或源码包。
+    if (!target.requestLicense && target.source.startsWith('sdk-')) {
+      setGateOpen(false);
+      startDownload(target);
+      return;
+    }
+    // 申请必须每次由用户明确提交，不能被上次下载的缓存标记跳过。
+    if (target.requestLicense) {
+      setGateOpen(true);
+      return;
+    }
     // 填过一次的老用户直接放行，别每次下载都问一遍
     try {
       if (window.localStorage.getItem(REGISTERED_KEY)) {
@@ -112,6 +135,7 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
 
   async function submitGate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
     const form = event.currentTarget;
     const fd = new FormData(form);
 
@@ -136,8 +160,22 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
       return;
     }
     setGateErrors({});
+    setSubmitError('');
 
     setSubmitting(true);
+    if (gateTarget.requestLicense) {
+      try {
+        await submitSdkLicenseRequest(SDK_REGISTRY_URL, {
+          name, phone, email, organization, sdkVersion: gateTarget.sdkVersion,
+        });
+        setApplicationSubmitted(true);
+      } catch (error) {
+        setSubmitError(error instanceof Error ? error.message : '申请尚未提交成功，请稍后重试。');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
     try {
       await fetch(SDK_REGISTRY_URL, {
         method: 'POST',
@@ -171,7 +209,7 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
   return (
     <DownloadContext.Provider value={openGate}>
       {children}
-      {/* 获取 SDK 前的登记弹窗。不是审批：提交完当场就开始下载，登记失败也照下不误 */}
+      {/* SDK 密钥申请需后台确认；上位机下载登记失败仍放行，两种结果分开处理。 */}
       {gateOpen && (
         <dialog
           ref={dialogRef}
@@ -198,49 +236,58 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
               ×
             </button>
 
-            <form noValidate onSubmit={submitGate} onChange={(event) => {
+            {applicationSubmitted ? <div role="status" aria-live="polite">
+              <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">SDK LICENSE</p>
+              <h2 id="sdk-gate-title" data-initial-focus tabIndex={-1} className="mt-2 pr-8 text-xl font-semibold">密钥申请已提交</h2>
+              <p className="mt-3 text-sm leading-6 text-[#667085]">我们会通过你留下的联系方式联系你，确认接入需求并处理申请。密钥尚未发放。</p>
+              <button type="button" onClick={() => setGateOpen(false)} className="mt-6 min-h-11 w-full cursor-pointer rounded-lg bg-[#2563eb] px-4 py-3 text-sm font-semibold text-white hover:bg-[#175cd3]">完成</button>
+            </div> : <form noValidate aria-busy={submitting} onSubmit={submitGate} onChange={(event) => {
               setDraft(Object.fromEntries(Array.from(new FormData(event.currentTarget), ([key, value]) => [key, String(value)])));
             }}>
             <p className="font-mono text-[10px] font-semibold tracking-[0.14em] text-[#2563eb]">
-              {gateTarget.source.startsWith('desktop-') ? 'DESKTOP DOWNLOAD' : 'SDK DOWNLOAD'}
+              {gateTarget.requestLicense ? 'SDK LICENSE' : 'DESKTOP DOWNLOAD'}
             </p>
             <h2 id="sdk-gate-title" className="mt-2 pr-8 text-xl font-semibold">{gateTarget.title}</h2>
             <p className="mt-2 text-sm leading-6 text-[#667085]">{gateTarget.subtitle}</p>
 
-            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <label className="grid gap-2 text-xs font-semibold text-[#344054]">
+            {/* 输入框按列宽收缩，避免默认 size 撑开网格；报错不拉伸同排字段。 */}
+            <div className="mt-6 grid grid-cols-1 items-start gap-5 sm:grid-cols-2">
+              <label className="grid min-w-0 grid-cols-1 content-start gap-2 text-xs font-semibold text-[#344054]">
                 姓名（必填）
                 <input data-initial-focus name="name" defaultValue={draft.name} autoComplete="name" placeholder="怎么称呼你" aria-invalid={!!gateErrors.name} aria-describedby={gateErrors.name ? 'gate-err-name' : undefined} className={fieldClass(gateErrors.name)} />
                 <FieldError id="gate-err-name" text={gateErrors.name} />
               </label>
-              <label className="grid gap-2 text-xs font-semibold text-[#344054]">
+              <label className="grid min-w-0 grid-cols-1 content-start gap-2 text-xs font-semibold text-[#344054]">
                 手机号（必填）
                 <input type="tel" name="phone" defaultValue={draft.phone} autoComplete="tel" placeholder="用于接入沟通" aria-invalid={!!gateErrors.phone} aria-describedby={gateErrors.phone ? 'gate-err-phone' : undefined} className={fieldClass(gateErrors.phone)} />
                 <FieldError id="gate-err-phone" text={gateErrors.phone} />
               </label>
-              <label className="grid gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
+              <label className="grid min-w-0 grid-cols-1 content-start gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
                 邮箱（必填）
-                <input type="email" name="email" defaultValue={draft.email} autoComplete="email" placeholder="用于接收更新通知" aria-invalid={!!gateErrors.email} aria-describedby={gateErrors.email ? 'gate-err-email' : undefined} className={fieldClass(gateErrors.email)} />
+                <input type="email" name="email" defaultValue={draft.email} autoComplete="email" placeholder={gateTarget.requestLicense ? '用于密钥申请联系' : '用于接收更新通知'} aria-invalid={!!gateErrors.email} aria-describedby={gateErrors.email ? 'gate-err-email' : undefined} className={fieldClass(gateErrors.email)} />
                 <FieldError id="gate-err-email" text={gateErrors.email} />
               </label>
-              <label className="grid gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
+              <label className="grid min-w-0 grid-cols-1 content-start gap-2 text-xs font-semibold text-[#344054] sm:col-span-2">
                 所在公司 / 学校 / 机构（必填）
                 <input name="organization" defaultValue={draft.organization} autoComplete="organization" placeholder="请输入机构名称" aria-invalid={!!gateErrors.organization} aria-describedby={gateErrors.organization ? 'gate-err-organization' : undefined} className={fieldClass(gateErrors.organization)} />
                 <FieldError id="gate-err-organization" text={gateErrors.organization} />
               </label>
             </div>
 
+            {submitError && <p role="alert" className="mt-4 rounded-lg border border-[#fda29b] bg-[#fff5f5] p-3 text-sm leading-6 text-[#b42318]">{submitError}</p>}
             <button
               type="submit"
               disabled={submitting}
               className="mt-6 w-full rounded-lg bg-[#2563eb] px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#175cd3] disabled:opacity-60"
             >
-              {submitting ? '下载中…' : `提交并下载${gateTarget.sdkLanguage === 'python' ? ' Python SDK' : gateTarget.sdkLanguage === 'node' ? ' Node.js SDK' : ''}`}
+              {gateTarget.requestLicense
+                ? submitting ? '提交申请中…' : submitError ? '重新提交申请' : '提交密钥申请'
+                : submitting ? '下载中…' : '提交并下载'}
             </button>
             <p className="mt-3 text-center text-[11px] leading-5 text-[#98a2b3]">
-              提交即表示你同意我们仅将信息用于产品相关的技术支持联系。
+              {gateTarget.requestLicense ? '提交即表示你同意我们仅将信息用于本次密钥申请与技术支持联系。' : '提交即表示你同意我们仅将信息用于产品相关的技术支持联系。'}
             </p>
-            </form>
+            </form>}
           </div>
         </dialog>
       )}

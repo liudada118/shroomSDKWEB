@@ -47,7 +47,7 @@ git diff --cached --submodule=log -- sdk
 | --- | --- |
 | `npm run sdk:init` | 初始化官网记录的子模块提交 |
 | `npm run sdk:check` | 检查来源、提交、版本与锁文件 |
-| `npm run pack:sdk` | 委托 SDK 构建并镜像三份 ZIP 与网页资源 |
+| `npm run pack:sdk` | 委托 SDK 构建三份 ZIP、npm TGZ 与网页资源，更新官网安装元数据 |
 | `npm run build:docs` | 从锁定 SDK 的 Markdown 生成在线文档 |
 | `npm run verify` | 官网集成检查：来源、文档、测试、类型、构建、SSR 和下载 |
 | `npm run build` | 生成官网部署产物 |
@@ -57,7 +57,11 @@ git diff --cached --submodule=log -- sdk
 
 SDK 先生成 `sdk/dist/shroom-sdk.zip`、`sdk/dist/shroom-sdk-node.zip`、`sdk/dist/shroom-sdk-python.zip`，官网再镜像到 `public/`，保留现有三个下载 URL。网页版本和下载文件名取自 `sdk/package.json`；文档及代码示例也来自同一个 SDK 提交。
 
-SDK 版本制品位于其仓库的 `dist/releases/<版本>/`，包含三份带版本号的 ZIP、来源清单、校验值及发布说明。历史版本从 SDK 的 GitHub Release 获取；没有已发布附件时，官网不会构造一个不可用的 Release 下载链接。网站构建和 GitHub Release 都不会自动部署线上官网。
+官网的 JavaScript 主路径使用 npm 安装包。构建调用固定 SDK 的 `pack-npm.mjs`，校验 TGZ 内容后保存到 `public/sdk-packages/<版本>/<SHA256>/shroom-sdk-<版本>.tgz`，并生成 `app/sdk-package.generated.json`。页面根据当前站点域名组合安装命令，客户直接执行命令即可下载到 `node_modules`，不需要先手动解压或复制源码。构建依赖的 esbuild 由官网显式锁定。
+
+**将新增的 `public/sdk-packages/` 文件和安装元数据一并提交到官网仓库，并保留历史目录。** 这些是约百 KB 的 SDK 包，不是上位机大安装包。客户锁文件会记录具体下载 URL 和完整性值；后续构建仅增加新内容地址，不删除旧包，也不覆盖同地址的不同字节。只部署 `dist/` 时必须包含从 `public/sdk-packages/` 复制的全部历史文件；不能只挑当前版本上传。`npm run verify` 会校验 HTTP 下载并在临时客户目录实际通过该 URL 安装和导入五个函数。
+
+SDK 版本制品位于其仓库的 `dist/releases/<版本>/`，包含三份带版本号的 ZIP、一个 npm TGZ、来源清单、校验值及发布说明。历史版本也可从 SDK 的 GitHub Release 获取；没有已发布附件时，官网不会构造一个不可用的 Release 下载链接。网站构建和 GitHub Release 都不会自动部署线上官网。下载及 npm 安装无需申请密钥；需要连接真实设备时，客户单独提交 SDK 密钥申请。
 
 ## 回退
 

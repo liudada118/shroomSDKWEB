@@ -1,4 +1,5 @@
 import sdkPackage from '../sdk/package.json' with { type: 'json' };
+import npmPackage from './sdk-package.generated.json' with { type: 'json' };
 
 const sdkVersion = sdkPackage.version;
 export const SDK_SOURCE_URL = 'https://github.com/liudada118/shroomSDK';
@@ -11,6 +12,17 @@ export type DownloadTarget = {
   sdkVersion?: string;
   sdkLanguage?: 'python' | 'node';
   fileName?: string;
+  /** 单独申请 SDK 产品密钥；提交完成后不触发下载。 */
+  requestLicense?: true;
+};
+
+export const SDK_LICENSE_REQUEST: DownloadTarget = {
+  url: '/docs/license',
+  source: 'sdk-license',
+  title: '申请 SDK 密钥',
+  subtitle: '留下联系方式，我们会联系你确认接入需求并处理密钥申请。SDK 可直接安装或下载。',
+  sdkVersion,
+  requestLicense: true,
 };
 
 // 用户提供的 CH34x 串口驱动；驱动独立于 SDK 和上位机安装包，直接下载无需登记。
@@ -86,6 +98,20 @@ export const DESKTOP_PLATFORMS = desktopReleases.map((release) => {
 
 export const SDK_VARIANTS: (DownloadTarget & { label: string; description: string; contents: string; guideHref: string; details: string })[] = [
   {
+    url: npmPackage.url,
+    source: 'sdk-node',
+    sdkLanguage: 'node',
+    sdkVersion,
+    fileName: npmPackage.fileName,
+    label: 'Node.js',
+    description: 'Node.js / Electron 开发，也包含浏览器入口',
+    contents: 'Node.js 18+ · JavaScript / TypeScript · 含浏览器入口',
+    guideHref: '/docs/quick-start',
+    details: '一个函数读取手套或手垫数据。需要网页传输和保存文件时，再调用创建 WS、开始采集、停止采集和下载。',
+    title: '获取 Node.js SDK',
+    subtitle: '可通过 npm 安装的精简包，包含 Node.js 与浏览器入口。连接真实设备前另行申请 SDK 产品密钥。',
+  },
+  {
     url: '/shroom-sdk-python.zip',
     source: 'sdk-python',
     sdkLanguage: 'python',
@@ -97,20 +123,6 @@ export const SDK_VARIANTS: (DownloadTarget & { label: string; description: strin
     guideHref: '/docs/backend?language=python',
     details: '通过 pip 本地安装，不依赖 Node.js。提供同步逐帧读取、模拟设备和可选 Matplotlib 热力图示例。',
     title: '获取 Python SDK',
-    subtitle: '已选择 Python 独立包。留个联系方式，提交后立即下载 ZIP，解压后通过 pip 本地安装。',
-  },
-  {
-    url: '/shroom-sdk-node.zip',
-    source: 'sdk-node',
-    sdkLanguage: 'node',
-    sdkVersion,
-    fileName: `shroom-sdk-node-${sdkVersion}.zip`,
-    label: 'Node.js',
-    description: 'Node.js / Electron 开发，也包含浏览器入口',
-    contents: 'Node.js 18+ · JavaScript / TypeScript · 含浏览器入口',
-    guideHref: '/docs/quick-start',
-    details: '一个函数读取手套或手垫数据。需要网页传输和保存文件时，再调用创建 WS、开始采集、停止采集和下载。',
-    title: '获取 Node.js SDK',
-    subtitle: '已选择 Node.js 包（含浏览器入口）。留个联系方式，提交后立即下载 ZIP，包含源码、示例和 AI 接入指南。',
+    subtitle: 'Python 独立 ZIP，解压后通过 pip 安装。连接真实设备前另行申请 SDK 产品密钥。',
   },
 ];

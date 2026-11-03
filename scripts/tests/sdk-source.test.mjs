@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
-import { inspectSdkSource, SDK_REPOSITORY } from '../sdk-source.mjs';
+import { inspectSdkSource, persistNpmAsset, SDK_REPOSITORY } from '../sdk-source.mjs';
 
 function git(root, ...args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim();
@@ -69,4 +69,33 @@ test('uncommitted tracked or new SDK files cannot be published as a pinned commi
   await inspectSdkSource(root);
   await writeFile(join(sdk, 'extra.js'), '// not committed');
   await assert.rejects(inspectSdkSource(root), /SDK 含未提交修改/);
+});
+
+test('npm asset addresses are content-specific and historical files survive a new package', async t => {
+  const { root, sdk } = await fixture(t);
+  const sourceCommit = git(sdk, 'rev-parse', 'HEAD');
+  const first = await persistNpmAsset({ root, version: '0.1.0', sourceCommit, bytes: Buffer.from('first package') });
+  assert.match(first.url, /^\/sdk-packages\/0\.1\.0\/[a-f0-9]{64}\/shroom-sdk-0\.1\.0\.tgz$/);
+  assert.equal((await readFile(join(root, 'public', first.url))).toString(), 'first package');
+  assert.deepEqual(await persistNpmAsset({ root, version: '0.1.0', sourceCommit, bytes: Buffer.from('first package') }), first);
+  const second = await persistNpmAsset({ root, version: '0.1.0', sourceCommit, bytes: Buffer.from('second package') });
+  assert.notEqual(second.url, first.url);
+  assert.equal((await readFile(join(root, 'public', first.url))).toString(), 'first package');
+  assert.deepEqual(JSON.parse(await readFile(join(root, 'app/sdk-package.generated.json'), 'utf8')), second);
+});
+
+test('a conflicting file at an existing npm address cannot be silently replaced', async t => {
+  const { root, sdk } = await fixture(t);
+  const config = { root, version: '0.1.0', sourceCommit: git(sdk, 'rev-parse', 'HEAD'), bytes: Buffer.from('package') };
+  const asset = await persistNpmAsset(config);
+  await writeFile(join(root, 'public', asset.url), 'unexpected change');
+  await assert.rejects(persistNpmAsset(config), /拒绝覆盖/);
+  assert.equal((await readFile(join(root, 'public', asset.url))).toString(), 'unexpected change');
+});
+
+test('invalid npm version or source identity is rejected before writing an asset', async t => {
+  const { root, sdk } = await fixture(t);
+  const config = { root, version: '0.1.0', sourceCommit: git(sdk, 'rev-parse', 'HEAD'), bytes: Buffer.from('package') };
+  await assert.rejects(persistNpmAsset({ ...config, version: '../outside' }), /合法版本/);
+  await assert.rejects(persistNpmAsset({ ...config, sourceCommit: 'unknown' }), /源码提交/);
 });
