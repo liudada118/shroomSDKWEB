@@ -12,7 +12,7 @@ Shroom Developer 面向已购设备、需要快速集成自有应用的客户。
 
 **当前版本的下载与文档都是真实可用的，不再是骨架**：
 
-- **按语言获取 SDK** —— JavaScript / TypeScript 主入口提供一条可复制的 npm 安装命令，直接从当前官网拉取精简 TGZ 并安装到客户 node_modules；另有 TGZ 下载与源码 ZIP 备用入口。Python 保留独立 ZIP 和 pip 指南。SDK 下载免登记，真实设备另行申请并激活产品密钥；上位机仍使用原下载登记。版本读取固定 SDK 提交，TGZ URL 含版本与 SHA256，历史包随官网源码保留。
+- **按语言获取 SDK** —— JavaScript / TypeScript 主入口提供 `npm install shroom-sdk`，从 npm 注册表安装到客户 node_modules；另有官网 TGZ 下载与源码 ZIP 备用入口。Python 保留独立 ZIP 和 pip 指南。SDK 下载免登记，真实设备另行申请并激活产品密钥；上位机仍使用原下载登记。官网展示版本读取固定 SDK 提交，发布时确认 npm latest 与其一致；备用 TGZ URL 含版本与 SHA256，历史包随官网源码保留。
 - **三平台上位机** —— 首页通过 `app/downloads.ts` 提供用户指定的 Shroom 安装包：Windows 1.1.36 EXE、macOS 1.1.37 ARM64 DMG（仅 Apple Silicon）、Linux 1.1.38 amd64 DEB（仅支持 DEB 的 x86_64 系统）。三个平台均可下载；版本来自文件名，体积来自 2026-10-13 的 HTTPS HEAD 响应。安装包由 `shroom.jq-industries.com/shroom1/` 独立提供，不进入本站 Git 或构建产物。页面不复用旧 Monitor ZIP 的日期、更新日志、签名或授权说明；当前包的功能/授权不由基础 SDK 边界推定。旧 `desktop-release.json` 与同步脚本仅保留用于历史 Monitor 流程，不再驱动首页。
 - **文档中心** —— `/docs` 主入口直达 `/docs/quick-start` 的五步调用流程：取数、创建 WS、开始采集、停止采集、下载。Node 负责设备与服务，网页通过同一个 `stream` 控制采集并按返回的记录 ID 下载；驱动、授权与依赖集中在“接入准备”。字段、排查、SDK 下载独立，产品选择和驱动保持可见。`/docs/custom` 承接基础自定义，后端参考统一在 `/docs/backend`；旧链接兼容。`sdk/docs/catalog.json` 维护文档来源与导航元数据，构建期预渲染成 HTML。
 - **完整快速方案** —— Node数据服务广播标准产品帧，浏览器自动分区展示，按标签录制到服务端磁盘并下载CSV/JSONL；页面刷新可找回记录。提供真实与合成产品示例，source明确区分模拟数据；细节见4.9。
@@ -367,10 +367,10 @@ flowchart TD
 ### 4.16 官网直接安装与密钥申请
 
 - `scripts/sdk-source.mjs` 对固定且干净的 SDK 提交调用 `pack-npm.mjs`，校验归档后保存到 `public/sdk-packages/<version>/<sha256>/`；同一地址不同内容拒绝覆盖，历史 TGZ 随网站源码保留。`app/sdk-package.generated.json` 记录版本、路径、校验值与来源提交。官网显式锁定 esbuild 构建依赖，不安装 SDK 原生运行依赖。
-- `SdkInstall` 与 `sdk-install.ts` 在首页/接入准备/下载区复用当前站点的完整 HTTP 安装命令；复制失败提供选中内容的手动复制方式。无需先下载文件，不输出维护者本机路径，也不将尚未发布的 npm 包名作为可安装命令。
+- `SdkInstall` 与 `sdk-install.ts` 在首页/接入准备/下载区复用 `npm install shroom-sdk`，用单行只读输入框展示；服务端与浏览器输出相同命令，无需订阅站点 origin。复制失败提供选中内容的手动复制方式。正式部署前需完成 npm 发布与独立客户目录安装验证；网站构建不执行 npm 发布。
 - 官网调用示例通过 `importStyle: package` 使用 `shroom-sdk/quick-flow`，授权使用公开的 `shroom-sdk/node`。ZIP 示例仍支持相对路径；浏览器包导入需构建工具，稳定 deviceId 规则不变。
 - `DownloadProvider` 的 `useLicenseRequest()` 打开独立申请表，不受既有下载登记缓存跳过。`license-request.ts` 严格验证后台响应，申请失败不假报成功；后台 E:/key 将来源显示为 SDK 密钥申请，人工联系并按现有发钥规则处理。
-- 集成检查覆盖不可覆盖/历史包保留、HTTP TGZ 哈希与公开入口、实际通过官网 URL 安装，以及申请的 HTTP/业务/网络失败。浏览器检查复制、SDK 免登记下载、申请弹窗与窄屏布局，不向生产后台发送测试资料。
+- 集成检查覆盖 SSR 包名安装命令、不可覆盖/历史包保留、备用 HTTP TGZ 哈希与公开入口、实际通过官网 URL 安装，以及申请的 HTTP/业务/网络失败。网站预检不要求待发布版本已经存在于 npm；注册表实际安装属于发布后的验证。浏览器检查复制、SDK 免登记下载、申请弹窗与窄屏布局，不向生产后台发送测试资料。
 
 ### 4.17 SDK 源码目录归类
 
@@ -528,6 +528,7 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 
 | 2026-10-30 | SDK 官网直接安装与密钥申请 | 官网复制一条命令即可安装，固定内容地址保留历史；申请密钥与下载分离，严格确认后台保存结果 |
 | 2026-11-03 | SDK 源码目录归类同步 | 官网采用 src 运行源码、examples 演示与 docs 文档的新位置；兼容 ZIP 和公开导入由独立 SDK 保持 |
+| 2026-11-03 | npm 包名安装入口 | 官网统一显示 npm install shroom-sdk，安装命令压缩为单行；保留官网 TGZ 备用下载、历史锁文件地址及独立密钥申请 |
 
 ## 9. 更新日志
 
@@ -597,6 +598,7 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 
 | 2026-10-30 | 优化重构 | 新增官网 npm 安装入口、精简包历史归档与 HTTP 安装验证；SDK 免登记获取，原表单改为独立密钥申请并同步后台呈现 |
 | 2026-11-03 | 优化重构 | 同步 SDK 目录整理后的资产复制、声明验证和维护文档，保留固定提交来源与原客户接入入口 |
+| 2026-11-03 | 优化重构 | 安装入口改为 npm 包名命令，移除 origin 订阅与多行地址框；更新 SSR/命令契约检查和发布顺序说明，保留 HTTP TGZ 安装回归 |
 
 ---
 

@@ -46,7 +46,7 @@ test('installation hints reflect actual package architectures and do not reuse M
   }
 });
 
-test('Node installs the immutable npm package while Python keeps its independent ZIP', () => {
+test('Node retains the immutable TGZ download while Python keeps its independent ZIP', () => {
   assert.deepEqual(SDK_VARIANTS.map(({ url, source, sdkLanguage }) => ({ url, source, sdkLanguage })), [
     { url: npmPackage.url, source: 'sdk-node', sdkLanguage: 'node' },
     { url: '/shroom-sdk-python.zip', source: 'sdk-python', sdkLanguage: 'python' },
@@ -55,10 +55,8 @@ test('Node installs the immutable npm package while Python keeps its independent
   assert.match(npmPackage.url, /\.tgz$/);
 });
 
-test('install command uses the active HTTP site and a stable artifact URL', () => {
-  assert.equal(sdkInstallCommand(), `npm install --save-exact "https://sdk.jq-industries.com${npmPackage.url}"`);
-  assert.equal(sdkInstallCommand('http://localhost:3000/path'), `npm install --save-exact "http://localhost:3000${npmPackage.url}"`);
-  assert.throws(() => sdkInstallCommand('file:///C:/sdk'), /HTTP/);
+test('primary install command uses the published package name', () => {
+  assert.equal(sdkInstallCommand(), 'npm install shroom-sdk');
 });
 
 test('serial drivers link directly to the supplied Windows EXE and macOS ZIP', () => {

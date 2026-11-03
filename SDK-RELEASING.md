@@ -26,7 +26,7 @@ npm run sdk:check
 
 ## 升级官网使用的 SDK
 
-先在 SDK 仓库完成修改、检查并推送源码。需要正式版本时，再按 SDK 发布流程生成标签和 Release。官网更新引用时，选择已经推送的明确标签或审核过的提交：
+先在 SDK 仓库完成修改、检查并推送源码。需要正式版本时，再按 SDK 发布流程发布 npm 包、生成标签和 Release。官网主安装命令是 `npm install shroom-sdk`，因此正式部署前须确认对应版本已发布为 npm 的 `latest`，并在独立客户目录完成注册表安装验证。官网更新引用时，选择已经推送的明确标签或审核过的提交：
 
 ```bash
 git -C sdk fetch origin --tags
@@ -59,14 +59,14 @@ SDK 先生成 `sdk/dist/shroom-sdk.zip`、`sdk/dist/shroom-sdk-node.zip`、`sdk/
 
 SDK 仓库的运行实现位于 `sdk/src/`，演示页面和经典脚本产物位于 `sdk/examples/web/`，AI 与发布说明位于 `sdk/docs/`。官网从这些目录读取资源；旧源码 ZIP 的扁平目录由 SDK 打包器映射，官网无需另维护一份兼容源码。
 
-官网的 JavaScript 主路径使用 npm 安装包。构建调用固定 SDK 的 `pack-npm.mjs`，校验 TGZ 内容后保存到 `public/sdk-packages/<版本>/<SHA256>/shroom-sdk-<版本>.tgz`，并生成 `app/sdk-package.generated.json`。页面根据当前站点域名组合安装命令，客户直接执行命令即可下载到 `node_modules`，不需要先手动解压或复制源码。构建依赖的 esbuild 由官网显式锁定。
+官网的 JavaScript 主路径使用 `npm install shroom-sdk` 从 npm 注册表安装，不需要先手动解压或复制源码。该命令使用 npm 的 `latest`；官网显示的 SDK 版本来自固定子模块，两者应在发布时保持一致。构建仍调用固定 SDK 的 `pack-npm.mjs`，校验 TGZ 内容后保存到 `public/sdk-packages/<版本>/<SHA256>/shroom-sdk-<版本>.tgz`，并生成 `app/sdk-package.generated.json`，供备用下载和历史 HTTP 安装使用。构建依赖的 esbuild 由官网显式锁定。
 
-**将新增的 `public/sdk-packages/` 文件和安装元数据一并提交到官网仓库，并保留历史目录。** 这些是约百 KB 的 SDK 包，不是上位机大安装包。客户锁文件会记录具体下载 URL 和完整性值；后续构建仅增加新内容地址，不删除旧包，也不覆盖同地址的不同字节。只部署 `dist/` 时必须包含从 `public/sdk-packages/` 复制的全部历史文件；不能只挑当前版本上传。`npm run verify` 会校验 HTTP 下载并在临时客户目录实际通过该 URL 安装和导入五个函数。
+**将新增的 `public/sdk-packages/` 文件和安装元数据一并提交到官网仓库，并保留历史目录。** 这些是约百 KB 的 SDK 包，不是上位机大安装包。使用历史 HTTP 安装方式的客户锁文件会记录具体下载 URL 和完整性值；后续构建仅增加新内容地址，不删除旧包，也不覆盖同地址的不同字节。只部署 `dist/` 时必须包含从 `public/sdk-packages/` 复制的全部历史文件；不能只挑当前版本上传。`npm run verify` 检查页面服务端输出的包名安装命令，并校验备用 HTTP 下载，在临时客户目录实际通过该 URL 安装和导入五个函数；npm 注册表安装在 SDK 发布成功后独立验证，不作为网站发布前构建的依赖。
 
 SDK 版本制品位于其仓库的 `dist/releases/<版本>/`，包含三份带版本号的 ZIP、一个 npm TGZ、来源清单、校验值及发布说明。历史版本也可从 SDK 的 GitHub Release 获取；没有已发布附件时，官网不会构造一个不可用的 Release 下载链接。网站构建和 GitHub Release 都不会自动部署线上官网。下载及 npm 安装无需申请密钥；需要连接真实设备时，客户单独提交 SDK 密钥申请。
 
 ## 回退
 
-按升级的同一流程，将子模块 checkout 到此前使用的已推送提交，再 `git add sdk`、运行 `npm run verify` 并提交官网指针变更。回退 SDK 包前，检查对应更新说明与采集数据格式的兼容性。
+按升级的同一流程，将子模块 checkout 到此前使用的已推送提交，再 `git add sdk`、运行 `npm run verify` 并提交官网指针变更。回退 SDK 包前，检查对应更新说明与采集数据格式的兼容性。官网回退不会改变 npm 的 `latest`；若需调整默认安装版本，按 SDK 发布流程单独处理 dist-tag 并验证，不能覆盖已发布版本。
 
 原 `shroomSDK` 仓库的 `shroom-backend-sdk@0.2.0` 与当前五步 `shroom-sdk@0.1.0` 是不同包。此次按直接替换方式迁入，旧版保留在 Git 历史及 `legacy-backend-sdk-0.2.0` 标签；旧 API、UI 和数据库的边界见 [迁移说明](sdk/MIGRATION.md)。

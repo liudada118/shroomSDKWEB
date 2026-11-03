@@ -1,4 +1,4 @@
-/** 启动生产服务，验证页面、下载及客户通过官网 HTTP 安装 npm 包后清理自有进程。 */
+/** 验证生产页面的 npm 包名命令与备用 HTTP 安装包，最后清理自有服务进程。 */
 import { execFile, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import assert from 'node:assert/strict';
@@ -90,7 +90,7 @@ try {
     if (path === '/' || path === '/docs/quick-start') {
       assert.match(html, /复制安装命令/);
       assert.match(html, /申请(?:\s*SDK\s*)?密钥/);
-      assert.ok(html.includes(npmPackage.url), '页面应使用当前固定内容的 npm 下载地址');
+      assert.match(html, /aria-label="SDK 安装命令"[^>]*value="npm install shroom-sdk"/, '安装入口直接展示 npm 包名命令');
     }
     if (path === '/docs/quick-start') {
       assert.match(html, /<h1[^>]*>触觉手套<\/h1>/);
