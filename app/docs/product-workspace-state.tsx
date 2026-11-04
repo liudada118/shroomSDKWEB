@@ -7,7 +7,7 @@ import {
   createWorkspaceStore, parseWorkspaceLocation, workspaceChapters,
   workspaceReady, workspaceStateForLocation, workspaceUrl, workspaceLocationTarget,
   type WorkspaceState, type WorkspaceProduct, type WorkspaceSide,
-  type WorkspacePlatform, type WorkspaceTab, type WorkspaceSection,
+  type WorkspacePlatform, type WorkspaceProtocol, type WorkspaceTab, type WorkspaceSection,
 } from './product-workspace-model';
 
 type WorkspaceContextValue = {
@@ -16,6 +16,7 @@ type WorkspaceContextValue = {
   setProduct: (product: WorkspaceProduct) => void;
   confirmSide: (side: WorkspaceSide) => void;
   setPlatform: (platform: WorkspacePlatform) => void;
+  setProtocol: (protocol: WorkspaceProtocol) => void;
   setTab: (tab: WorkspaceTab) => void;
   navigateChapter: (section: WorkspaceSection) => void;
 };
@@ -28,7 +29,7 @@ export function useProductWorkspace() {
 }
 
 export function ProductWorkspaceProvider({ children }: { children: ReactNode }) {
-  // 固定 SSR 初值避免水合不一致；首次挂载读取 URL，手侧仍需本机操作确认。
+  // 固定 SSR 初值避免水合不一致；首次挂载读取 URL，手侧或脚侧仍需本机操作确认。
   const [store] = useState(createWorkspaceStore);
   const state = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
   const pendingTarget = useRef<string | null>(null);
@@ -86,9 +87,10 @@ export function ProductWorkspaceProvider({ children }: { children: ReactNode }) 
 
   const value: WorkspaceContextValue = {
     state, ready, flowSteps,
-    setProduct: product => change(previous => previous.product === product ? previous : { ...previous, product, side: null, sideConfirmed: false }),
+    setProduct: product => change(previous => previous.product === product ? previous : { ...previous, product, side: null, sideConfirmed: false, protocol: '12bit' }),
     confirmSide: side => change(previous => ({ ...previous, side, sideConfirmed: true })),
     setPlatform: platform => change(previous => ({ ...previous, platform })),
+    setProtocol: protocol => change(previous => ({ ...previous, protocol })),
     setTab: tab => {
       const target = tab === 'start' ? 'product-start' : `product-${tab}`;
       pendingTarget.current = target;

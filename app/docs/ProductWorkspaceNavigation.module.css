@@ -1,17 +1,4 @@
-.productPicker { margin: 20px 0 4px; }
-.productLabel { display: block; margin: 0 0 8px; color: #475467; font-size: 13px; font-weight: 600; line-height: 1.5; }
-.selectWrap { position: relative; border: 1px solid #98a8bf; border-radius: 8px; background: #fff; box-shadow: 0 1px 2px rgb(16 24 40 / 5%); }
-.selectWrap:hover { border-color: #285de5; background: #f8faff; }
-.selectWrap:focus-within { border-color: #285de5; box-shadow: 0 0 0 3px rgb(40 93 229 / 18%); }
-.productSelect { display: block; appearance: none; width: 100%; min-height: 48px; margin: 0; padding: 12px 44px 12px 14px; border: 0; border-radius: inherit; background: transparent; color: #1d2939; font: inherit; font-size: 15px; font-weight: 600; line-height: 1.5; cursor: pointer; }
-.productSelect:focus-visible { outline: none; }
-.chevron { position: absolute; top: 50%; right: 14px; transform: translateY(-50%); color: #475467; pointer-events: none; }
-.spec { margin: 8px 2px 0; color: #667085; font-size: 12px; line-height: 1.5; }
+.currentProduct { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; margin: 6px 12px; color: #344054; font-size: 14px; line-height: 1.8; }
+.currentLabel { padding: 1px 6px; border: 1px solid #d0d5dd; border-radius: 4px; color: #667085; background: #f8fafc; font-size: 12px; }
 .referenceLink { width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer; }
 .navigation :is(a, button):focus-visible { outline: 2px solid #285de5; outline-offset: 3px; }
-@media (forced-colors: active) {
-  .selectWrap { border-color: ButtonText; }
-  .selectWrap:focus-within { outline: 2px solid Highlight; outline-offset: 2px; }
-  .productSelect { appearance: auto; }
-  .chevron { display: none; }
-}

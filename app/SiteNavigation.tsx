@@ -12,9 +12,9 @@ const navigationGroups = [
     label: '了解 SDK',
     items: [
       { label: '开发概览', href: '#top' },
-      { label: '安装串口驱动', href: '#serial-drivers' },
-      { label: '选择产品', href: '#products' },
-      { label: '产品能力', href: '#capabilities' },
+      { label: 'SDK / 上位机使用流程', href: '#workflows' },
+      { label: 'SDK 能力中心', href: '#capabilities' },
+      { label: '产品资料', href: '#products' },
     ],
   },
   {
@@ -22,6 +22,7 @@ const navigationGroups = [
     items: [
       { label: 'SDK 下载', href: '#downloads' },
       { label: '上位机下载', href: '#desktop-downloads' },
+      { label: '串口驱动', href: '#serial-drivers' },
     ],
   },
   {
@@ -29,7 +30,7 @@ const navigationGroups = [
     items: [
       { label: '文档与接入', href: '#docs' },
       { label: '一步拿数据', href: '/docs/quick-start' },
-      { label: 'AI 接入指南', href: '/docs/ai-context' },
+      { label: '用 Skill 快速接入', href: '/docs/skills' },
       { label: 'AI 知识问答', href: '/knowledge' },
     ],
   },
@@ -172,9 +173,6 @@ export default function SiteNavigation({ pathname, pageTitle, docOutline }: {
             <span title={activeLabel} className="truncate font-medium text-[#344054]">{activeLabel}</span>
           </div>}
           <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-            {!isDocs && <Link href={isHome ? '#serial-drivers' : '/#serial-drivers'} onClick={() => selectSection('#serial-drivers')} className="hidden min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-[#175cd3] transition-colors hover:bg-[#eaf1ff] lg:inline-flex">
-              串口驱动
-            </Link>}
             {!isDocs && <Link href="/docs" className="hidden min-h-11 items-center rounded-lg px-3 text-sm font-medium text-[#475467] transition-colors hover:bg-[#f2f4f7] hover:text-[#175cd3] sm:inline-flex">
               查看文档
             </Link>}

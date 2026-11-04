@@ -14,7 +14,7 @@ export default function DocsNavigation({ pathname, items, onNavigate }: {
   const backend = getDocDefinition('backend')!;
   const quickActive = pathname === '/docs/quick-start';
   const basicActive = pathname === '/docs/custom';
-  const showReferenceNavigation = pathname.startsWith('/docs/') && !quickActive;
+  const showReferenceNavigation = pathname.startsWith('/docs/') && !quickActive && !['/docs/products', '/docs/skills'].includes(pathname);
   const basicReferences = docsForRoute('custom').filter((doc) => doc.slug !== 'custom');
   const guides = docsForRoute('guides');
   const listed = [...basicReferences, ...guides].some((doc) => pathname === `/docs/${doc.slug}`);
@@ -41,6 +41,8 @@ export default function DocsNavigation({ pathname, items, onNavigate }: {
           快速接入文档
         </Link>
         {quickActive && <DocOutline items={items} onNavigate={onNavigate} collapsible={false} />}
+        <Link href="/docs/products" onClick={onNavigate} aria-current={pathname === '/docs/products' ? 'page' : undefined} className="docs-menu-link">所有产品资料</Link>
+        <Link href="/docs/skills" onClick={onNavigate} aria-current={pathname === '/docs/skills' ? 'page' : undefined} className="docs-menu-link">用 Skill 快速接入</Link>
       </div>
       <div className="docs-menu-group docs-basic-entry" data-doc-route="basic">
         <Link href="/docs/custom" onClick={onNavigate} aria-current={basicActive ? 'page' : undefined} className="docs-menu-link docs-route-entry">

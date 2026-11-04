@@ -34,7 +34,7 @@ export default function SiteShell({ children, pageTitles, docOutlines }: {
             </div>
           </div>
           <nav aria-label="页脚导航" className="flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-[#667085]">
-            <Link href="/#capabilities" className="hover:text-[#175cd3]">产品能力</Link>
+            <Link href="/#capabilities" className="hover:text-[#175cd3]">SDK 能力</Link>
             <Link href="/#downloads" className="hover:text-[#175cd3]">SDK 与上位机</Link>
             <Link href="/docs" className="hover:text-[#175cd3]">文档中心</Link>
             <Link href="/knowledge" className="hover:text-[#175cd3]">AI 知识问答</Link>

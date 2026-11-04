@@ -20,7 +20,8 @@ export type DocDefinition = {
 };
 
 // Only navigation metadata enters client components; article HTML stays on the server.
-export const docDefinitions = catalog as DocDefinition[];
+export const docDefinitions: DocDefinition[] = (catalog as DocDefinition[]).map(doc =>
+  doc.slug === 'ai-context' ? { ...doc, navLabel: 'AI 接入参考' } : doc);
 export const docAreas: { id: DocArea; label: string; description: string }[] = [
   { id: 'backend', label: '后端', description: '一篇完整的后端文档，用下拉框切换 Node.js / Python；串口、通讯、存储按章节展开。' },
   { id: 'frontend', label: '前端', description: '连接网页数据源，把实时数据绘制到界面。' },
@@ -28,7 +29,7 @@ export const docAreas: { id: DocArea; label: string; description: string }[] = [
 ];
 
 export const docRoutes: { id: DocRoute; label: string; description: string }[] = [
-  { id: 'quick', label: '快速接入文档', description: '已购手套与手部检测垫先直接取数并接入自有程序；需要时再选择网页展示、录制与下载。' },
+  { id: 'quick', label: '快速接入文档', description: '按产品直接取数并接入自有程序；鞋垫与人体全身从 SDK 0.3.0 起支持，再按需接入 WS、录制与下载。' },
   { id: 'custom', label: '基础文档', description: '进入独立页面，按需查阅串口、解析、通讯、存储和渲染 API，用于新设备和自定义开发。' },
   { id: 'guides', label: '辅助指南', description: '使用 SDK Skill、AI 开发指南和 API 排错参考。' },
 ];

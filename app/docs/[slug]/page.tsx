@@ -54,9 +54,10 @@ export default async function DocDetail({ params, searchParams }: {
         <header className="docs-page-header">
           <div className="docs-title-row">
             <h1>{doc.title}</h1>
-            <span className="docs-version">{doc.forAi ? 'SDK Skill' : `v${sdkPackage.version}`}</span>
+            <span className="docs-version">{doc.forAi ? 'AI 接入参考' : `v${sdkPackage.version}`}</span>
           </div>
           <p className="docs-page-description">{doc.summary}</p>
+          {doc.forAi && <Link href="/docs/skills" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#175cd3] hover:underline">下载可安装的 Shroom SDK Skill →</Link>}
           <div className="docs-page-meta">
             <span>{doc.forAi ? 'AI 接入指南' : definition?.apiReference ? 'API 参考' : '开发指南'}</span>
             <span className="docs-source">sdk/{doc.file}</span>

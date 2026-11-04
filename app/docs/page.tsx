@@ -32,12 +32,12 @@ export default function DocsIndex() {
         </nav>
         <header className="docs-page-header">
           <div className="docs-title-row"><h1>文档中心</h1><span className="docs-version">SDK 文档</span></div>
-          <p className="docs-page-description">把已购设备接入自己的应用，按顺序调用取数、WS、采集与下载接口。</p>
+          <p className="docs-page-description">先拿到数据，再按需加入网页传输、采集与下载。</p>
         </header>
 
         <section id="quick" aria-labelledby="quick-title" className="docs-start-panel scroll-mt-24">
           <p className="docs-start-eyebrow">推荐起点</p>
-          <h2 id="quick-title">从取数到下载，五步调用</h2>
+          <h2 id="quick-title">一个函数，开始接收产品数据。</h2>
           <p className="mt-3 text-sm leading-7 text-[#475467]">Node.js 读取设备并创建 WS，网页控制采集与下载。协议与点位映射由 SDK 处理。</p>
           <Link href="/docs/quick-start?tab=guide" className="inline-flex min-h-11 items-center text-sm font-semibold text-[#175cd3] hover:underline">首次使用：驱动、依赖与授权准备 →</Link>
           <div className="docs-start-actions">
@@ -58,7 +58,21 @@ export default function DocsIndex() {
               <p>{task.description}</p>
             </li>)}
           </ol>
-          <p className="docs-support-note">浏览器 JavaScript 与 Node.js 均提供手套和手垫产品示例；Python 提供通用串口与矩阵解析，尚无整包手套专用协议。<Link href="/docs/backend?language=python" className="font-semibold text-[#175cd3] hover:underline">查看 Python 用法 →</Link></p>
+          <p className="docs-support-note">Node.js / 浏览器支持手套、手垫，以及 SDK 0.3.0 新增的鞋垫与人体全身取数和 WS 五步调用。Python 提供通用串口与矩阵解析。<Link href="/docs/backend?language=python" className="font-semibold text-[#175cd3] hover:underline">查看 Python 支持范围 →</Link></p>
+        </section>
+
+        <section aria-labelledby="docs-resources-title" className="docs-reference-section">
+          <h2 id="docs-resources-title">资料找得到，接入更快一步。</h2>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <Link href="/docs/products" className="rounded-xl border border-[#e4e7ec] p-6 transition-colors hover:border-[#84adff] focus-visible:outline-2 focus-visible:outline-[#2563eb]">
+              <h3 className="text-lg font-semibold">所有产品资料 <span aria-hidden="true">→</span></h3>
+              <p className="mt-3 text-sm leading-7 text-[#667085]">查看手套、手垫、鞋垫和人体全身的协议、字段与取数说明。</p>
+            </Link>
+            <Link href="/docs/skills" className="rounded-xl border border-[#b2ccff] bg-[#f5f8ff] p-6 transition-colors hover:border-[#84adff] focus-visible:outline-2 focus-visible:outline-[#2563eb]">
+              <h3 className="text-lg font-semibold">用 Skill 快速接入 <span aria-hidden="true">→</span></h3>
+              <p className="mt-3 text-sm leading-7 text-[#667085]">下载接入 Skill，让 AI 按真实产品参数和五个函数编写调用代码。</p>
+            </Link>
+          </div>
         </section>
 
         <section id="custom" aria-labelledby="custom-title" className="docs-reference-section scroll-mt-24">

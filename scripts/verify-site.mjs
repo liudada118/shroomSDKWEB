@@ -7,6 +7,7 @@ try {
   await inspectSdkSource();
   await syncSdkAssets();
   const run = (script, args = []) => runSdkScript(WEBSITE_ROOT, script, args);
+  await run('scripts/pack-integration-skill.mjs');
   await run('scripts/build-docs.mjs');
   const tests = (await readdir(join(WEBSITE_ROOT, 'server'))).filter(name => name.endsWith('.test.ts')).sort().map(name => `server/${name}`);
   await run('--experimental-strip-types', ['--test', ...tests]);

@@ -1,4 +1,7 @@
-export type WorkspaceProduct = 'glove' | 'pad';
+import { getCatalogProduct, productCatalog, type CatalogProduct, type ProductProtocol } from '../product-catalog.ts';
+
+export type WorkspaceProduct = CatalogProduct['id'];
+export type WorkspaceProtocol = ProductProtocol;
 export type WorkspaceSide = 'left' | 'right';
 export type WorkspaceEnvironment = 'web' | 'node';
 export type WorkspacePlatform = 'windows' | 'macos' | 'linux';
@@ -17,6 +20,7 @@ export type WorkspaceState = {
   product: WorkspaceProduct;
   side: WorkspaceSide | null;
   sideConfirmed: boolean;
+  protocol: WorkspaceProtocol;
   env: WorkspaceEnvironment;
   platform: WorkspacePlatform;
   tab: WorkspaceTab;
@@ -24,12 +28,9 @@ export type WorkspaceState = {
   codeKind: WorkspaceCodeKind;
 };
 
-export const workspaceProducts = [
-  { id: 'glove' as const, label: '触觉手套', productId: 'handGloveFullPacket' },
-  { id: 'pad' as const, label: '手部检测垫', productId: 'hand' },
-];
+export const workspaceProducts = productCatalog.map(product => ({ ...product, label: product.name }));
 export const initialWorkspaceState: WorkspaceState = {
-  product: 'glove', side: null, sideConfirmed: false, env: 'web', platform: 'windows',
+  product: 'glove', side: null, sideConfirmed: false, protocol: '12bit', env: 'web', platform: 'windows',
   tab: 'start', section: 'guide-prepare', codeKind: 'complete',
 };
 
@@ -58,7 +59,7 @@ const flowAliases: Record<string, string> = {
 };
 const quickHashes = new Set(['product-start', 'workspace-config', 'flow-read', 'flow-ws', 'flow-start', 'flow-stop', 'flow-download']);
 
-/** URL 参数只预选配置。共享链接不能替操作者确认实物手侧。 */
+/** URL 参数只预选配置。共享链接不能替操作者确认实物手侧或脚侧。 */
 export function parseWorkspaceLocation(search: string, hash = ''): WorkspaceState {
   const params = new URLSearchParams(search);
   const rawFragment = hash.replace(/^#/, '');
@@ -72,9 +73,11 @@ export function parseWorkspaceLocation(search: string, hash = ''): WorkspaceStat
   const requestedTab = oneOf(value('tab'), ['start', 'guide', 'data', 'debug', 'downloads'], 'start');
   const section = chapter ?? oneOf(value('section'), workspaceChapters.map(item => item.id), 'guide-prepare');
   const legacyChapter = legacy && requestedTab === 'start' && section !== 'guide-prepare';
+  const product = oneOf(value('product'), workspaceProducts.map(item => item.id), 'glove');
   return {
     ...initialWorkspaceState,
-    product: oneOf(value('product'), ['glove', 'pad'], 'glove'),
+    product,
+    protocol: product === 'insole' ? oneOf(value('protocol'), ['12bit', '8bit'], '12bit') : '12bit',
     side: value('side') === 'left' || value('side') === 'right' ? value('side') as WorkspaceSide : null,
     env: oneOf(value('env'), ['web', 'node'], 'web'),
     platform: oneOf(value('platform'), ['windows', 'macos', 'linux'], 'windows'),
@@ -96,21 +99,22 @@ export function workspaceLocationTarget(search: string, hash: string): string | 
   return null;
 }
 
-/** 普通章节跳转保留同一实物的确认状态，换产品或换手侧必须重新确认。 */
+/** 普通章节跳转和协议切换保留同一实物的确认状态；换产品、手侧或脚侧必须重新确认。 */
 export function workspaceStateForLocation(previous: WorkspaceState, search: string, hash: string): WorkspaceState {
   const next = parseWorkspaceLocation(search, hash);
   return { ...next, sideConfirmed: previous.sideConfirmed && previous.product === next.product && previous.side === next.side };
 }
 
 export function workspaceReady(state: WorkspaceState): boolean {
-  return state.product === 'pad' || Boolean(state.side && state.sideConfirmed);
+  return !getCatalogProduct(state.product).requiresSide || Boolean(state.side && state.sideConfirmed);
 }
 
 /** 保留来源/追踪等无关 query，并采用原生章节 hash，便于复制、历史和问答跳转。 */
 export function workspaceUrl(state: WorkspaceState, current: URL, requestedHash?: string): string {
   const url = new URL(current);
   for (const key of ['product', 'env', 'platform', 'tab', 'codeKind'] as const) url.searchParams.set(key, state[key]);
-  if (state.side) url.searchParams.set('side', state.side); else url.searchParams.delete('side');
+  if (getCatalogProduct(state.product).requiresSide && state.side) url.searchParams.set('side', state.side); else url.searchParams.delete('side');
+  if (state.product === 'insole') url.searchParams.set('protocol', state.protocol); else url.searchParams.delete('protocol');
   url.searchParams.delete('section');
   if (requestedHash !== undefined) url.hash = requestedHash;
   else if (state.tab !== 'start') url.hash = referenceHashes[state.tab];

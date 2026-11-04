@@ -55,7 +55,7 @@ test('invalid and prototype URL values resolve to supported configurations', () 
 });
 
 test('every selected product exposes one connected five-step Node and browser flow', () => {
-  for (const product of ['glove', 'pad'] as const) for (const side of ['left', 'right'] as const)
+  for (const product of ['glove', 'pad', 'body', 'insole'] as const) for (const side of ['left', 'right'] as const)
     for (const platform of ['windows', 'macos', 'linux'] as const) {
       const steps = workspaceFlow({ ...initialWorkspaceState, product, side, sideConfirmed: true, platform });
       assert.deepEqual(steps.map(step => step.id), ['flow-read', 'flow-ws', 'flow-start', 'flow-stop', 'flow-download']);
@@ -74,6 +74,40 @@ test('every selected product exposes one connected five-step Node and browser fl
       assert.doesNotMatch(steps[1].blocks[1].code, /let recording/, '连接步骤无需维护跨按钮记录变量');
       assert.doesNotMatch(steps.flatMap(step => step.blocks.map(block => block.code)).join('\n'), /<!doctype|connectProduct|downloadUrl/);
     }
+});
+
+test('insole links preserve protocol while requiring foot confirmation before copying', () => {
+  const state = parseWorkspaceLocation('?product=insole&side=right&protocol=8bit');
+  assert.equal(state.product, 'insole'); assert.equal(state.protocol, '8bit');
+  assert.equal(workspaceReady(state), false);
+  assert.match(workspaceFlow(state)[0].blocks[0].code, /请先按实物确认左脚或右脚/);
+  const confirmed = { ...state, sideConfirmed: true };
+  assert.equal(workspaceReady(confirmed), true);
+  const changed = workspaceStateForLocation(confirmed, '?product=insole&side=right&protocol=12bit', '#flow-read');
+  assert.equal(changed.sideConfirmed, true, '协议变化不表示换了实物脚侧');
+  assert.equal(changed.protocol, '12bit');
+  assert.equal(workspaceStateForLocation(confirmed, '?product=insole&side=left&protocol=8bit', '#flow-read').sideConfirmed, false);
+  const read = workspaceFlow(confirmed)[0].blocks[0].code;
+  assert.match(read, /side: 'right'/); assert.match(read, /protocol: '8bit'/);
+  assert.match(read, /data\.sensors, data\.pressure, data\.imu/);
+  assert.doesNotMatch(read, /data\.fingers|data\.palm|左手|右手/);
+  const current = new URL('https://sdk.example/docs/quick-start?source=help');
+  const url = new URL(workspaceUrl(confirmed, current), current);
+  assert.equal(url.searchParams.get('protocol'), '8bit'); assert.equal(url.searchParams.get('side'), 'right');
+  assert.equal(url.searchParams.get('source'), 'help');
+  assert.equal(parseWorkspaceLocation('?product=insole&protocol=auto').protocol, '12bit');
+});
+
+test('body calls have regions without inheriting side or insole protocol from shared links', () => {
+  const state = parseWorkspaceLocation('?product=body&side=left&protocol=8bit');
+  assert.equal(workspaceReady(state), true);
+  assert.equal(state.protocol, '12bit');
+  const read = workspaceFlow(state)[0].blocks[0].code;
+  assert.match(read, /data\.regions, data\.raw/);
+  assert.doesNotMatch(read, /side:|protocol:|data\.fingers|data\.palm|createProductView/);
+  const current = new URL('https://sdk.example/docs/quick-start?side=left&protocol=8bit');
+  const url = new URL(workspaceUrl(state, current), current);
+  assert.equal(url.searchParams.has('side'), false); assert.equal(url.searchParams.has('protocol'), false);
 });
 
 test('URL updates retain unrelated parameters and never serialize confirmation', () => {

@@ -3,7 +3,7 @@ import { execFile, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { access, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -11,10 +11,76 @@ import { promisify } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createServer } from 'node:net';
 import { verifyNpmArchive } from '../sdk/scripts/npm-archive.mjs';
+import { unzipSync } from 'fflate';
+import { parseAst } from 'vite';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const runFile = promisify(execFile);
 const npmPackage = JSON.parse(await readFile(join(root, 'app/sdk-package.generated.json'), 'utf8'));
+
+/** 只读生成产物的语法树，不执行浏览器代码。 */
+function* astNodes(node) {
+  if (!node || typeof node.type !== 'string') return;
+  yield node;
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) { for (const child of value) yield* astNodes(child); }
+    else if (value && typeof value === 'object') yield* astNodes(value);
+  }
+}
+
+/** 读取打包后标识符与静态字符串，兼容压缩器输出的模板字符串。 */
+function astName(node) {
+  if (node?.type === 'Identifier') return node.name;
+  if (node?.type === 'Literal') return node.value;
+  if (node?.type === 'TemplateLiteral' && node.expressions.length === 0) return node.quasis[0].value.cooked;
+  return null;
+}
+
+/** 验证 Link 实际导入的公共导航 namespace，防止 SSR 正常但客户端点击失效。 */
+async function checkNavigationNamespaces() {
+  const chunks = join(root, 'dist/client/_next/static/chunks');
+  const linkFiles = (await readdir(chunks)).filter(name => /^link-.*\.js$/.test(name));
+  assert.ok(linkFiles.length > 0, '生产包缺少 Link chunk；框架产物结构变化时须更新导航检查');
+  const cache = new Map();
+  const required = ['navigateClientSide', 'getPrefetchInterceptionContext', 'getPrefetchCache',
+    'getPrefetchedUrls', 'getMountedSlotsHeader', 'prefetchRscResponse', 'restoreRscResponse'];
+  for (const file of linkFiles) {
+    const nodes = [...astNodes(parseAst(await readFile(join(chunks, file), 'utf8')))];
+    const imports = new Map(nodes.filter(node => node.type === 'ImportExpression')
+      .map(node => [node.start, { path: astName(node.source), namespace: null }]));
+    // Rolldown 用 import(...).then(module => module.<alias>) 选择公共 namespace。
+    for (const node of nodes) {
+      const member = node.type === 'CallExpression' ? node.callee : null;
+      const selector = node.arguments?.[0];
+      if (member?.type === 'MemberExpression' && astName(member.property) === 'then'
+        && member.object.type === 'ImportExpression' && selector?.type === 'ArrowFunctionExpression'
+        && selector.body.type === 'MemberExpression' && selector.body.object.name === selector.params[0]?.name) {
+        imports.get(member.object.start).namespace = astName(selector.body.property);
+      }
+    }
+    let navigationImports = 0;
+    for (const entry of imports.values()) {
+      assert.ok(typeof entry.path === 'string' && entry.path.startsWith('./'), `${file}: 无法解析动态导入路径`);
+      const target = resolve(chunks, entry.path);
+      assert.equal(dirname(target), chunks, `${file}: 动态导入必须指向同目录生产 chunk`);
+      if (!cache.has(target)) cache.set(target, [...astNodes(parseAst(await readFile(target, 'utf8')))]);
+      const targetNodes = cache.get(target);
+      const exports = new Map(targetNodes.filter(node => node.type === 'ExportSpecifier')
+        .map(node => [astName(node.exported), astName(node.local)]));
+      let names = new Set(exports.keys());
+      if (entry.namespace !== null) {
+        const binding = targetNodes.find(node => node.type === 'VariableDeclarator' && node.id.name === exports.get(entry.namespace));
+        const object = binding?.init?.type === 'CallExpression' ? binding.init.arguments[0] : binding?.init;
+        names = new Set(object?.type === 'ObjectExpression' ? object.properties.map(property => astName(property.key)) : []);
+      }
+      if (!names.has('navigateClientSide') && !names.has('getPrefetchInterceptionContext')) continue;
+      for (const name of required) assert.ok(names.has(name), `${file} → ${basename(target)}: 导航 namespace 缺少 ${name}`);
+      navigationImports += 1;
+    }
+    assert.ok(navigationImports >= 2, `${file}: 点击与预取未导入完整导航 namespace；仅 SSR 通过不足以证明导航可用`);
+  }
+  console.log('生产 Link 点击与预取导航 namespace 契约通过');
+}
 
 async function npmCli() {
   const binary = dirname(process.execPath);
@@ -49,6 +115,7 @@ import * as flow from 'shroom-sdk/quick-flow';
 import { Shroom } from 'shroom-sdk/node';
 assert.deepEqual(Object.keys(flow).sort(), ['createWS', 'downloadRecording', 'readProduct', 'startRecording', 'stopRecording']);
 assert.equal(Shroom.version, ${JSON.stringify(npmPackage.version)});
+assert.deepEqual(Shroom.listDeviceProducts().map(item => item.product), ['handGloveFullPacket', 'hand', 'humanBody', 'jqInsole']);
 console.log('官网 HTTP 安装及五函数包导入通过');\n`);
     const result = await execute(['smoke.mjs']);
     console.log(result.stdout.trim());
@@ -59,6 +126,8 @@ console.log('官网 HTTP 安装及五函数包导入通过');\n`);
     await rm(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   }
 }
+
+await checkNavigationNamespaces();
 
 const probe = createServer();
 await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve));
@@ -82,23 +151,33 @@ try {
     await delay(100);
   }
   assert.ok(online, `生产服务未就绪：${output}`);
-  for (const path of ['/docs/quick-start', '/docs', '/docs/backend?language=python', '/']) {
+  for (const path of ['/docs/quick-start', '/docs', '/docs/products', '/docs/skills', '/docs/insole', '/docs/human-body', '/docs/backend?language=python', '/']) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200, path);
     const html = await response.text();
     assert.ok(!html.includes('Product workspace requires ProductWorkspaceProvider'), path);
+    if (path === '/docs/insole') {
+      assert.match(html, /jqInsole/);
+      assert.match(html, /sensors\.sourceIndices/);
+      assert.match(html, /4095/);
+    }
+    if (path === '/docs/human-body') {
+      assert.match(html, /humanBody/);
+      assert.match(html, /backPantsRight/);
+      assert.match(html, /400/);
+    }
     if (path === '/' || path === '/docs/quick-start') {
       assert.match(html, /复制安装命令/);
       assert.match(html, /申请(?:\s*SDK\s*)?密钥/);
       assert.match(html, /aria-label="SDK 安装命令"[^>]*value="npm install shroom-sdk"/, '安装入口直接展示 npm 包名命令');
     }
     if (path === '/docs/quick-start') {
-      assert.match(html, /<h1[^>]*>触觉手套<\/h1>/);
-      const productSelect = html.match(/<select\b[^>]*\bid="workspace-navigation-product"[^>]*>/)?.[0];
-      assert.ok(productSelect, '产品切换保留原生下拉和键盘交互');
-      assert.match(html, /<label[^>]*for="workspace-navigation-product"[^>]*>切换产品<\/label>/);
-      const selectClass = productSelect.match(/class="([^"]+)"/)?.[1].split(' ')[0];
-      assert.ok(selectClass, '下拉控件引用组件样式');
+      assert.match(html, /<h1[^>]*>快速接入<\/h1>/);
+      const productChoices = html.match(/<div\b(?=[^>]*aria-label="选择示例产品")[^>]*>/)?.[0];
+      assert.ok(productChoices, '产品切换与取数示例放在一起');
+      assert.doesNotMatch(html, /workspace-navigation-product/, '侧栏不重复展示产品表单');
+      const choicesClass = productChoices.match(/class="([^"]+)"/)?.[1].split(' ')[0];
+      assert.ok(choicesClass, '产品按钮组引用组件样式');
       const styleUrls = [...new Set([...html.matchAll(/<link\b[^>]*>/g)]
         .filter(([tag]) => /\brel="stylesheet"/.test(tag))
         .map(([tag]) => tag.match(/\bhref="([^"]+)"/)?.[1]).filter(Boolean))];
@@ -107,11 +186,11 @@ try {
         assert.equal(response.status, 200, `样式 ${href}`);
         return response.text();
       }));
-      assert.ok(styleSheets.some(css => css.includes(`.${selectClass}`)), '生产页面实际加载产品选择器样式');
+      assert.ok(styleSheets.some(css => css.includes(`.${choicesClass}`)), '生产页面实际加载产品切换样式');
       const configuration = html.indexOf('id="workspace-config"');
       const flowPanel = html.indexOf('<section id="product-start"');
       const preparationPanel = html.indexOf('<section id="product-guide"');
-      assert.ok(configuration > 0 && flowPanel > configuration && preparationPanel > flowPanel);
+      assert.ok(flowPanel > 0 && configuration > html.indexOf('id="flow-read"') && preparationPanel > configuration);
       const flow = html.slice(flowPanel, preparationPanel);
       const steps = ['flow-read', 'flow-ws', 'flow-start', 'flow-stop', 'flow-download'];
       let previous = -1;
@@ -168,6 +247,18 @@ try {
     assert.ok(archive.length > 10000 && archive.readUInt32LE(0) === 0x04034b50, file);
     console.log(`下载 200: ${file}`);
   }
+  const skillManifestResponse = await fetch(`${origin}/skills/shroom-sdk-skill.json`);
+  assert.equal(skillManifestResponse.status, 200);
+  const skillManifest = await skillManifestResponse.json();
+  const skillResponse = await fetch(`${origin}/skills/${skillManifest.file}`);
+  assert.equal(skillResponse.status, 200);
+  const skillBytes = Buffer.from(await skillResponse.arrayBuffer());
+  assert.equal(createHash('sha256').update(skillBytes).digest('hex'), skillManifest.sha256);
+  const skillFiles = unzipSync(skillBytes);
+  assert.deepEqual(Object.keys(skillFiles).sort(), skillManifest.entries.toSorted());
+  assert.match(Buffer.from(skillFiles['shroom-sdk/SKILL.md']).toString('utf8'), /^---\nname: shroom-sdk\n/);
+  assert.ok(skillFiles['shroom-sdk/references/integration.md']?.length > 0);
+  console.log('Skill HTTP 下载、ZIP 路径及哈希校验通过');
   const installUrl = new URL(npmPackage.url, origin).href;
   const response = await fetch(installUrl);
   assert.equal(response.status, 200, npmPackage.url);

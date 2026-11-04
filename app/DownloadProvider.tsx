@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { SDK_LICENSE_REQUEST, SDK_VARIANTS, type DownloadTarget } from './downloads';
+import { DESKTOP_PLATFORMS, SERIAL_DRIVERS, SDK_LICENSE_REQUEST, SDK_VARIANTS, type DownloadTarget } from './downloads';
 import { submitSdkLicenseRequest } from './license-request';
 
 // SDK 直接下载；密钥单独申请。上位机保留原有下载登记，均不自动激活授权。
@@ -63,6 +63,8 @@ export function useLicenseRequest() {
 export default function DownloadProvider({ children }: { children: ReactNode }) {
   const [gateOpen, setGateOpen] = useState(false);
   const [gateTarget, setGateTarget] = useState<DownloadTarget>(SDK_VARIANTS[0]);
+  const desktopPlatform = DESKTOP_PLATFORMS.find(platform => platform.target.source === gateTarget.source);
+  const desktopDriver = SERIAL_DRIVERS.find(driver => driver.id === desktopPlatform?.id);
   const [submitting, setSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -249,6 +251,11 @@ export default function DownloadProvider({ children }: { children: ReactNode }) 
             </p>
             <h2 id="sdk-gate-title" className="mt-2 pr-8 text-xl font-semibold">{gateTarget.title}</h2>
             <p className="mt-2 text-sm leading-6 text-[#667085]">{gateTarget.subtitle}</p>
+            {desktopPlatform && <aside className="mt-4 rounded-lg border border-[#fedf89] bg-[#fffaeb] p-4 text-sm leading-6 text-[#7a2e0e]" aria-label="上位机串口驱动准备">
+              <strong>连接设备前，准备好串口驱动。</strong>
+              {desktopDriver && <a href={desktopDriver.url} target="_blank" rel="noreferrer" className="mt-1 flex min-h-11 items-center font-semibold underline">下载 {desktopDriver.label} 驱动（{desktopDriver.format}）↗</a>}
+              <p>{desktopPlatform.driverNote}</p>
+            </aside>}
 
             {/* 输入框按列宽收缩，避免默认 size 撑开网格；报错不拉伸同排字段。 */}
             <div className="mt-6 grid grid-cols-1 items-start gap-5 sm:grid-cols-2">

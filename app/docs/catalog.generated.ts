@@ -1,6 +1,78 @@
 // 由 scripts/build-docs.mjs 自动生成，供问答章节定位使用。
 export const sectionCatalog = [
   {
+    "anchor": "insole--s1",
+    "label": "连接参数",
+    "href": "/docs/insole#s1",
+    "page": "insole",
+    "description": "鞋垫协议与数据",
+    "keywords": "insole 连接参数"
+  },
+  {
+    "anchor": "insole--s2",
+    "label": "读取哪组数据",
+    "href": "/docs/insole#s2",
+    "page": "insole",
+    "description": "鞋垫协议与数据",
+    "keywords": "insole 读取哪组数据"
+  },
+  {
+    "anchor": "insole--s3",
+    "label": "协议与边界",
+    "href": "/docs/insole#s3",
+    "page": "insole",
+    "description": "鞋垫协议与数据",
+    "keywords": "insole 协议与边界"
+  },
+  {
+    "anchor": "insole--s4",
+    "label": "数据来源与未确认信息",
+    "href": "/docs/insole#s4",
+    "page": "insole",
+    "description": "鞋垫协议与数据",
+    "keywords": "insole 数据来源与未确认信息"
+  },
+  {
+    "anchor": "human-body--s1",
+    "label": "串口协议",
+    "href": "/docs/human-body#s1",
+    "page": "human-body",
+    "description": "人体全身协议与线序",
+    "keywords": "human-body 串口协议"
+  },
+  {
+    "anchor": "human-body--s2",
+    "label": "返回字段",
+    "href": "/docs/human-body#s2",
+    "page": "human-body",
+    "description": "人体全身协议与线序",
+    "keywords": "human-body 返回字段"
+  },
+  {
+    "anchor": "human-body--s3",
+    "label": "十块源矩阵与核对点",
+    "href": "/docs/human-body#s3",
+    "page": "human-body",
+    "description": "人体全身协议与线序",
+    "keywords": "human-body 十块源矩阵与核对点"
+  },
+  {
+    "anchor": "human-body--s4",
+    "label": "哪些显示处理没有移植",
+    "href": "/docs/human-body#s4",
+    "page": "human-body",
+    "description": "人体全身协议与线序",
+    "keywords": "human-body 哪些显示处理没有移植"
+  },
+  {
+    "anchor": "human-body--s5",
+    "label": "验证范围",
+    "href": "/docs/human-body#s5",
+    "page": "human-body",
+    "description": "人体全身协议与线序",
+    "keywords": "human-body 验证范围"
+  },
+  {
     "anchor": "npm--s1",
     "label": "安装到自己的项目",
     "href": "/docs/npm#s1",
@@ -111,6 +183,14 @@ export const sectionCatalog = [
     "page": "quick-start",
     "description": "快速接入文档",
     "keywords": "quick-start 5 步调用"
+  },
+  {
+    "anchor": "quick-start--product-options",
+    "label": "按产品替换取数参数",
+    "href": "/docs/quick-start#product-options",
+    "page": "quick-start",
+    "description": "快速接入文档",
+    "keywords": "quick-start 按产品替换取数参数"
   },
   {
     "anchor": "quick-start--flow-ports",
@@ -1794,56 +1874,64 @@ export const sectionCatalog = [
   },
   {
     "anchor": "changelog--s1",
-    "label": "[0.2.0] - 2026-11-03",
+    "label": "[0.3.0] - 2026-11-04",
     "href": "/docs/changelog#s1",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog [0.3.0] - 2026-11-04"
+  },
+  {
+    "anchor": "changelog--s2",
+    "label": "[0.2.0] - 2026-11-03",
+    "href": "/docs/changelog#s2",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.2.0] - 2026-11-03"
   },
   {
-    "anchor": "changelog--s2",
+    "anchor": "changelog--s3",
     "label": "Node.js 串口与快速流程",
-    "href": "/docs/changelog#s2",
+    "href": "/docs/changelog#s3",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 串口与快速流程"
   },
   {
-    "anchor": "changelog--s3",
+    "anchor": "changelog--s4",
     "label": "兼容范围",
-    "href": "/docs/changelog#s3",
+    "href": "/docs/changelog#s4",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 兼容范围"
   },
   {
-    "anchor": "changelog--s4",
+    "anchor": "changelog--s5",
     "label": "[0.1.0] - 2026-10-29",
-    "href": "/docs/changelog#s4",
+    "href": "/docs/changelog#s5",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.1.0] - 2026-10-29"
   },
   {
-    "anchor": "changelog--s5",
+    "anchor": "changelog--s6",
     "label": "Node.js 与浏览器",
-    "href": "/docs/changelog#s5",
+    "href": "/docs/changelog#s6",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 与浏览器"
   },
   {
-    "anchor": "changelog--s6",
+    "anchor": "changelog--s7",
     "label": "Python",
-    "href": "/docs/changelog#s6",
+    "href": "/docs/changelog#s7",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Python"
   },
   {
-    "anchor": "changelog--s7",
+    "anchor": "changelog--s8",
     "label": "发布管理",
-    "href": "/docs/changelog#s7",
+    "href": "/docs/changelog#s8",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 发布管理"

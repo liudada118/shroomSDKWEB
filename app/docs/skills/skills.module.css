@@ -1,0 +1,43 @@
+.page { max-width: 1000px; margin-inline: auto; padding-bottom: 72px; color: #344054; }
+.header { padding-block: 28px 36px; border-bottom: 1px solid #e4e7ec; }
+.eyebrow { color: #175cd3; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.header h1 { color: #101828; font-size: clamp(30px, 4vw, 40px); line-height: 1.25; font-weight: 700; letter-spacing: -.035em; }
+.lead { margin-top: 16px; max-width: 650px; font-size: 17px; line-height: 1.8; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; margin-block: 24px 12px; }
+.primary { min-height: 46px; display: inline-flex; align-items: center; gap: 20px; padding: 12px 20px; border-radius: 8px; background: #2563eb; color: #fff; font-size: 14px; font-weight: 600; transition: background .18s; }
+.primary:hover { background: #175cd3; }
+.textLink { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #175cd3; font-size: 14px; font-weight: 600; }
+.textLink:hover, .inlineLink:hover, .footnote a:hover { text-decoration: underline; }
+.page a:focus-visible, .page button:focus-visible { outline: 2px solid #2563eb; outline-offset: 4px; }
+.note { color: #667085; font-size: 13px; line-height: 1.8; }
+.section { padding-block: 32px; border-bottom: 1px solid #e4e7ec; scroll-margin-top: 100px; }
+.section h2 { color: #101828; font-size: 23px; font-weight: 700; margin-bottom: 16px; letter-spacing: -.02em; }
+.section > p { font-size: 15px; line-height: 1.9; }
+.section > .note { font-size: 13px; }
+.section p code { overflow-wrap: anywhere; padding: 2px 5px; border-radius: 4px; background: #f2f4f7; color: #344054; font-size: .92em; }
+.steps { list-style: none; padding: 0; margin: 22px 0 28px; display: grid; gap: 28px; }
+.steps li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 14px; }
+.number { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #d0d5dd; border-radius: 50%; font-size: 13px; font-weight: 600; color: #175cd3; }
+.steps h3 { font-size: 16px; font-weight: 600; color: #101828; line-height: 28px; margin-bottom: 6px; }
+.steps p { font-size: 14px; line-height: 1.8; }
+.steps p.note { margin-top: 8px; font-size: 13px; }
+.code { margin-block: 12px; padding: 16px 18px; border-radius: 8px; background: #101828; color: #e4e7ec; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
+.prompt { margin-block: 12px; padding: 16px 18px; border-left: 3px solid #98b6f7; background: #f5f8ff; font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
+.footnote { color: #667085; font-size: 13px !important; }
+.footnote a, .inlineLink { color: #175cd3; text-decoration: underline; text-underline-offset: 3px; }
+.inlineLink { margin-left: 8px; white-space: normal; }
+.flow { color: #175cd3; font-weight: 600; margin-block: 16px; }
+.scope { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-block: 20px 8px; }
+.scope p { font-size: 14px; line-height: 1.9; }
+.scope strong { display: block; color: #101828; margin-bottom: 4px; font-weight: 600; }
+.comparison { display: grid; margin-block: 20px; border-block: 1px solid #e4e7ec; }
+.comparison div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 20px; padding-block: 16px; font-size: 14px; line-height: 1.8; }
+.comparison div + div { border-top: 1px solid #e4e7ec; }
+.comparison dt { font-weight: 600; color: #101828; }
+@media (max-width: 640px) {
+  .scope { grid-template-columns: 1fr; gap: 18px; }
+  .comparison div { grid-template-columns: 1fr; gap: 4px; }
+  .section h2 { font-size: 21px; }
+  .header { padding-top: 20px; }
+}
+@media (prefers-reduced-motion: reduce) { .primary { transition: none; } }

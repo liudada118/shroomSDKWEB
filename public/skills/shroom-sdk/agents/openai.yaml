@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shroom SDK 接入"
+  short_description: "在现有项目中接入 Shroom 设备，处理取数、采集与下载"
+  default_prompt: "使用 $shroom-sdk，帮我在当前项目接入设备取数，按需添加网页采集与下载。"

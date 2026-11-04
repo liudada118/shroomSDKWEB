@@ -63,7 +63,7 @@ const desktopReleases: DesktopRelease[] = [
     format: 'EXE', compatibility: 'Windows',
     description: '下载 Shroom Windows 安装程序，按安装向导完成安装。',
     installNote: '下载后运行 EXE，按安装向导操作；此包不是免安装 ZIP。',
-    driverNote: '先安装上方 Windows CH34x 串口驱动，再在设备管理器中确认 COM 端口可见；安装后重插设备并重启采集程序。',
+    driverNote: '先安装 Windows CH34x 串口驱动，再在设备管理器中确认 COM 端口可见；安装后重插设备并重启采集程序。',
   },
   {
     id: 'macos', label: 'macOS', badge: 'M', version: '1.1.37', size: 437163541,
@@ -71,7 +71,7 @@ const desktopReleases: DesktopRelease[] = [
     format: 'DMG', compatibility: 'Apple Silicon · ARM64',
     description: '适用于 Apple Silicon Mac 的 Shroom 安装包，不适用于 Intel Mac。',
     installNote: '下载后打开 DMG，按包内提示安装；请先确认 Mac 使用 Apple Silicon 芯片。',
-    driverNote: '先下载上方 macOS CH34x 驱动 ZIP，解压并按说明安装；按系统提示允许驱动后，重插设备并重新查询串口。',
+    driverNote: '先下载 macOS CH34x 驱动 ZIP，解压并按说明安装；按系统提示允许驱动后，重插设备并重新查询串口。',
   },
   {
     id: 'linux', label: 'Linux', badge: 'L', version: '1.1.38', size: 256686224,
@@ -107,7 +107,7 @@ export const SDK_VARIANTS: (DownloadTarget & { label: string; description: strin
     description: 'Node.js / Electron 开发，也包含浏览器入口',
     contents: 'Node.js 18+ · JavaScript / TypeScript · 含浏览器入口',
     guideHref: '/docs/quick-start',
-    details: '一个函数读取手套或手垫数据。需要网页传输和保存文件时，再调用创建 WS、开始采集、停止采集和下载。',
+    details: '一个函数读取手套、手垫、鞋垫或人体全身数据；鞋垫与人体全身要求 SDK 0.3.0 或更高版本。之后可按需创建 WS、采集与下载。',
     title: '获取 Node.js SDK',
     subtitle: '可通过 npm 安装的精简包，包含 Node.js 与浏览器入口。连接真实设备前另行申请 SDK 产品密钥。',
   },

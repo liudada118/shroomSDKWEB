@@ -46,6 +46,25 @@ export default defineConfig(async () => {
 
   return {
     css: { postcss: { plugins: [tailwindcss()] } },
+    environments: {
+      client: {
+        build: {
+          rolldownOptions: {
+            output: {
+              // 独立保留导航模块，避免 Link 动态导入被合并到无对应导出的入口块。
+              codeSplitting: {
+                groups: [{
+                  name: 'vinext-navigation',
+                  test: /[\\/]vinext[\\/]dist[\\/]shims[\\/]navigation\.js$/,
+                  priority: 10,
+                  minSize: 0,
+                }],
+              },
+            },
+          },
+        },
+      },
+    },
     server: {
       watch: {
         // Windows locks these download archives (AV scans / concurrent writes),
