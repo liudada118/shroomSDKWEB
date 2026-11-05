@@ -1,0 +1,141 @@
+.page {
+  --text: #101828;
+  --muted: #475467;
+  --subtle: #667085;
+  --line: #e4e7ec;
+  --accent: #175cd3;
+  --blue: #2563eb;
+  color: var(--text);
+  background: #fff;
+}
+
+.page :is(section, article, nav, aside, a[id]) { scroll-margin-top: 96px; }
+.page :is(a, button):focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; }
+.page button { cursor: pointer; }
+.container { width: min(100%, 1240px); margin-inline: auto; padding-inline: 40px; }
+.hero { padding-block: 84px 72px; border-bottom: 1px solid var(--line); }
+.heroLayout { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); align-items: center; gap: clamp(24px, 3vw, 48px); }
+.heroCopy, .heroVisual { min-width: 0; }
+.heroVisual { width: 100%; max-width: 540px; justify-self: end; }
+.eyebrow { color: var(--accent); font-size: 13px; font-weight: 650; line-height: 1.6; }
+.hero h1 { margin-top: 22px; max-width: 18em; font-size: clamp(38px, 4.3vw, 62px); font-weight: 650; line-height: 1.2; letter-spacing: -.045em; text-wrap: balance; }
+.hero h1 span { color: var(--blue); }
+.heroDescription { margin-top: 24px; max-width: 44em; font-size: 18px; line-height: 1.85; color: var(--muted); text-wrap: pretty; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.heroNote { margin-top: 22px; font-size: 13px; line-height: 1.7; color: var(--subtle); }
+.primaryButton, .secondaryButton { display: inline-flex; justify-content: center; align-items: center; gap: 14px; min-height: 46px; padding: 11px 20px; border: 1px solid transparent; border-radius: 8px; font-size: 14px; font-weight: 600; line-height: 1.5; text-align: center; transition: background-color 150ms, border-color 150ms; }
+.primaryButton { color: #fff; background: var(--blue); }
+.primaryButton:hover { background: var(--accent); }
+.secondaryButton { color: #344054; background: #fff; border-color: #d0d5dd; }
+.secondaryButton:hover { background: #f8fafc; border-color: #98a2b3; }
+.textLink { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; color: var(--accent); font-size: 14px; font-weight: 600; line-height: 1.6; text-align: left; }
+.textLink:hover { text-decoration: underline; text-underline-offset: 4px; }
+.section { padding-block: 64px; border-bottom: 1px solid var(--line); }
+.section:last-child { border-bottom: 0; }
+.tinted { background: #f8fafc; }
+.sectionHeader { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 30px; }
+.sectionHeader h2 { margin-top: 10px; font-size: clamp(26px, 2.4vw, 34px); font-weight: 650; line-height: 1.4; letter-spacing: -.035em; text-wrap: balance; }
+.sectionHeader p:not(.eyebrow) { margin-top: 12px; color: var(--muted); font-size: 15px; line-height: 1.8; text-wrap: pretty; }
+.sectionHeader > .textLink { flex-shrink: 0; }
+.flowGrid, .capabilityGrid, .productGrid, .downloadGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.downloadGrid { grid-template-columns: minmax(0, 1fr); }
+.flowCard { display: flex; flex-direction: column; min-width: 0; padding: 28px; border: 1px solid #cfdbef; border-radius: 12px; background: #fff; }
+.flowTitle { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.flowTitle h3 { font-size: 23px; font-weight: 650; line-height: 1.4; letter-spacing: -.02em; }
+.flowTitle > span { color: var(--accent); background: #eff4ff; padding: 4px 9px; border-radius: 5px; font-size: 12px; line-height: 1.6; }
+.flowSlogan { margin-top: 12px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.steps { display: grid; gap: 24px; padding: 28px 0; list-style: none; }
+.steps li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 12px; position: relative; }
+.steps li:not(:last-child)::after { content: ''; position: absolute; left: 14px; top: 32px; bottom: -18px; width: 1px; background: #e3ebf7; }
+.stepNumber { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #eff4ff; color: var(--accent); font-size: 12px; font-family: var(--font-geist-mono), monospace; }
+.steps h4 { font-size: 15px; font-weight: 600; line-height: 1.8; }
+.steps p { margin-top: 5px; color: var(--subtle); font-size: 13px; line-height: 1.75; }
+.flowCard > .textLink { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); }
+.capabilityCard { min-width: 0; padding: 26px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.icon { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 20px; border-radius: 9px; background: #eff4ff; color: var(--accent); }
+.capabilityCard h3 { font-size: 19px; font-weight: 600; line-height: 1.5; }
+.capabilityCard p { margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.85; }
+.capabilityCard .cardMeta { margin-top: 18px; padding-top: 16px; border-top: 1px solid #f0f2f5; color: var(--subtle); font-size: 12px; }
+.productCard { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 12px; background: #fff; transition: border-color 150ms, background-color 150ms; }
+.productCard:hover { border-color: #84adff; background: #fbfdff; }
+.productHeading { display: flex; width: 100%; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.productFilename { margin-block: 12px 20px; color: var(--subtle); font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.productHeading h3 { min-width: 0; font-size: 22px; font-weight: 650; line-height: 1.4; letter-spacing: -.025em; }
+.documentType { flex-shrink: 0; padding: 4px 8px; border: 1px solid #dbe7fd; border-radius: 5px; color: var(--accent); font-size: 12px; line-height: 1.6; white-space: nowrap; }
+.productCard > .textLink { margin-top: auto; }
+.sdkCard { display: flex; flex-direction: column; min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.downloadTitle { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.languageBadge { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 8px; color: var(--accent); background: #eff4ff; font-family: var(--font-geist-mono), monospace; font-size: 14px; font-weight: 600; }
+.version { color: var(--subtle); font-family: var(--font-geist-mono), monospace; font-size: 12px; line-height: 1.7; }
+.sdkCard h3 { margin-top: 20px; font-size: 22px; font-weight: 650; line-height: 1.5; letter-spacing: -.025em; }
+.sdkCard > p { margin-top: 14px; color: var(--muted); font-size: 14px; line-height: 1.85; }
+.sdkCard .downloadDescription { margin-top: 8px; font-size: 13px; color: #344054; }
+.sdkCard .sdkRequirements { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--subtle); font-size: 12px; }
+.install { margin-top: 18px; }
+.downloadActions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: auto; padding-top: 22px; }
+.downloadActions .textLink { font-size: 13px; }
+.licenseStrip { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 20px; padding: 20px 24px; border: 1px solid #dbe7fd; border-radius: 10px; background: #f0f6ff; }
+.licenseStrip p { font-size: 13px; line-height: 1.8; }
+.licenseStrip strong { display: block; color: #344054; font-weight: 600; }
+.licenseStrip p > span { display: block; margin-top: 3px; color: var(--muted); }
+.licenseStrip .textLink { flex-shrink: 0; }
+.platforms { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.platforms button { min-height: 46px; padding: 10px 24px; border: 1px solid #d0d5dd; border-radius: 8px; color: var(--muted); background: #fff; font-size: 14px; font-weight: 600; }
+.platforms button:hover { border-color: #84adff; background: #f8fbff; }
+.platforms button[aria-pressed='true'] { color: var(--accent); border-color: #84adff; background: #eff4ff; box-shadow: inset 0 0 0 1px #84adff; }
+.desktopGrid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .9fr); gap: 20px; }
+.desktopCard, .driverCard { min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 12px; }
+.desktopCard h3 { font-size: 24px; font-weight: 650; line-height: 1.4; letter-spacing: -.025em; }
+.desktopCard > p, .driverCard > p:not(.eyebrow) { margin-top: 16px; color: var(--muted); font-size: 14px; line-height: 1.85; }
+.packageFacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding: 22px 0; margin-block: 4px 2px; }
+.packageFacts dt { color: var(--subtle); font-size: 12px; line-height: 1.7; }
+.packageFacts dd { margin-top: 7px; color: #344054; font-size: 13px; font-weight: 600; line-height: 1.7; }
+.desktopCard .installNote { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--subtle); font-size: 12px; }
+.driverCard { background: #f8fbff; border-color: #dbe7fd; }
+.driverCard h3 { margin-top: 9px; font-size: 20px; font-weight: 650; line-height: 1.5; }
+.driverCard .secondaryButton { margin-top: 22px; }
+.driverCard > .driverNote { font-size: 12px; color: var(--subtle); }
+.driverCard > .textLink { margin-top: 14px; font-size: 13px; }
+.anchor { display: block; height: 0; scroll-margin-top: 96px; }
+.docsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.docCard { display: flex; flex-direction: column; min-width: 0; padding: 24px; border: 1px solid var(--line); border-radius: 10px; background: #fff; transition: border-color 150ms, background-color 150ms; }
+.docCard:hover { border-color: #84adff; background: #fbfdff; }
+.docCard .eyebrow { font-size: 12px; }
+.docCard h3 { margin-top: 13px; font-size: 18px; font-weight: 600; line-height: 1.6; }
+.docCard p { flex: 1; margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.85; }
+.cardAction { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 24px; color: var(--accent); font-size: 13px; font-weight: 600; line-height: 1.7; }
+.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); }
+.tools > span { color: var(--subtle); font-size: 12px; }
+.tools .textLink { font-size: 13px; }
+
+@media (max-width: 1199px) {
+  .container { padding-inline: 28px; }
+  .heroDescription { font-size: 16px; }
+  .flowCard, .productCard, .sdkCard, .desktopCard, .driverCard { padding: 24px; }
+  .docsGrid { gap: 14px; }
+  .docCard { padding: 20px; }
+}
+
+@media (max-width: 767px) {
+  .container { padding-inline: 20px; }
+  .hero { padding-block: 48px; }
+  .heroLayout { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .heroVisual { max-width: 440px; justify-self: center; }
+  .hero h1 { font-size: clamp(34px, 8vw, 46px); }
+  .heroDescription { font-size: 16px; }
+  .desktopBreak { display: none; }
+  .section { padding-block: 42px; }
+  .sectionHeader { align-items: flex-start; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+  .sectionHeader h2 { font-size: 26px; }
+  .flowGrid, .capabilityGrid, .productGrid, .downloadGrid, .desktopGrid, .docsGrid { grid-template-columns: minmax(0, 1fr); }
+  .flowCard, .productCard, .sdkCard, .desktopCard, .driverCard { padding: 22px; }
+  .licenseStrip { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .flowTitle h3 { font-size: 22px; }
+  .platforms button { flex: 1; padding-inline: 12px; }
+  .tools { gap: 4px 20px; }
+  .tools > span { flex-basis: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primaryButton, .secondaryButton, .docCard, .productCard { transition: none; }
+}

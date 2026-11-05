@@ -101,6 +101,7 @@ function KnowledgeWidgetPanel({ initial, pathname }: { initial: StoredState; pat
       panel?.close();
       document.body.style.overflow = overflow;
       window.removeEventListener('keydown', handleKeyDown);
+      launcherRef.current?.focus();
     };
   }, [open]);
 
@@ -130,11 +131,12 @@ function KnowledgeWidgetPanel({ initial, pathname }: { initial: StoredState; pat
         type="button"
         aria-expanded={open}
         aria-controls="knowledge-widget-panel"
+        aria-label={open ? '收起文档问答' : '打开文档问答'}
         onClick={() => setOpen((current) => !current)}
-        className="fixed bottom-5 right-5 z-50 inline-flex min-h-12 items-center gap-2 rounded-full bg-[var(--accent-fill)] px-4 text-sm font-semibold text-[var(--on-accent)] shadow-[0_14px_34px_rgba(37,99,235,0.34)] transition hover:bg-[var(--accent-fill-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:bottom-6 sm:right-6"
+        className="fixed bottom-5 right-5 z-50 inline-flex min-h-12 items-center gap-2 rounded-full border border-[var(--line)] bg-[var(--surface)] px-3 text-sm font-semibold text-[var(--text-muted)] shadow-sm transition hover:bg-[var(--surface-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:bottom-6 sm:right-6 sm:px-4"
       >
-        <span aria-hidden="true">{open ? '×' : 'AI'}</span>
-        <span>{open ? '收起' : '问文档'}</span>
+        <span aria-hidden="true" className="grid h-7 w-7 place-items-center rounded-full bg-[var(--accent-soft)] text-xs text-[var(--accent-strong)]">{open ? '×' : 'AI'}</span>
+        <span className="hidden sm:inline">{open ? '收起' : '问文档'}</span>
       </button>
 
       {open && (
@@ -228,7 +230,7 @@ function KnowledgeWidgetPanel({ initial, pathname }: { initial: StoredState; pat
                   maxLength={1_000}
                   rows={1}
                   disabled={busy}
-                  placeholder="例如：Python 怎么读取一帧？"
+                  placeholder="例如：怎么获取产品数据？"
                   className="max-h-28 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-base leading-6 text-[var(--text-strong)] outline-none placeholder:text-[var(--text-subtle)] disabled:cursor-not-allowed"
                 />
                 {busy ? (

@@ -1,0 +1,13 @@
+{
+  "schema": "shroom.integration-skill.v1",
+  "name": "shroom-sdk",
+  "sdkBaseline": "0.4.0",
+  "file": "shroom-sdk-skill.zip",
+  "size": 11016,
+  "sha256": "e0aa424265a3df6292b94b3f715dc75e7684d6961348a7da03d9d7d77a3fb7d2",
+  "entries": [
+    "shroom-sdk/SKILL.md",
+    "shroom-sdk/agents/openai.yaml",
+    "shroom-sdk/references/integration.md"
+  ]
+}

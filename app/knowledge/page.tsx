@@ -28,7 +28,7 @@ export default function KnowledgePage() {
     <div className="knowledge-ui mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-12 lg:px-10">
       <p className="text-sm font-semibold text-[#2563eb]">AI 知识问答</p>
       <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">从 SDK 文档里，找到答案。</h1>
-      <p className="mt-4 max-w-3xl text-sm leading-7 text-[#667085]">智谱检索你配置的知识库后直接生成回答。可询问 Python、Node.js 或浏览器接入；回答范围取决于已上传的资料，请以当前版本文档为准。</p>
+      <p className="mt-4 max-w-3xl text-sm leading-7 text-[#667085]">智谱检索你配置的知识库后直接生成回答。可询问 Node.js 或浏览器接入；回答范围取决于已上传的资料，请以当前版本文档为准。</p>
 
       <section aria-label="SDK 知识问答" className="mt-8 flex h-[min(760px,78dvh)] min-h-[480px] min-w-0 flex-col overflow-hidden rounded-2xl border border-[#e4e7ec] bg-white shadow-sm">
         <div className="flex min-h-16 items-center justify-between gap-3 border-b border-[#e4e7ec] px-4 sm:px-6">
@@ -43,14 +43,14 @@ export default function KnowledgePage() {
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
                 {suggestedQuestions.map((question) => <button key={question} type="button" onClick={() => void ask(question)} className="min-h-[72px] rounded-xl border border-[#d0d5dd] px-4 py-3 text-left text-sm leading-6 transition-colors hover:border-[#84adff] hover:bg-[#eff4ff]">{question}<span aria-hidden="true" className="ml-2 text-[#2563eb]">→</span></button>)}
               </div>
-              <Link href="/docs/backend?language=python" className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-[#175cd3] hover:underline">查看 Python 接入指南 →</Link>
+              <Link href="/docs/quick-start" className="mt-6 inline-flex min-h-11 items-center text-sm font-semibold text-[#175cd3] hover:underline">查看快速接入指南 →</Link>
             </div>
           ) : <div className="mx-auto max-w-3xl space-y-6">{messages.map((message) => <KnowledgeMessage key={message.id} message={message} />)}</div>}
         </div>
         <form onSubmit={submit} className="border-t border-[#e4e7ec] p-4 sm:p-5">
           <label htmlFor="knowledge-question" className="mb-2 block text-xs font-semibold text-[#475467]">你的问题</label>
           <div className="flex items-end gap-2 rounded-xl border border-[#d0d5dd] p-2 focus-within:border-[#84adff] focus-within:ring-4 focus-within:ring-[#eff4ff]">
-            <textarea id="knowledge-question" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={handleKey} disabled={busy} maxLength={1000} rows={2} placeholder="例如：Python SDK 如何连接串口？" className="min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-base leading-6 outline-none disabled:opacity-60" />
+            <textarea id="knowledge-question" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={handleKey} disabled={busy} maxLength={1000} rows={2} placeholder="例如：如何用 readProduct() 获取产品数据？" className="min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-base leading-6 outline-none disabled:opacity-60" />
             {busy ? <button type="button" onClick={stop} className="min-h-11 shrink-0 rounded-lg border border-[#d0d5dd] px-4 text-sm font-semibold hover:bg-[#f2f4f7]">停止</button> : <button type="submit" disabled={!input.trim()} className="min-h-11 shrink-0 rounded-lg bg-[#2563eb] px-4 text-sm font-semibold text-white hover:bg-[#175cd3] disabled:cursor-not-allowed disabled:opacity-40">发送</button>}
           </div>
           <p className="mt-2 flex justify-between gap-2 text-xs text-[#667085]"><span>Enter 发送 · Shift + Enter 换行</span><span>{Array.from(input).length}/1000</span></p>

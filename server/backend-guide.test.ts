@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { docPages, getDoc } from '../app/docs/generated.ts';
 import { sectionCatalog } from '../app/docs/catalog.generated.ts';
-import { backendMarkdownForLanguage } from '../app/docs/backend-language.ts';
+import { backendLanguageFromSearch, backendMarkdownForLanguage } from '../app/docs/backend-language.ts';
 
 const backend = getDoc('backend')!;
 
@@ -17,7 +17,7 @@ test('backend chapters share a single page with stable h2 anchors and nested h3 
     assert.ok(backend.html.includes(`<h2 id="${chapter.id}">${chapter.label}</h2>`));
     assert.ok(sectionCatalog.some((section) => section.href === `/docs/backend#${chapter.id}`));
   }
-  for (const id of ['node-connect', 'python-connect', 'backend-client', 'backend-queries', 'python-to-dict']) {
+  for (const id of ['node-connect', 'backend-client', 'backend-queries']) {
     assert.ok(backend.toc.some((item) => item.id === id && item.level === 3));
   }
   assert.doesNotMatch(backend.html, /\{#[a-z-]+\}/);
@@ -33,28 +33,30 @@ test('copying backend Markdown selects Node.js examples and retains the shared c
   for (const title of ['串口', '通讯', '存储']) assert.ok(raw.includes(`## ${title}\n`));
 });
 
-test('copying backend Markdown selects Python examples and explains the unsupported network client', () => {
-  const raw = backendMarkdownForLanguage(backend.raw, 'python');
-  assert.match(raw, /python -m pip install/);
-  assert.match(raw, /with Shroom\.connect/);
-  assert.match(raw, /python -m shroom_sdk --frames 100 --json/);
-  assert.match(raw, /当前 Python SDK 未包含/);
-  assert.doesNotMatch(raw, /import \{ Shroom \}|client\.connectRealtime|await writeFile|data-sdk-language/);
-  for (const title of ['串口', '通讯', '存储']) assert.ok(raw.includes(`## ${title}\n`));
+test('public documents, copied Markdown and knowledge sections omit the hidden language', () => {
+  assert.equal(backendLanguageFromSearch('?language=python'), 'node');
+  assert.equal(getDoc('python'), undefined);
+  for (const page of docPages) {
+    assert.doesNotMatch(`${page.label}\n${page.summary}\n${page.raw}\n${page.html}`, /python|pyserial|shroom_sdk|pip install/i, page.slug);
+  }
+  assert.doesNotMatch(JSON.stringify(sectionCatalog), /python/i);
+  assert.match(backend.raw, /\| `fullScale` \|/);
+  assert.match(backend.raw, /\| `raw` \| `Uint8Array` \|/);
+  assert.doesNotMatch(backend.raw, /full_scale|bytes_received|get_diagnostics/);
 });
 
 test('language blocks become complete Markdown HTML and existing reference routes remain available', () => {
-  for (const language of ['node', 'python']) {
+  for (const language of ['node']) {
     const blocks = [...backend.html.matchAll(new RegExp(`<div data-sdk-language="${language}">([\\s\\S]*?)<\\/div>`, 'g'))];
     assert.equal(blocks.length, 4);
     assert.ok(blocks.every((block) => block[1].includes('<p>') || block[1].includes('<pre>')));
   }
-  for (const slug of ['python', 'node', 'serial', 'storage', 'backend-api']) assert.ok(getDoc(slug));
-  assert.ok(backend.html.includes('href="/docs/backend-api"'));
+  for (const slug of ['node', 'serial', 'storage', 'backend-api']) assert.ok(getDoc(slug));
+  assert.ok(backend.html.includes('href="/docs/backend-api#request"'));
 });
 
 test('API headings and knowledge links follow the selected language', () => {
-  for (const language of ['node', 'python'] as const) {
+  for (const language of ['node'] as const) {
     const headings = backend.toc.filter((item) => item.language === language);
     assert.ok(headings.length > 10);
     for (const heading of headings) {
@@ -67,7 +69,7 @@ test('API headings and knowledge links follow the selected language', () => {
     assert.equal(backend.toc.find((item) => item.id === id)?.language, undefined);
   }
   assert.equal(backend.toc.find((item) => item.id === 'node-connect')?.language, 'node');
-  assert.equal(backend.toc.find((item) => item.id === 'python-connect')?.language, 'python');
+  assert.equal(backend.toc.find((item) => item.id === 'python-connect'), undefined);
 });
 
 test('relative API links preserve anchors and every generated document anchor exists', () => {
@@ -80,7 +82,7 @@ test('relative API links preserve anchors and every generated document anchor ex
 });
 
 test('BackendSdkClient reference covers every declared public method', async () => {
-  const declarations = await readFile(new URL('../sdk/backend/client.d.ts', import.meta.url), 'utf8');
+  const declarations = await readFile(new URL('../sdk/src/backend/client.d.ts', import.meta.url), 'utf8');
   const reference = getDoc('backend-api')!;
   const methods = [...declarations.matchAll(/^  (\w+)(?:<[^\n]+>)?\(/gm)]
     .map((match) => match[1]).filter((method) => method !== 'constructor');
@@ -95,13 +97,9 @@ test('BackendSdkClient reference covers every declared public method', async () 
 
 test('serial and rendering references expose the actual core capabilities', () => {
   const node = backendMarkdownForLanguage(backend.raw, 'node');
-  const python = backendMarkdownForLanguage(backend.raw, 'python');
   for (const method of ['Shroom.listPorts', 'Shroom.connect', 'Shroom.mock', 'device.onFrame', 'device.close',
     'createFramer', 'framer.push', 'framer.reset', 'decodeFrame', 'resolveShape', 'getLayout', 'listLayouts',
     'listProducts', 'getProduct', 'Shroom.renderAscii']) assert.ok(node.includes(`${method}(`), method);
-  for (const method of ['Shroom.list_ports', 'Shroom.connect', 'Shroom.mock', 'device.read_frame', 'device.frames',
-    'device.write', 'device.close', 'Framer', 'framer.push', 'framer.reset', 'decode_frame', 'resolve_shape',
-    'get_layout', 'Shroom.render_ascii', 'frame.to_dict', 'frame.matrix']) assert.ok(python.includes(`${method}(`), method);
   const rendering = getDoc('rendering')!;
   for (const method of ['createHeatmap', 'heatmap.render', 'heatmap.setOptions', 'heatmap.resize', 'heatmap.clear', 'getColormap']) {
     assert.ok(rendering.toc.some((heading) => heading.text.includes(`${method}(`)), method);
@@ -123,6 +121,6 @@ test('API contents explain English function headings in Chinese without renaming
   assert.equal(nodeConnect.description, '连接串口设备');
   assert.equal(nodeConnect.text, 'Shroom.connect(options)');
   assert.equal(nodeConnect.language, 'node');
-  assert.equal(backend.toc.find((heading) => heading.id === 'python-connect')?.description, '连接串口设备');
+  assert.equal(backend.toc.find((heading) => heading.id === 'python-connect'), undefined);
   assert.equal(backend.toc.find((heading) => heading.id === 'serial')?.description, undefined);
 });

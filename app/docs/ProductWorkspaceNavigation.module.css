@@ -1,0 +1,4 @@
+.currentProduct { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; margin: 6px 12px; color: #344054; font-size: 14px; line-height: 1.8; }
+.currentLabel { padding: 1px 6px; border: 1px solid #d0d5dd; border-radius: 4px; color: #667085; background: #f8fafc; font-size: 12px; }
+.referenceLink { width: 100%; text-align: left; border: 0; background: transparent; cursor: pointer; }
+.navigation :is(a, button):focus-visible { outline: 2px solid #285de5; outline-offset: 3px; }

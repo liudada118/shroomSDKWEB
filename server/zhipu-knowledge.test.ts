@@ -25,12 +25,12 @@ test('parseKnowledgeRequest validates the official 1000-character retrieval limi
   );
 });
 
-test('normalizeRetrievalPayload keeps distinct chunks, deduplicates sources, and rejects unsafe URLs', () => {
+test('normalizeRetrievalPayload keeps visible chunks, deduplicates sources, and rejects unsafe URLs', () => {
   const normalized = normalizeRetrievalPayload({
     code: 200,
     data: [
       {
-        text: '第一段内容',
+        text: '第一段内容。Python 使用独立安装包。',
         score: 0.91,
         metadata: { doc_id: 'doc-1', doc_name: '<SDK 指南>', doc_url: 'javascript:alert(1)' },
       },
@@ -38,6 +38,14 @@ test('normalizeRetrievalPayload keeps distinct chunks, deduplicates sources, and
         text: '第二段内容',
         score: 0.82,
         metadata: { doc_id: 'doc-1', doc_name: '<SDK 指南>', doc_url: 'javascript:alert(1)' },
+      },
+      {
+        text: '安装并读取串口。',
+        metadata: { doc_id: 'hidden-python', doc_name: 'Python SDK' },
+      },
+      {
+        text: '安装并读取串口。',
+        metadata: { doc_id: 'hidden-link', doc_name: '旧文档', doc_url: 'https://example.com/docs/python' },
       },
       {
         text: '第二段内容',
@@ -52,6 +60,8 @@ test('normalizeRetrievalPayload keeps distinct chunks, deduplicates sources, and
   assert.equal(normalized.sources[0].title, '<SDK 指南>');
   assert.equal(normalized.sources[0].url, undefined);
   assert.deepEqual(normalized.chunks.map((chunk) => chunk.sourceId), [1, 1]);
+  assert.equal(normalized.chunks[0].text, '第一段内容。');
+  assert.doesNotMatch(JSON.stringify(normalized), /python/i);
 });
 
 test('createKnowledgeAnswerResponse does not call the model when retrieval has no hits', async () => {
@@ -198,19 +208,20 @@ function readStream(body: string): { text: string; sections: unknown } {
   return { text, sections };
 }
 
-test('parseKnowledgeRequest keeps a valid docs page and drops anything else', () => {
-  assert.equal(parseKnowledgeRequest({ question: '在哪断开串口', page: 'python' }).page, 'python');
+test('parseKnowledgeRequest keeps a visible docs page and drops anything else', () => {
+  assert.equal(parseKnowledgeRequest({ question: '在哪断开串口', page: 'node' }).page, 'node');
+  assert.equal(parseKnowledgeRequest({ question: '在哪断开串口', page: 'python' }).page, undefined);
   assert.equal(parseKnowledgeRequest({ question: '在哪断开串口', page: 'marketing' }).page, undefined);
   assert.equal(parseKnowledgeRequest({ question: '在哪断开串口' }).page, undefined);
 });
 
 test('section marker never reaches the client and resolves to validated anchors', async () => {
   const response = await createKnowledgeAnswerResponse(
-    { question: '怎么主动断开串口？', history: [], page: 'python' },
+    { question: '怎么主动断开串口？', history: [], page: 'node' },
     config,
     new AbortController().signal,
     // The marker is deliberately split across two deltas.
-    answerFetcher(['调用 device.close() 即可。', '\n\n@@SEC', 'TIONS: python--s1, not-a-section, python--s2, python--s1, python--s3, python--s4']),
+    answerFetcher(['调用 device.close() 即可。', '\n\n@@SEC', 'TIONS: python--s1, node--s1, not-a-section, node--s2, node--s1, node--s3, node--s4']),
   );
   const { text, sections } = readStream(await response.text());
 
@@ -218,11 +229,11 @@ test('section marker never reaches the client and resolves to validated anchors'
   assert.doesNotMatch(text, /@@|SECTIONS/);
   assert.deepEqual(
     (sections as Array<{ anchor: string }>).map((section) => section.anchor),
-    ['python--s1', 'python--s2', 'python--s3'],
+    ['node--s1', 'node--s2', 'node--s3'],
   );
   assert.deepEqual(
     (sections as Array<{ href: string; page: string }>)[0],
-    { anchor: 'python--s1', label: '安装', href: '/docs/python#s1', page: 'python' },
+    { anchor: 'node--s1', label: '安装与入口', href: '/docs/node#s1', page: 'node' },
   );
 });
 
@@ -248,7 +259,7 @@ test('the model is given the section catalog and the current page', async () => 
   }) as typeof fetch;
 
   await createKnowledgeAnswerResponse(
-    { question: 'Python 怎么安装', history: [], page: 'python' },
+    { question: 'Node.js 怎么安装', history: [], page: 'node' },
     config,
     new AbortController().signal,
     fetcher,
@@ -256,9 +267,17 @@ test('the model is given the section catalog and the current page', async () => 
 
   const modelRequest = JSON.parse(String(calls[1]?.body)) as { messages: Array<{ content: string }> };
   const systemPrompt = modelRequest.messages[0]?.content || '';
-  assert.match(systemPrompt, /python--s1 \| 安装/);
-  assert.match(systemPrompt, /用户当前正在阅读「Python SDK」文档页/);
-  assert.match(systemPrompt, /不内置录制回放/);
+  assert.match(systemPrompt, /node--s1 \| 安装与入口/);
+  assert.match(systemPrompt, /用户当前正在阅读「Node.js SDK」文档页/);
+  assert.doesNotMatch(systemPrompt, /python--|Python SDK/);
+  assert.match(systemPrompt, /serveDevice/);
+  for (const method of ['readProduct', 'createWS', 'startRecording', 'stopRecording', 'downloadRecording']) {
+    assert.ok(systemPrompt.includes(method), `知识问答应知道快速函数 ${method}`);
+  }
+  assert.match(systemPrompt, /SQLite 中事务批量持久化/);
+  assert.match(systemPrompt, /从数据库生成 CSV\/JSONL/);
+  assert.match(systemPrompt, /本网站当前接入范围为 JavaScript \/ TypeScript/);
+  assert.match(systemPrompt, /业务数据库、历史回放或力学标定由应用实现/);
   assert.match(systemPrompt, /@@SECTIONS:/);
 });
 

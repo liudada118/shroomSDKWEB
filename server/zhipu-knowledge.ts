@@ -1,5 +1,6 @@
 // Relative + explicit extension so `node --test server/zhipu-knowledge.test.ts` can resolve it.
 import { findSection, isDocsPageId, sectionCatalog, type DocSectionRef, type DocsPageId } from '../app/docs-data.ts';
+import { siteDocumentMarkdown } from '../scripts/site-docs.mjs';
 
 const RETRIEVAL_URL = 'https://open.bigmodel.cn/api/llm-application/open/knowledge/retrieve';
 const CHAT_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
@@ -170,7 +171,8 @@ export function normalizeRetrievalPayload(value: unknown): NormalizedRetrieval {
       : typeof metadata.contextual_text === 'string'
         ? metadata.contextual_text
         : '';
-    const text = normalizeWhitespace(rawText);
+    // 与官网正文共用语言投影，保留混合资料里的 JavaScript 内容。
+    const text = normalizeWhitespace(siteDocumentMarkdown(rawText));
     if (!text) continue;
 
     const docId = typeof metadata.doc_id === 'string' && metadata.doc_id.trim()
@@ -182,6 +184,8 @@ export function normalizeRetrievalPayload(value: unknown): NormalizedRetrieval {
     const rawTitle = typeof metadata.doc_name === 'string' ? normalizeWhitespace(metadata.doc_name) : '';
     const title = rawTitle || `知识文档 ${sources.length + 1}`;
     const url = safeHttpUrl(metadata.doc_url);
+    // 官网暂只展示 JavaScript / TypeScript；旧知识库中的其他语言资料不进入回答或来源卡片。
+    if (/python|pyserial|shroom_sdk/i.test([title, url].join('\n'))) continue;
     const documentKey = docId || fallbackId || `${title}|${url || ''}`;
     const chunkKey = `${documentKey}|${text}`;
     if (seenChunks.has(chunkKey)) continue;
@@ -445,9 +449,11 @@ async function startChatCompletion(
             '直接给出答案，不要在回答里标注来源编号（如 [1]），也不要列出参考资料。',
             '资料不足时明确回答“当前知识库没有足够信息”，不要使用外部知识补全。',
             '优先使用简洁中文；涉及代码时保留准确的 API 名称和参数。',
-            '当前公开基础 SDK 支持浏览器、Node.js 和 Python；不内置录制回放、CSV 导出、数据库、力学标定、手套专用协议或手势识别。旧知识片段若涉及这些能力，须说明版本差异，不能声称当前基础包已经提供。',
-            'Node.js/浏览器现有 BackendSdkClient HTTP/WebSocket 后端客户端，可查询契约、串口和展示系统、订阅实时帧、显式调用后端开关串口与启停采集；不是内置后端或采集引擎，Shroom Monitor 也不是此后端。后端 frame 保留原始 JSON，不等于直连串口 Frame，不能直接 decodeFrame 或 heatmap.render。Python 暂无后端客户端；参考 backend 文档页。',
-            'Python 使用同步逐帧读取和 snake_case 参数，不支持 JavaScript 的 onFrame 回调；Python 资料不足时引导用户查看 Python SDK 文档，不得把 JavaScript 示例改名后当成 Python API。',
+            '突出一步拿产品数据：只要取数时，在完成驱动、依赖和授权后调用 readProduct 即可，不要求用户继续创建 WS 或采集下载；需要这些能力时再展开后四步。',
+            '当前 SDK 的 Node.js/浏览器支持产品取数，产品、协议与字段以本次文档片段为准。快速接入优先使用 quick-flow.js 的 readProduct、createWS、startRecording、stopRecording、downloadRecording 五个函数；Node 取数并创建 WS，网页 readProduct({url}) 后复用同一个 stream 控制采集，SDK 管理本次记录 ID。五函数复用基础 API connectProduct/connectStream/serveDevice；用户需要定制时再解释基础 API。采集由 Node 在 SQLite 中事务批量持久化，停止等待队列提交，下载时从数据库生成 CSV/JSONL；旧 JSONL 记录保留读取兼容。可选二维分区渲染，不提供三维模型或手势识别。SDK 内置采集 SQLite，业务数据库、历史回放或力学标定由应用实现，不把 ADC/归一化值当作 kPa/N。具体用法必须以提供的当前文档片段为依据，旧片段须区分版本。',
+            '五步调用的错误处理区分调用处 try/catch 与运行期 onError。stopRecording 返回后仍需检查 status/error；下载仅触发浏览器下载或返回 URL，不确认文件已保存。采集命令超时不等于服务端未执行，先查询状态，不自动重发。具体错误码、状态字段与处理步骤须以本次资料为准。',
+            'Node.js/浏览器现有 BackendSdkClient HTTP/WebSocket 后端客户端，可查询契约、串口和展示系统、订阅实时帧、显式调用后端开关串口与启停采集；不是内置后端或采集引擎，Shroom Monitor 也不是此后端。后端 frame 保留原始 JSON，不等于直连串口 Frame，不能直接 decodeFrame 或 heatmap.render；参考 backend 文档页。',
+            '本网站当前接入范围为 JavaScript / TypeScript（Node.js 与浏览器）。回答只使用这一范围内的资料，不推荐未展示的语言安装包、文档或接口。',
             '',
             buildSectionCatalogPrompt(input.page),
             '',

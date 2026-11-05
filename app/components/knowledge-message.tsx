@@ -50,7 +50,7 @@ function SectionJumps({
             <span>{section.label}</span>
             {section.page !== currentPage && (
               <span className="font-normal text-[var(--text-muted)]">
-                {section.page === 'python' ? 'Python 文档' : 'SDK 文档'}
+                SDK 文档
               </span>
             )}
           </button>
