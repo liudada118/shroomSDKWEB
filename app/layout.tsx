@@ -56,7 +56,7 @@ export default function RootLayout({
       >
         <DownloadProvider>
           <SiteShell
-            pageTitles={{ '/': '开发概览', '/docs': '文档中心', '/docs/products': '产品详细资料', '/docs/skills': '用 Skill 快速接入', '/knowledge': 'AI 知识问答', ...Object.fromEntries(docPages.map((doc) => [`/docs/${doc.slug}`, doc.label])) }}
+            pageTitles={{ '/': '开发概览', '/docs': '文档中心', '/docs/products': '产品接口参考', '/docs/skills': '用 Skill 快速接入', '/knowledge': 'AI 知识问答', ...Object.fromEntries(docPages.map((doc) => [`/docs/${doc.slug}`, doc.label])) }}
             docOutlines={Object.fromEntries(docPages.map((doc) => [`/docs/${doc.slug}`, doc.toc]))}
           >
             {children}

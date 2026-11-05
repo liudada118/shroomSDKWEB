@@ -128,10 +128,6 @@ a {
 }
 
 /* Both variants are server-rendered; the page-level select only reveals one language. */
-.backend-guide[data-language="node"] [data-sdk-language="python"],
-.backend-guide[data-language="python"] [data-sdk-language="node"] {
-  display: none;
-}
 
 .doc-body > *:first-child {
   margin-top: 0;
@@ -293,6 +289,11 @@ a {
 .docs-menu-link { display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 8px 12px; border-radius: 6px; color: var(--docs-muted); transition: color 150ms, background-color 150ms; }
 .docs-menu-link:hover { background: var(--docs-surface); color: var(--docs-accent); }
 .docs-menu-link[aria-current="page"] { background: var(--docs-accent-soft); color: var(--docs-accent); font-weight: 600; }
+.docs-document-group > summary { cursor: pointer; list-style: none; gap: 8px; }
+.docs-document-group > summary::-webkit-details-marker { display: none; }
+.docs-document-group > summary > svg { flex-shrink: 0; }
+.docs-document-group[open] > summary > svg { transform: rotate(90deg); }
+.docs-document-group > summary:focus-visible { outline: 2px solid var(--docs-accent); outline-offset: 3px; }
 .docs-menu-chapters { margin: 4px 0 0 20px; padding-left: 8px; border-left: 1px solid var(--docs-line); }
 .docs-menu-chapters .docs-menu-link { min-height: 40px; font-size: 13px; }
 .docs-menu-link[aria-current="location"] { color: var(--docs-accent); font-weight: 600; background: var(--docs-accent-soft); }

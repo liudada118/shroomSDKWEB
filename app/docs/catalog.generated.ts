@@ -1,6 +1,54 @@
 // 由 scripts/build-docs.mjs 自动生成，供问答章节定位使用。
 export const sectionCatalog = [
   {
+    "anchor": "glove--s1",
+    "label": "一步取数",
+    "href": "/docs/glove#s1",
+    "page": "glove",
+    "description": "手套分包协议与数据",
+    "keywords": "glove 一步取数"
+  },
+  {
+    "anchor": "glove--s2",
+    "label": "一只手一个串口",
+    "href": "/docs/glove#s2",
+    "page": "glove",
+    "description": "手套分包协议与数据",
+    "keywords": "glove 一只手一个串口"
+  },
+  {
+    "anchor": "glove--s3",
+    "label": "串口协议",
+    "href": "/docs/glove#s3",
+    "page": "glove",
+    "description": "手套分包协议与数据",
+    "keywords": "glove 串口协议"
+  },
+  {
+    "anchor": "glove--s4",
+    "label": "返回数据",
+    "href": "/docs/glove#s4",
+    "page": "glove",
+    "description": "手套分包协议与数据",
+    "keywords": "glove 返回数据"
+  },
+  {
+    "anchor": "glove--s5",
+    "label": "整包设备迁移",
+    "href": "/docs/glove#s5",
+    "page": "glove",
+    "description": "手套分包协议与数据",
+    "keywords": "glove 整包设备迁移"
+  },
+  {
+    "anchor": "glove--s6",
+    "label": "来源与验证范围",
+    "href": "/docs/glove#s6",
+    "page": "glove",
+    "description": "手套分包协议与数据",
+    "keywords": "glove 来源与验证范围"
+  },
+  {
     "anchor": "insole--s1",
     "label": "连接参数",
     "href": "/docs/insole#s1",
@@ -417,94 +465,6 @@ export const sectionCatalog = [
     "keywords": "custom 辅助指南"
   },
   {
-    "anchor": "python--s1",
-    "label": "安装",
-    "href": "/docs/python#s1",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python 安装"
-  },
-  {
-    "anchor": "python--s2",
-    "label": "实机必备：先安装串口驱动",
-    "href": "/docs/python#s2",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python 实机必备：先安装串口驱动"
-  },
-  {
-    "anchor": "python--s3",
-    "label": "SDK 授权",
-    "href": "/docs/python#s3",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python SDK 授权"
-  },
-  {
-    "anchor": "python--s4",
-    "label": "30 秒运行",
-    "href": "/docs/python#s4",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python 30 秒运行"
-  },
-  {
-    "anchor": "python--s5",
-    "label": "在 Python 程序中使用",
-    "href": "/docs/python#s5",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python 在 Python 程序中使用"
-  },
-  {
-    "anchor": "python--s6",
-    "label": "Frame 字段",
-    "href": "/docs/python#s6",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python Frame 字段"
-  },
-  {
-    "anchor": "python--s7",
-    "label": "API 与 JavaScript 对照",
-    "href": "/docs/python#s7",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python API 与 JavaScript 对照"
-  },
-  {
-    "anchor": "python--s8",
-    "label": "协议和点位配置",
-    "href": "/docs/python#s8",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python 协议和点位配置"
-  },
-  {
-    "anchor": "python--s9",
-    "label": "自己提供原始数据",
-    "href": "/docs/python#s9",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python 自己提供原始数据"
-  },
-  {
-    "anchor": "python--s10",
-    "label": "图形示例",
-    "href": "/docs/python#s10",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python 图形示例"
-  },
-  {
-    "anchor": "python--s11",
-    "label": "测试与构建",
-    "href": "/docs/python#s11",
-    "page": "python",
-    "description": "Python SDK",
-    "keywords": "python 测试与构建"
-  },
-  {
     "anchor": "node--s1",
     "label": "安装与入口",
     "href": "/docs/node#s1",
@@ -561,14 +521,6 @@ export const sectionCatalog = [
     "keywords": "serial Node.js 连接"
   },
   {
-    "anchor": "serial--s3",
-    "label": "Python 连接",
-    "href": "/docs/serial#s3",
-    "page": "serial",
-    "description": "串口接入",
-    "keywords": "serial Python 连接"
-  },
-  {
     "anchor": "serial--s4",
     "label": "数据帧与点位",
     "href": "/docs/serial#s4",
@@ -601,14 +553,6 @@ export const sectionCatalog = [
     "keywords": "backend node Node.js 入口"
   },
   {
-    "anchor": "backend--python-import",
-    "label": "Python 入口",
-    "href": "/docs/backend?language=python#python-import",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python Python 入口"
-  },
-  {
     "anchor": "backend--serial",
     "label": "串口",
     "href": "/docs/backend#serial",
@@ -622,7 +566,7 @@ export const sectionCatalog = [
     "href": "/docs/backend?language=node#node-connect-glove",
     "page": "backend",
     "description": "后端文档",
-    "keywords": "backend node Shroom.connectGlove(options) 连接整包手套并选择左右手"
+    "keywords": "backend node Shroom.connectGlove(options) 连接分包手套并指定实物左右手"
   },
   {
     "anchor": "backend--node-connect-hand-pad",
@@ -658,11 +602,11 @@ export const sectionCatalog = [
   },
   {
     "anchor": "backend--node-product-data",
-    "label": "产品帧与整包手套数据",
+    "label": "产品帧与手套数据",
     "href": "/docs/backend?language=node#node-product-data",
     "page": "backend",
     "description": "后端文档",
-    "keywords": "backend node 产品帧与整包手套数据 读取产品压力矩阵与手套整包字段"
+    "keywords": "backend node 产品帧与手套数据 读取产品压力矩阵与手套分包/整包字段"
   },
   {
     "anchor": "backend--node-list-ports",
@@ -793,126 +737,6 @@ export const sectionCatalog = [
     "keywords": "backend node Shroom.renderAscii(frame, options) 在终端显示热力图"
   },
   {
-    "anchor": "backend--python-list-ports",
-    "label": "Shroom.list_ports()",
-    "href": "/docs/backend?language=python#python-list-ports",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python Shroom.list_ports() 列出可用串口"
-  },
-  {
-    "anchor": "backend--python-connect",
-    "label": "Shroom.connect(path, **options)",
-    "href": "/docs/backend?language=python#python-connect",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python Shroom.connect(path, **options) 连接串口设备"
-  },
-  {
-    "anchor": "backend--python-mock",
-    "label": "Shroom.mock(**options)",
-    "href": "/docs/backend?language=python#python-mock",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python Shroom.mock(**options) 生成模拟传感器数据"
-  },
-  {
-    "anchor": "backend--python-read-frame",
-    "label": "device.read_frame(timeout)",
-    "href": "/docs/backend?language=python#python-read-frame",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python device.read_frame(timeout) 读取单帧数据"
-  },
-  {
-    "anchor": "backend--python-frames",
-    "label": "device.frames(timeout) / 迭代",
-    "href": "/docs/backend?language=python#python-frames",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python device.frames(timeout) / 迭代 连续读取数据帧"
-  },
-  {
-    "anchor": "backend--python-write",
-    "label": "device.write(data)",
-    "href": "/docs/backend?language=python#python-write",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python device.write(data) 向串口发送字节"
-  },
-  {
-    "anchor": "backend--python-close",
-    "label": "device.close() / with",
-    "href": "/docs/backend?language=python#python-close",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python device.close() / with 关闭设备与自动释放资源"
-  },
-  {
-    "anchor": "backend--python-diagnostics",
-    "label": "device.state / get_diagnostics()",
-    "href": "/docs/backend?language=python#python-diagnostics",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python device.state / get_diagnostics() 读取设备状态与诊断快照"
-  },
-  {
-    "anchor": "backend--python-errors",
-    "label": "ShroomError",
-    "href": "/docs/backend?language=python#python-errors",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python ShroomError 捕获同步结构化错误"
-  },
-  {
-    "anchor": "backend--python-framer",
-    "label": "Framer(**options)",
-    "href": "/docs/backend?language=python#python-framer",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python Framer(**options) 创建字节流拆帧器"
-  },
-  {
-    "anchor": "backend--python-framer-push",
-    "label": "framer.push(chunk) / reset()",
-    "href": "/docs/backend?language=python#python-framer-push",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python framer.push(chunk) / reset() 提取完整帧与重置缓存"
-  },
-  {
-    "anchor": "backend--python-decode-frame",
-    "label": "decode_frame(payload, **options)",
-    "href": "/docs/backend?language=python#python-decode-frame",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python decode_frame(payload, **options) 将原始字节解码为数据帧"
-  },
-  {
-    "anchor": "backend--python-resolve-shape",
-    "label": "resolve_shape(points, rows=..., cols=...)",
-    "href": "/docs/backend?language=python#python-resolve-shape",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python resolve_shape(points, rows=..., cols=...) 推断矩阵行列数"
-  },
-  {
-    "anchor": "backend--python-layout",
-    "label": "get_layout(layout, rows, cols)",
-    "href": "/docs/backend?language=python#python-layout",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python get_layout(layout, rows, cols) 读取点位排列配置"
-  },
-  {
-    "anchor": "backend--python-ascii",
-    "label": "Shroom.render_ascii(frame, width=..., gain=...)",
-    "href": "/docs/backend?language=python#python-ascii",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python Shroom.render_ascii(frame, width=..., gain=...) 在终端显示热力图"
-  },
-  {
     "anchor": "backend--frame",
     "label": "Frame 与解码参数",
     "href": "/docs/backend#frame",
@@ -1017,14 +841,6 @@ export const sectionCatalog = [
     "keywords": "backend node client.request() / route() 自定义请求与接口路径"
   },
   {
-    "anchor": "backend--python-network",
-    "label": "Python 网络通讯支持范围",
-    "href": "/docs/backend?language=python#python-network",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python Python 网络通讯支持范围"
-  },
-  {
     "anchor": "backend--storage",
     "label": "存储",
     "href": "/docs/backend#storage",
@@ -1039,30 +855,6 @@ export const sectionCatalog = [
     "page": "backend",
     "description": "后端文档",
     "keywords": "backend node 帧快照与 JSONL（应用示例）"
-  },
-  {
-    "anchor": "backend--python-to-dict",
-    "label": "frame.to_dict()",
-    "href": "/docs/backend?language=python#python-to-dict",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python frame.to_dict() 转换为可保存的字典"
-  },
-  {
-    "anchor": "backend--python-matrix",
-    "label": "frame.matrix()",
-    "href": "/docs/backend?language=python#python-matrix",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python frame.matrix() 转换为二维数据矩阵"
-  },
-  {
-    "anchor": "backend--python-save",
-    "label": "写入 JSONL（应用示例）",
-    "href": "/docs/backend?language=python#python-save",
-    "page": "backend",
-    "description": "后端文档",
-    "keywords": "backend python 写入 JSONL（应用示例）"
   },
   {
     "anchor": "backend--storage-boundary",
@@ -1425,14 +1217,6 @@ export const sectionCatalog = [
     "keywords": "storage Node.js 保存 JSONL"
   },
   {
-    "anchor": "storage--s3",
-    "label": "Python 保存 JSONL",
-    "href": "/docs/storage#s3",
-    "page": "storage",
-    "description": "数据存储",
-    "keywords": "storage Python 保存 JSONL"
-  },
-  {
     "anchor": "storage--s4",
     "label": "数据库与后端采集",
     "href": "/docs/storage#s4",
@@ -1494,7 +1278,7 @@ export const sectionCatalog = [
     "href": "/docs/frontend-communication#connect-glove",
     "page": "frontend-communication",
     "description": "前端通讯",
-    "keywords": "frontend-communication Shroom.connectGlove(options) 连接整包手套并选择左右手"
+    "keywords": "frontend-communication Shroom.connectGlove(options) 连接分包手套并指定实物左右手"
   },
   {
     "anchor": "frontend-communication--connect-hand-pad",
@@ -1874,96 +1658,104 @@ export const sectionCatalog = [
   },
   {
     "anchor": "changelog--s1",
-    "label": "[0.3.0] - 2026-11-04",
+    "label": "[0.4.0] - 2026-11-04",
     "href": "/docs/changelog#s1",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog [0.4.0] - 2026-11-04"
+  },
+  {
+    "anchor": "changelog--s2",
+    "label": "[0.3.0] - 2026-11-04",
+    "href": "/docs/changelog#s2",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.3.0] - 2026-11-04"
   },
   {
-    "anchor": "changelog--s2",
+    "anchor": "changelog--s3",
     "label": "[0.2.0] - 2026-11-03",
-    "href": "/docs/changelog#s2",
+    "href": "/docs/changelog#s3",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.2.0] - 2026-11-03"
   },
   {
-    "anchor": "changelog--s3",
+    "anchor": "changelog--s4",
     "label": "Node.js 串口与快速流程",
-    "href": "/docs/changelog#s3",
+    "href": "/docs/changelog#s4",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 串口与快速流程"
   },
   {
-    "anchor": "changelog--s4",
+    "anchor": "changelog--s5",
     "label": "兼容范围",
-    "href": "/docs/changelog#s4",
+    "href": "/docs/changelog#s5",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 兼容范围"
   },
   {
-    "anchor": "changelog--s5",
+    "anchor": "changelog--s6",
     "label": "[0.1.0] - 2026-10-29",
-    "href": "/docs/changelog#s5",
+    "href": "/docs/changelog#s6",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.1.0] - 2026-10-29"
   },
   {
-    "anchor": "changelog--s6",
+    "anchor": "changelog--s7",
     "label": "Node.js 与浏览器",
-    "href": "/docs/changelog#s6",
+    "href": "/docs/changelog#s7",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 与浏览器"
   },
   {
-    "anchor": "changelog--s7",
-    "label": "Python",
-    "href": "/docs/changelog#s7",
-    "page": "changelog",
-    "description": "SDK 更新日志",
-    "keywords": "changelog Python"
-  },
-  {
-    "anchor": "changelog--s8",
+    "anchor": "changelog--s9",
     "label": "发布管理",
-    "href": "/docs/changelog#s8",
+    "href": "/docs/changelog#s9",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 发布管理"
   },
   {
     "anchor": "migration--s1",
-    "label": "先确认使用的是哪套包",
+    "label": "0.4.0 手套默认协议修正",
     "href": "/docs/migration#s1",
     "page": "migration",
     "description": "旧 SDK 迁移说明",
-    "keywords": "migration 先确认使用的是哪套包"
+    "keywords": "migration 0.4.0 手套默认协议修正"
   },
   {
     "anchor": "migration--s2",
-    "label": "接入代码需要调整",
+    "label": "原有包与五步 SDK",
     "href": "/docs/migration#s2",
+    "page": "migration",
+    "description": "旧 SDK 迁移说明",
+    "keywords": "migration 原有包与五步 SDK"
+  },
+  {
+    "anchor": "migration--s3",
+    "label": "接入代码需要调整",
+    "href": "/docs/migration#s3",
     "page": "migration",
     "description": "旧 SDK 迁移说明",
     "keywords": "migration 接入代码需要调整"
   },
   {
-    "anchor": "migration--s3",
+    "anchor": "migration--s4",
     "label": "采集数据库必须分开",
-    "href": "/docs/migration#s3",
+    "href": "/docs/migration#s4",
     "page": "migration",
     "description": "旧 SDK 迁移说明",
     "keywords": "migration 采集数据库必须分开"
   },
   {
-    "anchor": "migration--s4",
+    "anchor": "migration--s5",
     "label": "取回旧版",
-    "href": "/docs/migration#s4",
+    "href": "/docs/migration#s5",
     "page": "migration",
     "description": "旧 SDK 迁移说明",
     "keywords": "migration 取回旧版"
@@ -2015,14 +1807,6 @@ export const sectionCatalog = [
     "page": "readme",
     "description": "SDK 说明与排错",
     "keywords": "readme Node / Electron 里用"
-  },
-  {
-    "anchor": "readme--s4",
-    "label": "Python 里用",
-    "href": "/docs/readme#s4",
-    "page": "readme",
-    "description": "SDK 说明与排错",
-    "keywords": "readme Python 里用"
   },
   {
     "anchor": "readme--s5",

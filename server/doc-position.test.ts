@@ -23,7 +23,7 @@ test('the final visible section is active at the end even when it cannot reach t
 
 test('the left outline groups API functions under their chapters and keeps language isolation', () => {
   const backend = getDoc('backend')!;
-  for (const language of ['node', 'python'] as const) {
+  for (const language of ['node'] as const) {
     const groups = groupDocOutline(backend.toc, language);
     const items = groups.flatMap((group) => [group.heading, ...group.children]);
     assert.deepEqual(items, backend.toc.filter((item) => !item.language || item.language === language));
@@ -35,7 +35,7 @@ test('the left outline groups API functions under their chapters and keeps langu
 });
 
 test('every reference keeps all its headings in the left outline', () => {
-  for (const slug of ['frontend-communication', 'rendering', 'backend-api', 'python', 'readme']) {
+  for (const slug of ['frontend-communication', 'rendering', 'backend-api', 'node', 'readme']) {
     const doc = getDoc(slug)!;
     const ids = groupDocOutline(doc.toc, 'node').flatMap((group) => [group.heading.id, ...group.children.map((item) => item.id)]);
     assert.deepEqual(ids, doc.toc.map((item) => item.id));
@@ -43,8 +43,7 @@ test('every reference keeps all its headings in the left outline', () => {
 });
 
 test('sidebar language follows supported URL parameters and safely defaults to Node.js', () => {
-  assert.equal(backendLanguageFromSearch('?language=python'), 'python');
-  for (const search of ['', '?language=node', '?language=unknown', '?other=python']) {
+  for (const search of ['', '?language=node', '?language=python', '?language=unknown', '?other=python']) {
     assert.equal(backendLanguageFromSearch(search), 'node');
   }
 });

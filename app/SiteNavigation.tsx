@@ -237,7 +237,7 @@ export default function SiteNavigation({ pathname, pageTitle, docOutline }: {
           <a href="/lab.html" target="_blank" rel="noreferrer" className="flex min-h-11 items-center justify-between rounded-lg border border-[#e4e7ec] bg-white px-3 text-sm font-medium text-[#344054] transition-colors hover:border-[#84adff] hover:text-[#175cd3]">
             网页测试台 <span aria-hidden="true">↗</span><span className="sr-only">（新标签页打开）</span>
           </a>
-          <p className="mt-3 px-3 font-mono text-[11px] text-[#667085]">Web · Node.js · Python</p>
+          <p className="mt-3 px-3 font-mono text-[11px] text-[#667085]">Web · Node.js</p>
         </div>
       </aside>
     </div>

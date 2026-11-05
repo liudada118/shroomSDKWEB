@@ -20,10 +20,11 @@ export type DocDefinition = {
 };
 
 // Only navigation metadata enters client components; article HTML stays on the server.
-export const docDefinitions: DocDefinition[] = (catalog as DocDefinition[]).map(doc =>
-  doc.slug === 'ai-context' ? { ...doc, navLabel: 'AI 接入参考' } : doc);
+export const docDefinitions: DocDefinition[] = (catalog as DocDefinition[]).filter(doc => doc.slug !== 'python').map(doc =>
+  doc.slug === 'ai-context' ? { ...doc, navLabel: 'AI 接入参考' }
+    : doc.slug === 'backend' ? { ...doc, summary: '查阅 Node.js 产品连接、模拟、解析、后端通讯与存储 API 的参数和示例。' } : doc);
 export const docAreas: { id: DocArea; label: string; description: string }[] = [
-  { id: 'backend', label: '后端', description: '一篇完整的后端文档，用下拉框切换 Node.js / Python；串口、通讯、存储按章节展开。' },
+  { id: 'backend', label: '后端', description: '查阅 Node.js 后端文档；串口、通讯、存储按章节展开。' },
   { id: 'frontend', label: '前端', description: '连接网页数据源，把实时数据绘制到界面。' },
   { id: 'guides', label: '辅助指南', description: '使用 SDK Skill、AI 开发指南和 API 排错参考。' },
 ];

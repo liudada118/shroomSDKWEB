@@ -26,9 +26,9 @@ export default function ProductWorkspaceNavigation({ onNavigate }: { onNavigate:
         onClick={() => { setTab(reference.tab); onNavigate(); }}>{reference.label}</button>)}
     </div>
     <div className="docs-menu-group">
-      <p className="docs-menu-caption">产品资料</p>
+      <p className="docs-menu-caption">产品接口</p>
       <div className={styles.currentProduct}><span>{currentProduct.label}</span><span className={styles.currentLabel}>当前示例</span></div>
-      <Link href="/docs/products" onClick={onNavigate} className="docs-menu-link">所有产品资料 →</Link>
+      <Link href="/docs/products" onClick={onNavigate} className="docs-menu-link">产品接口参考 →</Link>
     </div>
     <div className="docs-menu-group">
       <p className="docs-menu-caption">开发支持</p>

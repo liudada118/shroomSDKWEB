@@ -17,11 +17,12 @@ test('workflow and custom routes exist without replacing existing reference URLs
   const catalog = await definitions();
   assert.equal(catalog.find((doc) => doc.slug === 'quick-start')?.route, 'quick');
   assert.equal(catalog.find((doc) => doc.slug === 'custom')?.route, 'custom');
-  for (const slug of ['backend', 'frontend-communication', 'rendering', 'python', 'node', 'serial', 'storage', 'backend-api']) {
+  for (const slug of ['backend', 'frontend-communication', 'rendering', 'node', 'serial', 'storage', 'backend-api']) {
     assert.ok(catalog.some((doc) => doc.slug === slug), slug);
     assert.ok(getDoc(slug), `${slug} must remain generated`);
   }
   assert.equal(catalog.filter((doc) => doc.area === 'backend' && !doc.hidden).length, 1);
+  assert.equal(getDoc('python'), undefined);
 });
 
 test('quick guide presents the requested five API steps and keeps the preparation outline consistent', async () => {
@@ -45,7 +46,7 @@ test('quick guide presents the requested five API steps and keeps the preparatio
   }
   assert.match(quick.raw, /CH341SER\.EXE/);
   assert.match(quick.raw, /CH34xVCPDriver\.zip/);
-  assert.match(quick.raw, /Python 当前提供基础串口/);
+  assert.doesNotMatch(quick.raw, /Python/i);
 });
 
 test('custom guide links to references and distinguishes the legacy backend from the standalone service', () => {
@@ -54,10 +55,10 @@ test('custom guide links to references and distinguishes the legacy backend from
   for (const slug of ['backend', 'frontend-communication', 'rendering', 'storage', 'quick-start']) {
     assert.ok(custom.html.includes(`href="/docs/${slug}`), slug);
   }
-  assert.match(custom.raw, /Node\.js \/ Python/);
+  assert.match(custom.raw, /集中展示 Node\.js 示例/);
   assert.match(custom.raw, /(?:不是同一协议|使用不同协议)/);
   assert.match(custom.raw, /BackendSdkClient\.startCollection\(\)/);
-  assert.match(custom.raw, /Python 目前只有基础串口/);
+  assert.doesNotMatch(custom.raw, /Python/i);
 });
 
 test('stop and download remain distinct steps with the persisted ID managed by the SDK', () => {

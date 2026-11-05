@@ -14,6 +14,7 @@ import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 import { inspectSdkSource } from './sdk-source.mjs';
+import { siteDocumentDefinition, siteDocumentMarkdown } from './site-docs.mjs';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 await inspectSdkSource(ROOT);
@@ -21,7 +22,8 @@ const SDK = join(ROOT, 'sdk');
 const OUT = join(ROOT, 'app', 'docs', 'generated.ts');
 
 // slug 是 URL 的一部分，必须是 ASCII —— 文件名有中文的那份尤其不能直接拿来用
-const DOCS = JSON.parse(await readFile(join(SDK, 'docs', 'catalog.json'), 'utf8'));
+const DOCS = JSON.parse(await readFile(join(SDK, 'docs', 'catalog.json'), 'utf8'))
+  .map(siteDocumentDefinition).filter(Boolean);
 const slugs = new Set();
 for (const doc of DOCS) {
   if (!/^[a-z][a-z0-9-]*$/.test(doc.slug) || slugs.has(doc.slug)) {
@@ -89,7 +91,7 @@ function addAnchors(html) {
 
 const pages = [];
 for (const doc of DOCS) {
-  const source = (await readFile(join(SDK, doc.file), 'utf8')).replace(/\r\n?/g, '\n');
+  const source = siteDocumentMarkdown(await readFile(join(SDK, doc.file), 'utf8'));
   const { title, body } = splitTitle(source);
   const parsed = await marked.parse(body, { gfm: true, breaks: false });
   const { html, toc } = addAnchors(rewriteLocalLinks(parsed, doc.file));

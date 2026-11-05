@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const prompt = '使用 $shroom-sdk，在当前项目接入 Shroom 手部检测垫。先提供串口选择，用 readProduct 一步取数，再按需添加网页采集与下载。密钥由我在本机配置。';
 const installPath = '.agents/skills/shroom-sdk/SKILL.md';
 
-/** Skill 安装说明独立成页；下载内容是可发现的指引包，不冒充运行 SDK 或 MCP。 */
+/** Skill 安装说明独立成页；下载内容是接入指引包，运行 SDK 另行安装。 */
 export default function SkillsPage() {
   return (
     <div className={`docs-page ${styles.page}`}>
@@ -27,7 +27,7 @@ export default function SkillsPage() {
           <a className={styles.primary} href="/skills/shroom-sdk-skill.zip" download="shroom-sdk-skill.zip">下载 Skill ZIP <span aria-hidden="true">↓</span></a>
           <a className={styles.textLink} href="/skills/shroom-sdk/SKILL.md" target="_blank" rel="noreferrer">查看 SKILL.md <span aria-hidden="true">↗</span></a>
         </div>
-        <p className={styles.note}>指引基线 SDK 0.3.0 · SDK 依赖通过 npm 单独安装 · Node 与网页使用同一版本</p>
+        <p className={styles.note}>指引基线 SDK 0.4.0 · SDK 依赖通过 npm 单独安装 · Node 与网页使用同一版本</p>
       </header>
 
       <section id="install" className={styles.section} aria-labelledby="install-title">
@@ -47,7 +47,7 @@ export default function SkillsPage() {
             <h3>告诉 AI 产品与需要的功能</h3>
             <div className={styles.prompt}>{prompt}</div>
             <CopyRawButton raw={prompt} label="复制调用提示" />
-            <p className={styles.note}>手套注明左右手，鞋垫注明左右脚与协议；密钥在本机配置，无需发给 AI。</p>
+            <p className={styles.note}>手套注明左右手与分包/整包协议，鞋垫注明左右脚与协议；密钥在本机配置，无需发给 AI。</p>
           </div></li>
         </ol>
         <p className={styles.footnote}>项目安装目录参考 <a href="https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills" target="_blank" rel="noreferrer">OpenAI 官方 Skills 说明</a>。其他支持 Skills 的工具，请按其导入方式安装整个文件夹；各工具的目录和调用语法可能不同。</p>
@@ -58,20 +58,10 @@ export default function SkillsPage() {
         <p>接入前用 <code>listPorts()</code> 查询并让用户选择串口。业务流程保留五个函数：</p>
         <p className={styles.flow}>取数 → 创建 WS → 开始采集 → 停止采集 → 下载</p>
         <div className={styles.scope}>
-          <p><strong>设备与授权</strong>Node 连接手套、手垫、人体或鞋垫；浏览器通过 WS 接收。人体与鞋垫要求 SDK 0.3.0 或更高版本；驱动、SDK 密钥与真实串口在客户电脑准备。</p>
+          <p><strong>设备与授权</strong>Node 连接手套、手垫、人体或鞋垫；浏览器通过 WS 接收。分包手套从 SDK 0.4.0 起支持，人体与鞋垫从 0.3.0 起支持；驱动、SDK 密钥与真实串口在客户电脑准备。</p>
           <p><strong>重连与采集</strong>采集保存为 SQLite。串口断线会结束当前记录，恢复后需重新采集；网页 WS 断线不会停止 Node 录制。</p>
         </div>
         <Link className={styles.textLink} href="/docs/quick-start">查看五步调用与接入准备 <span aria-hidden="true">→</span></Link>
-      </section>
-
-      <section id="mcp" className={styles.section} aria-labelledby="mcp-title">
-        <h2 id="mcp-title">MCP 是做什么的？</h2>
-        <p>MCP 用统一协议让 AI 应用连接外部工具与数据。例如，服务可以提供“查询当前设备状态”这样的可调用工具。<a className={styles.inlineLink} href="https://modelcontextprotocol.io/docs/getting-started/intro" target="_blank" rel="noreferrer">MCP 官方说明 ↗</a></p>
-        <dl className={styles.comparison}>
-          <div><dt>Skill</dt><dd>告诉 AI 如何完成接入：使用哪些 API、怎样处理错误、何时开始和停止采集。</dd></div>
-          <div><dt>MCP 服务</dt><dd>向 AI 提供实际可调用的工具或实时数据，需要另行实现、连接与授权。</dd></div>
-        </dl>
-        <p className={styles.note}>当前提供接入 Skill，尚未提供 Shroom MCP 服务。安装 Skill 后，AI 不会因此自动获得你的串口、密钥或采集权限。</p>
       </section>
     </div>
   );

@@ -115,7 +115,7 @@ import * as flow from 'shroom-sdk/quick-flow';
 import { Shroom } from 'shroom-sdk/node';
 assert.deepEqual(Object.keys(flow).sort(), ['createWS', 'downloadRecording', 'readProduct', 'startRecording', 'stopRecording']);
 assert.equal(Shroom.version, ${JSON.stringify(npmPackage.version)});
-assert.deepEqual(Shroom.listDeviceProducts().map(item => item.product), ['handGloveFullPacket', 'hand', 'humanBody', 'jqInsole']);
+assert.deepEqual(Shroom.listDeviceProducts().map(item => item.product), ['handGloveSegmented', 'handGloveFullPacket', 'hand', 'humanBody', 'jqInsole']);
 console.log('官网 HTTP 安装及五函数包导入通过');\n`);
     const result = await execute(['smoke.mjs']);
     console.log(result.stdout.trim());

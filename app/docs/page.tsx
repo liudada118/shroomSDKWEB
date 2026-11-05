@@ -58,14 +58,14 @@ export default function DocsIndex() {
               <p>{task.description}</p>
             </li>)}
           </ol>
-          <p className="docs-support-note">Node.js / 浏览器支持手套、手垫，以及 SDK 0.3.0 新增的鞋垫与人体全身取数和 WS 五步调用。Python 提供通用串口与矩阵解析。<Link href="/docs/backend?language=python" className="font-semibold text-[#175cd3] hover:underline">查看 Python 支持范围 →</Link></p>
+          <p className="docs-support-note">Node.js / 浏览器支持手套、手垫，以及 SDK 0.3.0 新增的鞋垫与人体全身取数和 WS 五步调用。</p>
         </section>
 
         <section aria-labelledby="docs-resources-title" className="docs-reference-section">
           <h2 id="docs-resources-title">资料找得到，接入更快一步。</h2>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <Link href="/docs/products" className="rounded-xl border border-[#e4e7ec] p-6 transition-colors hover:border-[#84adff] focus-visible:outline-2 focus-visible:outline-[#2563eb]">
-              <h3 className="text-lg font-semibold">所有产品资料 <span aria-hidden="true">→</span></h3>
+              <h3 className="text-lg font-semibold">产品接口参考 <span aria-hidden="true">→</span></h3>
               <p className="mt-3 text-sm leading-7 text-[#667085]">查看手套、手垫、鞋垫和人体全身的协议、字段与取数说明。</p>
             </Link>
             <Link href="/docs/skills" className="rounded-xl border border-[#b2ccff] bg-[#f5f8ff] p-6 transition-colors hover:border-[#84adff] focus-visible:outline-2 focus-visible:outline-[#2563eb]">

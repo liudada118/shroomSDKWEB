@@ -41,7 +41,7 @@ class StreamEventError extends Error {
 export const suggestedQuestions = [
   '没有硬件时，怎样先跑通 Mock 示例？',
   '浏览器连接设备时需要哪些参数？',
-  'Python SDK 如何安装并读取串口数据？',
+  '如何用 readProduct() 获取产品数据？',
   'Core Frame 包含哪些字段？',
 ];
 

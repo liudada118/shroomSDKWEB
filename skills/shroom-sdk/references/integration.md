@@ -1,10 +1,10 @@
-# 按需接入：Shroom SDK 0.3.0
+# 按需接入：Shroom SDK 0.4.0
 
 先用项目锁文件、`npm ls shroom-sdk` 和对应类型声明核对实际版本，再使用这些片段。只做用户需要的部分，变量应接入真实业务选择与配置。浏览器项目需支持包名导入的构建工具。
 
-在业务项目中运行 `npm install shroom-sdk` 安装 SDK。人体与鞋垫从 **0.3.0** 起支持；已有较旧版本的项目可执行 `npm install shroom-sdk@0.3.0` 升级并更新锁文件，再用 `npm ls shroom-sdk` 或运行时 `Shroom.version` 核对实际版本。安装 Skill 不会改变 SDK 依赖。若用户提供 TGZ 或本地源码，按其真实路径和 README 使用对应依赖与入口，不把内部文件复制进业务项目；离线 TGZ 安装需保留安装包与锁文件。
+在业务项目中运行 `npm install --save-exact shroom-sdk@0.4.0` 安装本指引对应的版本，并保存锁文件；再用 `npm ls shroom-sdk` 或运行时 `Shroom.version` 核对实际版本。分包手套从 **0.4.0** 起支持，人体与鞋垫从 **0.3.0** 起支持。安装 Skill 不会改变 SDK 依赖。若用户提供 TGZ 或本地源码，按其真实路径和 README 使用对应依赖与入口，不把内部文件复制进业务项目；离线 TGZ 安装需保留安装包与锁文件。
 
-Node 服务与网页项目都要安装相同且至少为 0.3.0 的版本，并重新构建前端；只升级 Node 不能让旧 0.2.0 浏览器 WS 解码器识别 `humanBody / jqInsole`。
+Node 服务与网页项目都安装相同版本，并重新构建前端。分包手套要求两端至少为 0.4.0；旧 0.3.0 WS 客户端不认识 `handGloveSegmented`，旧 0.2.0 客户端也不认识 `humanBody / jqInsole`。
 
 ## 1. Node：搜索串口
 
@@ -38,9 +38,9 @@ let device;
 try {
   await Shroom.activateLicense(key, { deviceId });
   device = await readProduct({
-    product: 'glove',
+    product: 'glove', // 0.4.0 默认分包手套；旧整包用 handGloveFullPacket。
     path: 'COM3', // 替换为用户选中的串口。
-    side: 'left', // 按实物选择 left/right；不要推断。
+    side: 'left', // 这条串口连接左手；一只手一个串口，不从包类型推断。
     onData(data) {
       console.log(data.fingers, data.palm, data.imu.raw);
     },
@@ -58,12 +58,15 @@ try {
 
 | 产品别名 / 规范 ID | 连接参数 | 读取字段 |
 | --- | --- | --- |
-| `glove` / `handGloveFullPacket` | 必须明确左右手 `side` | `fingers`、`palm`、`imu.raw` |
+| `glove` / `handGloveSegmented`（0.4.0） | 必须明确左右手 `side`；一只手一个串口，固定 921600 baud | `fingers`、`palm`、`imu.raw` |
+| `handGloveFullPacket`（旧整包） | 必须显式使用规范 ID 并明确 `side`，固定 921600 baud | `fingers`、`palm`、`imu.raw`、`sequence` |
 | `pad` / `hand` | 不传 `side` | `pressureMatrix`、`values` |
 | `body` / `humanBody`（0.3.0） | 不传 `side`；固定 1000000 baud | `regions.back.raw` 等十个源矩阵 |
 | `insole` / `jqInsole`（0.3.0） | 必须明确左右脚 `side`；`protocol` 默认 `'12bit'` 或显式 `'8bit'`；默认 921600 baud | `sensors.raw / values / positions`、`imu` |
 
 人体与鞋垫只改变取数配置，不增加第六个快速函数。规范 ID 用于返回帧和 WS；新增其他产品仍须扩展 SDK 适配器与注册表，不能仅在业务中虚构字符串。
+
+分包手套由 SDK 合并 130 字节首包与 146 字节尾包（长度均不含各自 4 字节帧尾），配对完成后才通过 `onData` 返回一帧 256 通道数据与 16 字节 `imu.raw`。输出 `protocol: 'segmented'`，`packetType` 只校验同连接首尾包类型一致，不决定左右手；分包帧没有 `sequence`。两只手用两个不同 `path` 分别连接并指定 left/right；不在一个串口自动路由双手。协议与限制见[0.4.0 手套文档](https://github.com/liudada118/shroomSDK/blob/sdk-v0.4.0/docs/GLOVE.md)。
 
 ```js
 // 人体：沿用已完成的授权，path 替换为用户选中的串口。

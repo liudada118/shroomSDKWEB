@@ -5,7 +5,7 @@ import { listDeviceProducts } from '../sdk/src/node/index.js';
 
 test('all product references cover registered protocols without treating aliases as extra devices', () => {
   const supported = listDeviceProducts();
-  assert.deepEqual(productCatalog.map(product => product.productId).sort(), supported.map(product => product.product).sort());
+  assert.deepEqual([...productCatalog.map(product => product.productId), 'handGloveFullPacket'].sort(), supported.map(product => product.product).sort(), '整包协议作为同类手套的兼容入口保留，不增加第五类产品');
   for (const product of productCatalog) {
     const url = new URL(productGuideHref(product), 'https://sdk.example');
     assert.equal(url.pathname, '/docs/quick-start');
@@ -28,7 +28,12 @@ test('released protocols retain their minimum version and reject older installat
     assert.doesNotMatch(product.note, /开发版|未发布/);
     assert.match(product.note, /SDK 0\.3\.0 起支持/);
   }
-  assert.equal(productPackageReady(getCatalogProduct('glove'), '0.2.0'), true);
+  const glove = getCatalogProduct('glove');
+  assert.equal(glove.productId, 'handGloveSegmented');
+  assert.equal(glove.minSdkVersion, '0.4.0');
+  assert.equal(productPackageReady(glove, '0.3.0'), false);
+  assert.equal(productPackageReady(glove, '0.4.0'), true);
+  assert.equal(productPackageReady(getCatalogProduct('pad'), '0.2.0'), true);
 });
 
 test('insole field descriptions follow the selected protocol and keep scan bytes separate from sensor points', () => {

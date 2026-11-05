@@ -46,10 +46,9 @@ test('installation hints reflect actual package architectures and do not reuse M
   }
 });
 
-test('Node retains the immutable TGZ download while Python keeps its independent ZIP', () => {
+test('the public SDK download list retains only the JavaScript package', () => {
   assert.deepEqual(SDK_VARIANTS.map(({ url, source, sdkLanguage }) => ({ url, source, sdkLanguage })), [
     { url: npmPackage.url, source: 'sdk-node', sdkLanguage: 'node' },
-    { url: '/shroom-sdk-python.zip', source: 'sdk-python', sdkLanguage: 'python' },
   ]);
   assert.ok(npmPackage.url.includes(npmPackage.sha256));
   assert.match(npmPackage.url, /\.tgz$/);

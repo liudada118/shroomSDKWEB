@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import CopyRawButton from '../CopyRawButton';
 import BackendGuide, { BackendGuideToolbar } from '../BackendGuide';
 import { docPages, getDoc } from '../generated';
@@ -14,6 +14,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
+  if (slug === 'python') redirect('/docs/quick-start');
   const doc = getDoc(slug);
   if (!doc) return { title: '文档未找到｜Shroom Developer' };
   return {
@@ -28,6 +29,8 @@ export default async function DocDetail({ params, searchParams }: {
   searchParams: Promise<{ language?: string | string[] }>;
 }) {
   const { slug } = await params;
+  if (slug === 'python') redirect('/docs/quick-start');
+  if (slug === 'backend' && (await searchParams).language === 'python') redirect('/docs/backend');
   const doc = getDoc(slug);
   if (!doc) notFound();
   const definition = getDocDefinition(doc.slug);
@@ -35,7 +38,6 @@ export default async function DocDetail({ params, searchParams }: {
   const others = docPages.filter((page) => page.slug !== doc.slug
     && !getDocDefinition(page.slug)?.hidden
     && getDocDefinition(page.slug)?.area === definition?.area).slice(0, 3);
-  const initialLanguage = doc.slug === 'backend' && (await searchParams).language === 'python' ? 'python' : 'node';
 
   if (doc.slug === 'quick-start') {
     // 调用流程由 SDK 共享生成器提供，接入准备和字段参考各有独立面板。
@@ -84,6 +86,6 @@ export default async function DocDetail({ params, searchParams }: {
   );
 
   return <div className="docs-page">{doc.slug === 'backend'
-    ? <BackendGuide key={initialLanguage} raw={doc.raw} initialLanguage={initialLanguage}>{content}</BackendGuide>
+    ? <BackendGuide raw={doc.raw}>{content}</BackendGuide>
     : content}</div>;
 }

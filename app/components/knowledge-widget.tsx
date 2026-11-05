@@ -234,7 +234,7 @@ function KnowledgeWidgetPanel({ initial, pathname }: { initial: StoredState; pat
                   maxLength={1_000}
                   rows={1}
                   disabled={busy}
-                  placeholder="例如：Python 怎么读取一帧？"
+                  placeholder="例如：怎么获取产品数据？"
                   className="max-h-28 min-h-11 min-w-0 flex-1 resize-none bg-transparent px-2 py-2 text-base leading-6 text-[var(--text-strong)] outline-none placeholder:text-[var(--text-subtle)] disabled:cursor-not-allowed"
                 />
                 {busy ? (

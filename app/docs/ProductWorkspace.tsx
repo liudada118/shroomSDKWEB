@@ -68,7 +68,6 @@ export default function ProductWorkspace() {
   const openDownload = useDownload();
   const requestLicense = useLicenseRequest();
   const jsDownload = SDK_VARIANTS.find(target => target.source === 'sdk-node')!;
-  const pythonDownload = SDK_VARIANTS.find(target => target.source === 'sdk-python')!;
   const [notice, setNotice] = useState('');
   const [copyFallback, setCopyFallback] = useState<string | null>(null);
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
@@ -136,7 +135,7 @@ export default function ProductWorkspace() {
   const sdkInstallContent = <>
     <p>复制命令，在自己的项目目录执行。SDK 会自动下载并安装，无需先保存压缩包。</p>
     <SdkInstall />
-    {product.minSdkVersion === '0.3.0' && <p>此产品要求 SDK {product.minSdkVersion} 或更高版本。旧项目可执行 <code>npm install shroom-sdk@0.3.0</code> 升级；Node 服务端与网页项目需使用同一版本，并重新构建前端。</p>}
+    <p>此产品要求 SDK {product.minSdkVersion} 或更高版本。旧项目可执行 <code>npm install --save-exact shroom-sdk@{jsDownload.sdkVersion}</code> 升级；Node 服务端与网页项目需使用同一版本，并重新构建前端。</p>
     <p><button type="button" disabled={!localPackageReady} className={styles.textLink} onClick={() => openDownload(jsDownload)}>下载安装包 →</button></p>
   </>;
 
@@ -159,11 +158,11 @@ export default function ProductWorkspace() {
           {step.id === 'flow-read' && <div id="workspace-config" className={styles.exampleControls}>
             <div className={styles.productRow}>
               <div className={styles.productChoices} role="group" aria-label="选择示例产品"><span className={styles.controlLabel}>产品</span>{workspaceProducts.map(product => <button type="button" key={product.id} aria-pressed={state.product === product.id} onClick={() => setProduct(product.id)}><span className={styles.choiceCheck} aria-hidden="true">{state.product === product.id ? '✓' : ''}</span>{product.label}</button>)}</div>
-              <Link className={styles.textLink} href="/docs/products">所有产品资料 →</Link>
+              <Link className={styles.textLink} href="/docs/products">产品接口参考 →</Link>
             </div>
             {product.requiresSide && <div className={styles.sideRow}><div className={styles.sideChoices} role="group" aria-label={`按实物确认${product.sideLabel}`}><span className={styles.controlLabel}>{product.sideLabel}</span>{(['left', 'right'] as const).map(side => <button id={`workspace-side-${side}`} type="button" key={side} aria-pressed={state.sideConfirmed && state.side === side} onClick={() => confirmSide(side)}><span className={styles.choiceCheck} aria-hidden="true">{state.sideConfirmed && state.side === side ? '✓' : ''}</span>{product.sideNames?.[side]}</button>)}</div><p id="workspace-ready" className={!ready ? styles.selectionHint : styles.confirmedHint}>{ready ? `已按实物确认${sideName}` : `按实物确认${product.sideLabel}后，可复制调用代码。`}</p></div>}
             {product.protocols.length > 0 && <div className={styles.protocolRow}><label className={styles.platformControl} htmlFor="workspace-protocol">鞋垫协议<select id="workspace-protocol" value={state.protocol} onChange={event => setProtocol(event.target.value as WorkspaceProtocol)}>{product.protocols.map(protocol => <option key={protocol.value} value={protocol.value}>{protocol.label}</option>)}</select></label><p className={styles.secondaryText}>按固件选择，不自动识别或扫描协议；默认 921600 baud。</p></div>}
-            {product.minSdkVersion === '0.3.0' && <p className={styles.versionNote}><strong>SDK {product.minSdkVersion} 起支持</strong>已有项目请同步升级 Node 与网页中的 SDK。<button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-run')}>查看安装说明 →</button></p>}
+            <p className={styles.versionNote}><strong>SDK {product.minSdkVersion} 起支持</strong>已有项目请同步升级 Node 与网页中的 SDK。<button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-run')}>查看安装说明 →</button></p>
           </div>}
           {step.blocks.map((block, blockIndex) => <CodeBlock key={`${step.id}-${block.runtime}-${blockIndex}`} code={block.code} runtime={block.runtime} disabled={!ready} descriptionId={!ready ? 'workspace-ready' : undefined} onCopy={() => copyFlow(block.code)} />)}
           <p className={styles.stepNote}>{step.note}</p>
@@ -203,7 +202,6 @@ export default function ProductWorkspace() {
         <article><div><h3>JavaScript SDK · v{packageVersion ?? jsDownload.sdkVersion}</h3><p>下载 npm 安装包；包含 Node 串口、WS 服务和浏览器入口。</p>{localPackageReady && <a className={styles.textLink} href="/shroom-sdk-node.zip" download>源码与示例 ZIP →</a>}</div><button type="button" disabled={!localPackageReady} className={styles.secondaryButton} onClick={() => openDownload(jsDownload)}>下载安装包</button></article>
         <article><div><h3>Shroom SDK 产品密钥</h3><p>安装与下载无需申请，连接真实设备前需要激活。</p></div><button type="button" className={styles.primaryButton} onClick={requestLicense}>申请 SDK 密钥</button></article>
         {SERIAL_DRIVERS.map(driver => <article key={driver.id}><div><h3>{driver.label} 串口驱动 · {driver.format}</h3><p>{driver.installNote}</p></div><a className={styles.secondaryButton} href={driver.url}>下载驱动</a></article>)}
-        <article><div><h3>Python SDK</h3><p>通用串口与矩阵路线，不包含本页的 Node / Web WS 采集控制链，也不支持整包手套。</p><Link className={styles.textLink} href="/docs/backend?language=python">查看 Python 支持范围 →</Link></div><button type="button" className={styles.secondaryButton} onClick={() => openDownload(pythonDownload)}>下载 Python SDK</button></article>
       </div>
     </section>
 

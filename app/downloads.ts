@@ -96,6 +96,7 @@ export const DESKTOP_PLATFORMS = desktopReleases.map((release) => {
   return { ...release, sizeLabel, target };
 });
 
+// 官网当前只展示 JavaScript / TypeScript；独立 SDK 的其他语言实现与历史下载保持不变。
 export const SDK_VARIANTS: (DownloadTarget & { label: string; description: string; contents: string; guideHref: string; details: string })[] = [
   {
     url: npmPackage.url,
@@ -107,22 +108,8 @@ export const SDK_VARIANTS: (DownloadTarget & { label: string; description: strin
     description: 'Node.js / Electron 开发，也包含浏览器入口',
     contents: 'Node.js 18+ · JavaScript / TypeScript · 含浏览器入口',
     guideHref: '/docs/quick-start',
-    details: '一个函数读取手套、手垫、鞋垫或人体全身数据；鞋垫与人体全身要求 SDK 0.3.0 或更高版本。之后可按需创建 WS、采集与下载。',
+    details: '一个函数读取手套、手垫、鞋垫或人体全身数据。分包手套从 SDK 0.4.0 起支持；鞋垫与人体全身从 0.3.0 起支持。之后可按需创建 WS、采集与下载。',
     title: '获取 Node.js SDK',
     subtitle: '可通过 npm 安装的精简包，包含 Node.js 与浏览器入口。连接真实设备前另行申请 SDK 产品密钥。',
-  },
-  {
-    url: '/shroom-sdk-python.zip',
-    source: 'sdk-python',
-    sdkLanguage: 'python',
-    sdkVersion,
-    fileName: `shroom-sdk-python-${sdkVersion}.zip`,
-    label: 'Python',
-    description: '数据采集、分析与算法开发',
-    contents: 'Python 3.10+ · pySerial · 模拟数据与图形示例',
-    guideHref: '/docs/backend?language=python',
-    details: '通过 pip 本地安装，不依赖 Node.js。提供同步逐帧读取、模拟设备和可选 Matplotlib 热力图示例。',
-    title: '获取 Python SDK',
-    subtitle: 'Python 独立 ZIP，解压后通过 pip 安装。连接真实设备前另行申请 SDK 产品密钥。',
   },
 ];

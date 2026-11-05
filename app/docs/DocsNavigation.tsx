@@ -19,15 +19,21 @@ export default function DocsNavigation({ pathname, items, onNavigate }: {
   const guides = docsForRoute('guides');
   const listed = [...basicReferences, ...guides].some((doc) => pathname === `/docs/${doc.slug}`);
 
-  /** Render a document link and expand only the current article's section outline. */
+  /** 当前文档行折叠整份目录，其他文档保留跳转入口。 */
   function docLink(doc: DocDefinition) {
     const active = pathname === `/docs/${doc.slug}`;
+    const label = doc.slug === 'backend' ? '后端 · 串口 / 通讯 / 存储' : doc.slug === 'frontend-communication' ? '前端 · 通讯' : doc.slug === 'rendering' ? '前端 · 渲染' : doc.navLabel;
     return (
       <li key={doc.slug}>
-        <Link href={`/docs/${doc.slug}`} onClick={onNavigate} aria-current={active ? 'page' : undefined} className="docs-menu-link">
-          {doc.slug === 'backend' ? '后端 · 串口 / 通讯 / 存储' : doc.slug === 'frontend-communication' ? '前端 · 通讯' : doc.slug === 'rendering' ? '前端 · 渲染' : doc.navLabel}
-        </Link>
-        {active && <DocOutline items={items} onNavigate={onNavigate} />}
+        {active && items.length > 0 ? <details open className="docs-document-group">
+          <summary className="docs-menu-link" aria-current="page">
+            {label}
+            <svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m7 5 5 5-5 5" /></svg>
+          </summary>
+          <DocOutline items={items} onNavigate={onNavigate} />
+        </details> : <Link href={`/docs/${doc.slug}`} onClick={onNavigate} aria-current={active ? 'page' : undefined} className="docs-menu-link">
+          {label}
+        </Link>}
       </li>
     );
   }
@@ -36,14 +42,16 @@ export default function DocsNavigation({ pathname, items, onNavigate }: {
     <nav aria-label="文档分类导航" className="docs-navigation">
       <Link href="/" onClick={onNavigate} className="docs-quick-link">← 开发首页</Link>
       <Link href="/docs" onClick={onNavigate} aria-current={pathname === '/docs' ? 'page' : undefined} className="docs-menu-link">文档概览</Link>
-      <div className="docs-menu-group" data-doc-route="quick">
-        <Link href="/docs/quick-start" onClick={onNavigate} aria-current={quickActive ? 'page' : undefined} className="docs-menu-link docs-route-entry">
-          快速接入文档
-        </Link>
-        {quickActive && <DocOutline items={items} onNavigate={onNavigate} collapsible={false} />}
-        <Link href="/docs/products" onClick={onNavigate} aria-current={pathname === '/docs/products' ? 'page' : undefined} className="docs-menu-link">所有产品资料</Link>
-        <Link href="/docs/skills" onClick={onNavigate} aria-current={pathname === '/docs/skills' ? 'page' : undefined} className="docs-menu-link">用 Skill 快速接入</Link>
-      </div>
+      <ul className="docs-menu-group" data-doc-route="quick" aria-label="接入与产品资料">
+        <li>
+          <Link href="/docs/quick-start" onClick={onNavigate} aria-current={quickActive ? 'page' : undefined} className="docs-menu-link">
+            快速接入文档 <span aria-hidden="true">→</span>
+          </Link>
+          {quickActive && <DocOutline items={items} onNavigate={onNavigate} collapsible={false} />}
+        </li>
+        <li><Link href="/docs/products" onClick={onNavigate} aria-current={pathname === '/docs/products' ? 'page' : undefined} className="docs-menu-link">产品接口参考 <span aria-hidden="true">→</span></Link></li>
+        <li><Link href="/docs/skills" onClick={onNavigate} aria-current={pathname === '/docs/skills' ? 'page' : undefined} className="docs-menu-link">用 Skill 快速接入 <span aria-hidden="true">→</span></Link></li>
+      </ul>
       <div className="docs-menu-group docs-basic-entry" data-doc-route="basic">
         <Link href="/docs/custom" onClick={onNavigate} aria-current={basicActive ? 'page' : undefined} className="docs-menu-link docs-route-entry">
           基础文档 <span aria-hidden="true">→</span>

@@ -14,6 +14,9 @@
 .page button { cursor: pointer; }
 .container { width: min(100%, 1240px); margin-inline: auto; padding-inline: 40px; }
 .hero { padding-block: 84px 72px; border-bottom: 1px solid var(--line); }
+.heroLayout { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); align-items: center; gap: clamp(24px, 3vw, 48px); }
+.heroCopy, .heroVisual { min-width: 0; }
+.heroVisual { width: 100%; max-width: 540px; justify-self: end; }
 .eyebrow { color: var(--accent); font-size: 13px; font-weight: 650; line-height: 1.6; }
 .hero h1 { margin-top: 22px; max-width: 18em; font-size: clamp(38px, 4.3vw, 62px); font-weight: 650; line-height: 1.2; letter-spacing: -.045em; text-wrap: balance; }
 .hero h1 span { color: var(--blue); }
@@ -35,6 +38,7 @@
 .sectionHeader p:not(.eyebrow) { margin-top: 12px; color: var(--muted); font-size: 15px; line-height: 1.8; text-wrap: pretty; }
 .sectionHeader > .textLink { flex-shrink: 0; }
 .flowGrid, .capabilityGrid, .productGrid, .downloadGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.downloadGrid { grid-template-columns: minmax(0, 1fr); }
 .flowCard { display: flex; flex-direction: column; min-width: 0; padding: 28px; border: 1px solid #cfdbef; border-radius: 12px; background: #fff; }
 .flowTitle { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .flowTitle h3 { font-size: 23px; font-weight: 650; line-height: 1.4; letter-spacing: -.02em; }
@@ -52,12 +56,12 @@
 .capabilityCard h3 { font-size: 19px; font-weight: 600; line-height: 1.5; }
 .capabilityCard p { margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.85; }
 .capabilityCard .cardMeta { margin-top: 18px; padding-top: 16px; border-top: 1px solid #f0f2f5; color: var(--subtle); font-size: 12px; }
-.productCard { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
-.productHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.productSubtitle { margin-top: 10px; color: var(--muted); font-size: 14px; line-height: 1.8; }
-.productHeading h3 { font-size: 22px; font-weight: 650; line-height: 1.4; letter-spacing: -.025em; }
-.supported { padding: 4px 8px; border: 1px solid #dbe7fd; border-radius: 5px; color: var(--accent); font-size: 12px; line-height: 1.6; white-space: nowrap; }
-.productMetric { margin-block: 16px 12px; color: var(--muted); font-size: 14px; font-weight: 500; line-height: 1.8; font-variant-numeric: tabular-nums; }
+.productCard { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 12px; background: #fff; transition: border-color 150ms, background-color 150ms; }
+.productCard:hover { border-color: #84adff; background: #fbfdff; }
+.productHeading { display: flex; width: 100%; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.productFilename { margin-block: 12px 20px; color: var(--subtle); font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.productHeading h3 { min-width: 0; font-size: 22px; font-weight: 650; line-height: 1.4; letter-spacing: -.025em; }
+.documentType { flex-shrink: 0; padding: 4px 8px; border: 1px solid #dbe7fd; border-radius: 5px; color: var(--accent); font-size: 12px; line-height: 1.6; white-space: nowrap; }
 .productCard > .textLink { margin-top: auto; }
 .sdkCard { display: flex; flex-direction: column; min-width: 0; padding: 28px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .downloadTitle { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
@@ -68,7 +72,6 @@
 .sdkCard .downloadDescription { margin-top: 8px; font-size: 13px; color: #344054; }
 .sdkCard .sdkRequirements { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--subtle); font-size: 12px; }
 .install { margin-top: 18px; }
-.sdkCard .pythonNote { margin-top: 22px; padding: 16px; border-radius: 8px; background: #f8fafc; color: var(--subtle); font-size: 13px; }
 .downloadActions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin-top: auto; padding-top: 22px; }
 .downloadActions .textLink { font-size: 13px; }
 .licenseStrip { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 20px; padding: 20px 24px; border: 1px solid #dbe7fd; border-radius: 10px; background: #f0f6ff; }
@@ -94,7 +97,7 @@
 .driverCard > .driverNote { font-size: 12px; color: var(--subtle); }
 .driverCard > .textLink { margin-top: 14px; font-size: 13px; }
 .anchor { display: block; height: 0; scroll-margin-top: 96px; }
-.docsGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.docsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
 .docCard { display: flex; flex-direction: column; min-width: 0; padding: 24px; border: 1px solid var(--line); border-radius: 10px; background: #fff; transition: border-color 150ms, background-color 150ms; }
 .docCard:hover { border-color: #84adff; background: #fbfdff; }
 .docCard .eyebrow { font-size: 12px; }
@@ -107,6 +110,7 @@
 
 @media (max-width: 1199px) {
   .container { padding-inline: 28px; }
+  .heroDescription { font-size: 16px; }
   .flowCard, .productCard, .sdkCard, .desktopCard, .driverCard { padding: 24px; }
   .docsGrid { gap: 14px; }
   .docCard { padding: 20px; }
@@ -115,6 +119,8 @@
 @media (max-width: 767px) {
   .container { padding-inline: 20px; }
   .hero { padding-block: 48px; }
+  .heroLayout { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .heroVisual { max-width: 440px; justify-self: center; }
   .hero h1 { font-size: clamp(34px, 8vw, 46px); }
   .heroDescription { font-size: 16px; }
   .desktopBreak { display: none; }
@@ -131,5 +137,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .primaryButton, .secondaryButton, .docCard { transition: none; }
+  .primaryButton, .secondaryButton, .docCard, .productCard { transition: none; }
 }

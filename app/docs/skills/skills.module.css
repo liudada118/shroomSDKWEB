@@ -7,7 +7,7 @@
 .primary { min-height: 46px; display: inline-flex; align-items: center; gap: 20px; padding: 12px 20px; border-radius: 8px; background: #2563eb; color: #fff; font-size: 14px; font-weight: 600; transition: background .18s; }
 .primary:hover { background: #175cd3; }
 .textLink { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #175cd3; font-size: 14px; font-weight: 600; }
-.textLink:hover, .inlineLink:hover, .footnote a:hover { text-decoration: underline; }
+.textLink:hover, .footnote a:hover { text-decoration: underline; }
 .page a:focus-visible, .page button:focus-visible { outline: 2px solid #2563eb; outline-offset: 4px; }
 .note { color: #667085; font-size: 13px; line-height: 1.8; }
 .section { padding-block: 32px; border-bottom: 1px solid #e4e7ec; scroll-margin-top: 100px; }
@@ -24,19 +24,13 @@
 .code { margin-block: 12px; padding: 16px 18px; border-radius: 8px; background: #101828; color: #e4e7ec; font-size: 13px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; }
 .prompt { margin-block: 12px; padding: 16px 18px; border-left: 3px solid #98b6f7; background: #f5f8ff; font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
 .footnote { color: #667085; font-size: 13px !important; }
-.footnote a, .inlineLink { color: #175cd3; text-decoration: underline; text-underline-offset: 3px; }
-.inlineLink { margin-left: 8px; white-space: normal; }
+.footnote a { color: #175cd3; text-decoration: underline; text-underline-offset: 3px; }
 .flow { color: #175cd3; font-weight: 600; margin-block: 16px; }
 .scope { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-block: 20px 8px; }
 .scope p { font-size: 14px; line-height: 1.9; }
 .scope strong { display: block; color: #101828; margin-bottom: 4px; font-weight: 600; }
-.comparison { display: grid; margin-block: 20px; border-block: 1px solid #e4e7ec; }
-.comparison div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 20px; padding-block: 16px; font-size: 14px; line-height: 1.8; }
-.comparison div + div { border-top: 1px solid #e4e7ec; }
-.comparison dt { font-weight: 600; color: #101828; }
 @media (max-width: 640px) {
   .scope { grid-template-columns: 1fr; gap: 18px; }
-  .comparison div { grid-template-columns: 1fr; gap: 4px; }
   .section h2 { font-size: 21px; }
   .header { padding-top: 20px; }
 }

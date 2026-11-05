@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useDownload, useLicenseRequest } from './DownloadProvider';
 import SdkInstall from './SdkInstall';
+import HeroDataVisual from './HeroDataVisual';
 import { DESKTOP_PLATFORMS, SDK_VARIANTS, SERIAL_DRIVERS, SDK_SOURCE_URL } from './downloads';
-import { productCatalog } from './product-catalog';
+import { productSpecifications } from './product-specifications';
 import styles from './home.module.css';
 
 const GLOVE_LAB_URL = 'https://glove.jq-industries.io/';
@@ -61,15 +62,18 @@ export default function Home() {
 
   return <div className={styles.page}>
     <section id="top" className={styles.hero} aria-labelledby="home-title">
-      <div className={styles.container}>
-        <p className={styles.eyebrow}>SHROOM 开发者中心</p>
-        <h1 id="home-title">让传感器数据，<br /><span>接入你的应用。</span></h1>
-        <p className={styles.heroDescription}>用 SDK 一步获取产品数据，开发自己的应用；<br className={styles.desktopBreak} />用上位机直接查看、采集与导出。</p>
-        <div className={styles.actions}>
-          <a href="#sdk-flow" className={styles.primaryButton}>使用 SDK 开发 <span aria-hidden="true">→</span></a>
-          <a href="#desktop-flow" className={styles.secondaryButton}>使用上位机 <span aria-hidden="true">→</span></a>
+      <div className={styles.container + ' ' + styles.heroLayout}>
+        <div className={styles.heroCopy}>
+          <p className={styles.eyebrow}>SHROOM 开发者中心</p>
+          <h1 id="home-title">让传感器数据，<br /><span>接入你的应用。</span></h1>
+          <p className={styles.heroDescription}>用 SDK 一步获取产品数据，开发自己的应用；<br className={styles.desktopBreak} />用上位机直接查看、采集与导出。</p>
+          <div className={styles.actions}>
+            <a href="#sdk-flow" className={styles.primaryButton}>使用 SDK 开发 <span aria-hidden="true">→</span></a>
+            <a href="#desktop-flow" className={styles.secondaryButton}>使用上位机 <span aria-hidden="true">→</span></a>
+          </div>
+          <p className={styles.heroNote}>从连接设备，到让数据为你所用。</p>
         </div>
-        <p className={styles.heroNote}>从连接设备，到让数据为你所用。</p>
+        <div className={styles.heroVisual}><HeroDataVisual /></div>
       </div>
     </section>
 
@@ -112,16 +116,16 @@ export default function Home() {
     <section id="products" className={styles.section} aria-labelledby="products-title">
       <div className={styles.container}>
         <header className={styles.sectionHeader}>
-          <div><p className={styles.eyebrow}>产品概览</p><h2 id="products-title">产品资料</h2><p>快速了解产品，完整参数请查阅产品规格书。</p></div>
-          <Link href="/docs/products" className={styles.textLink}>全部产品资料 <span aria-hidden="true">→</span></Link>
+          <div><p className={styles.eyebrow}>产品规格书</p><h2 id="products-title">产品资料</h2><p>查看产品规格与技术参数，点击直接打开 PDF 规格书。</p></div>
         </header>
         <div className={styles.productGrid}>
-          {productCatalog.map(product => <article key={product.id} className={styles.productCard} aria-labelledby={product.id + '-title'}>
-            <div className={styles.productHeading}><h3 id={product.id + '-title'}>{product.name}</h3>{product.minSdkVersion === '0.3.0' && <span className={styles.supported}>SDK {product.minSdkVersion} 起支持</span>}</div>
-            <p className={styles.productSubtitle}>{product.slogan}</p>
-            <p className={styles.productMetric}>{product.summary[0]}</p>
-            <Link href={'/docs/products#' + product.id} className={styles.textLink} aria-label={'查看' + product.name + '产品资料'}>查看产品资料 <span aria-hidden="true">→</span></Link>
-          </article>)}
+          {productSpecifications.map(specification => <a key={specification.id} className={styles.productCard}
+            href={specification.href} target="_blank" rel="noopener noreferrer"
+            aria-label={`查看${specification.name}规格书（PDF，新标签页打开）`}>
+            <div className={styles.productHeading}><h3>{specification.name}</h3><span className={styles.documentType}>PDF</span></div>
+            <p className={styles.productFilename}>{specification.displayFileName}</p>
+            <span className={styles.textLink}>查看规格书 <span aria-hidden="true">↗</span></span>
+          </a>)}
         </div>
       </div>
     </section>
@@ -129,19 +133,19 @@ export default function Home() {
     <section id="downloads" className={styles.section + ' ' + styles.tinted} aria-labelledby="sdk-downloads-title">
       <div className={styles.container}>
         <header className={styles.sectionHeader}>
-          <div><p className={styles.eyebrow}>按开发语言选择</p><h2 id="sdk-downloads-title">SDK 下载</h2><p>选好语言，开始开发。JavaScript / TypeScript 通过 npm 安装，Python 使用独立安装包。</p></div>
+          <div><p className={styles.eyebrow}>安装即可开始</p><h2 id="sdk-downloads-title">SDK 下载</h2><p>通过 npm 安装，在 Node.js 或浏览器项目中调用。</p></div>
           <Link href="/docs" className={styles.textLink}>进入文档中心 <span aria-hidden="true">→</span></Link>
         </header>
         <div className={styles.downloadGrid}>
           {SDK_VARIANTS.map(variant => <article key={variant.source} aria-labelledby={variant.source + '-title'} className={styles.sdkCard}>
-            <div className={styles.downloadTitle}><span className={styles.languageBadge} aria-hidden="true">{variant.sdkLanguage === 'python' ? 'PY' : 'JS'}</span><span className={styles.version}>v{variant.sdkVersion} · {variant.sdkLanguage === 'node' ? 'npm' : 'ZIP'}</span></div>
-            <h3 id={variant.source + '-title'}>{variant.sdkLanguage === 'node' ? 'JavaScript / TypeScript' : variant.label} SDK</h3>
+            <div className={styles.downloadTitle}><span className={styles.languageBadge} aria-hidden="true">JS</span><span className={styles.version}>v{variant.sdkVersion} · npm</span></div>
+            <h3 id={variant.source + '-title'}>JavaScript / TypeScript SDK</h3>
             <p className={styles.downloadDescription}>{variant.description}</p>
             <p>{variant.details}</p>
             <p className={styles.sdkRequirements}>{variant.contents}</p>
-            {variant.sdkLanguage === 'node' ? <div className={styles.install}><SdkInstall /></div> : <p className={styles.pythonNote}>Python 提供通用串口与同步逐帧读取；五步产品函数使用 JavaScript / TypeScript。</p>}
+            <div className={styles.install}><SdkInstall /></div>
             <div className={styles.downloadActions}>
-              <button type="button" onClick={() => openDownload(variant)} className={variant.sdkLanguage === 'node' ? styles.secondaryButton : styles.primaryButton}>{variant.sdkLanguage === 'node' ? '下载安装包' : '下载 Python SDK'}</button>
+              <button type="button" onClick={() => openDownload(variant)} className={styles.secondaryButton}>下载安装包</button>
               <Link href={variant.guideHref} className={styles.textLink}>使用指南 <span aria-hidden="true">→</span></Link>
               <a href={SDK_SOURCE_URL} target="_blank" rel="noreferrer" className={styles.textLink}>查看源码 <span aria-hidden="true">↗</span></a>
             </div>
@@ -187,7 +191,6 @@ export default function Home() {
         <div className={styles.docsGrid}>
           <Link id="quick-start" href="/docs/quick-start" className={styles.docCard}><span className={styles.eyebrow}>快速接入</span><h3>一步拿到产品数据</h3><p>先完成取数，再按需创建 WS、采集和下载。</p><span className={styles.cardAction}>查看调用流程 <span aria-hidden="true">→</span></span></Link>
           <Link id="skill" href="/docs/skills" className={styles.docCard}><span className={styles.eyebrow}>AI 开发辅助</span><h3>用 Skill 快速接入</h3><p>把接入约定交给 AI，按实际产品和环境生成调用代码。</p><span className={styles.cardAction}>查看 Skill 使用说明 <span aria-hidden="true">→</span></span></Link>
-          <Link href="/docs/backend?language=python" className={styles.docCard}><span className={styles.eyebrow}>Python</span><h3>读取与分析数据</h3><p>查阅独立 Python 包、同步串口读取与基础矩阵用法。</p><span className={styles.cardAction}>查看 Python 指南 <span aria-hidden="true">→</span></span></Link>
         </div>
         <nav id="tools" className={styles.tools} aria-label="辅助开发工具"><span>辅助工具</span><a id="web-lab" href="/lab.html" target="_blank" rel="noreferrer" className={styles.textLink}>网页测试台 <span aria-hidden="true">↗</span></a><a href={GLOVE_LAB_URL} target="_blank" rel="noreferrer" className={styles.textLink}>手套体验站 <span aria-hidden="true">↗</span></a><Link href="/knowledge" className={styles.textLink}>AI 文档问答 <span aria-hidden="true">→</span></Link></nav>
       </div>

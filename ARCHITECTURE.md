@@ -1,18 +1,20 @@
 # 架构文档
 
-> 本文档由 Codex 自动生成和维护。最后更新于：2026-11-04
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-11-05
 
 ## 1. 项目概述
 
 官网与 SDK 分属两个 Git 仓库：[shroomSDKWEB](https://github.com/liudada118/shroomSDKWEB) 维护页面、在线文档和下载入口，[shroomSDK](https://github.com/liudada118/shroomSDK) 维护 SDK 源码、测试、构建与版本发布。官网的 `sdk/` 是固定提交的 Git 子模块；以下 SDK 路径表示子模块内的文件，不再属于官网直接维护的源码。
 
-Shroom Developer 面向开发自有应用与直接使用上位机的两类客户。首页采用纯描述首屏，按“用途概览 → SDK / 上位机双流程 → SDK 能力中心 → 产品概览与资料入口 → 按语言获取 SDK / 按平台下载上位机 → 文档中心”组织，每区以短标题说明结果。SDK 路径以 readProduct 一步取数为核心；上位机路径独立，不要求用户另装 SDK。驱动提示集中在接入准备与上位机下载，首屏不再展示代码或驱动横幅。首页使用独立 home.module.css，保留既有下载、工具与文档锚点。
+当前官网固定 SDK **0.4.0**（`sdk-v0.4.0` / `50d0956c192c892f7bd701cbdde8e22bb0ae0b4b`），页面版本、下载制品、生成文档与 Skill 基线一致。npm `latest` 为 0.4.0，官网 TGZ 与该正式发布包内容一致。人体和鞋垫的“0.3.0 起支持”仍是各自最低版本说明。
 
-首页、文档中心、文档详情和 `/knowledge` 问答页通过根布局共用 `SiteShell`：统一 72px 顶栏、左侧导航、正文区域和页脚；窄屏通过同一个“目录”按钮展开导航。首页与问答侧栏为 240px，文档侧栏为 288px。文档分类和当前文档的章节/API 全部并入左侧层级树，正文不再分出右侧目录；文档顶栏仅显示品牌与当前位置，开发首页、下载和问答入口放在左侧。首页使用 `.home-shell` 与 `home.module.css`，文档使用 `.docs-shell` 阅读样式，下载登记和既有路由保持兼容。独立的 `/lab.html` 测试台不套用网站布局。
+Shroom Developer 面向开发自有应用与直接使用上位机的两类客户。首页采用描述与数据示意双栏首屏，按“用途概览 → SDK / 上位机双流程 → SDK 能力中心 → 产品概览与资料入口 → 获取 JavaScript SDK / 按平台下载上位机 → 文档中心”组织，每区以短标题说明结果。SDK 路径以 readProduct 一步取数为核心；上位机路径独立，不要求用户另装 SDK。驱动提示集中在接入准备与上位机下载，首屏不再展示代码或驱动横幅。首页使用独立 home.module.css，保留既有下载、工具与文档锚点。
+
+首页、文档中心、文档详情和 `/knowledge` 问答页通过根布局共用 `SiteShell`：统一 72px 顶栏、左侧导航、正文区域和页脚；窄屏通过同一个“目录”按钮展开导航。首页与问答侧栏为 240px，文档侧栏为 288px。文档分类和当前文档的章节/API 全部并入左侧层级树，正文不再分出右侧目录；文档顶栏仅显示品牌与当前位置，开发首页、下载和问答入口放在左侧。`DocsNavigation` 将快速接入、产品资料与 Skill 入口呈现为同级语义列表，普通项使用相同字重与右箭头，仅当前页面高亮。首页使用 `.home-shell` 与 `home.module.css`，文档使用 `.docs-shell` 阅读样式，下载登记和既有路由保持兼容。独立的 `/lab.html` 测试台不套用网站布局。
 
 **当前版本的下载与文档都是真实可用的，不再是骨架**：
 
-- **按语言获取 SDK** —— JavaScript / TypeScript 主入口提供 `npm install shroom-sdk`，从 npm 注册表安装到客户 node_modules；另有官网 TGZ 下载与源码 ZIP 备用入口。Python 保留独立 ZIP 和 pip 指南。SDK 下载免登记，真实设备另行申请并激活产品密钥；上位机仍使用原下载登记。官网展示版本读取固定 SDK 提交，发布时确认 npm latest 与其一致；备用 TGZ URL 含版本与 SHA256，历史包随官网源码保留。
+- **获取 SDK** —— 官网暂只展示 JavaScript / TypeScript，提供 `npm install shroom-sdk`、TGZ 下载和源码入口，覆盖 Node.js 与浏览器。Python 下载卡、指南入口、语言选择与相关展示说明暂时隐藏；独立 SDK 的 Python 实现和历史下载制品保留。SDK 下载免登记，真实设备另行申请并激活产品密钥；上位机仍使用原下载登记。官网展示版本读取固定 SDK 提交，发布时确认 npm latest 与其一致；备用 TGZ URL 含版本与 SHA256，历史包随官网源码保留。
 - **三平台上位机** —— 首页通过 `app/downloads.ts` 提供用户指定的 Shroom 安装包：Windows 1.1.36 EXE、macOS 1.1.37 ARM64 DMG（仅 Apple Silicon）、Linux 1.1.38 amd64 DEB（仅支持 DEB 的 x86_64 系统）。三个平台均可下载；版本来自文件名，体积来自 2026-10-13 的 HTTPS HEAD 响应。安装包由 `shroom.jq-industries.com/shroom1/` 独立提供，不进入本站 Git 或构建产物。页面不复用旧 Monitor ZIP 的日期、更新日志、签名或授权说明；当前包的功能/授权不由基础 SDK 边界推定。旧 `desktop-release.json` 与同步脚本仅保留用于历史 Monitor 流程，不再驱动首页。
 - **文档中心** —— `/docs` 主入口直达 `/docs/quick-start`：先直接展示 `listPorts()` 搜索和用户选择串口，再进入取数、创建 WS、开始采集、停止采集、下载五步。搜索使用 `shroom-sdk/node` 基础 API，不新增第六个快速函数。Node 负责设备与服务，网页通过同一个 `stream` 控制采集并按返回的记录 ID 下载；驱动、授权与依赖集中在“接入准备”。产品和手侧在取数示例旁选择，字段、排查、SDK 下载为独立面板，驱动不再全局置顶。`/docs/products` 提供完整产品资料，`/docs/skills` 分发 AI 接入 Skill；`/docs/custom` 承接基础自定义，后端参考统一在 `/docs/backend`。SDK 文档由 `sdk/docs/catalog.json` 维护来源和导航元数据，构建期预渲染成 HTML；官网产品与 Skill 页由独立路由渲染，旧链接保持兼容。
 - **完整快速方案** —— Node 数据服务广播标准产品帧，按标签录制到 SQLite 并下载 CSV/JSONL；页面刷新可按记录 ID 找回历史。已有手套/手垫提供分区展示，新的人体/鞋垫由应用消费 onData 自行绘制；没有将合成数据称为真机数据，细节见 4.9。
@@ -30,7 +32,7 @@ Shroom Developer 面向开发自有应用与直接使用上位机的两类客户
 页面 **不提供、也不会提供** kPa / 牛顿等物理单位换算 —— SDK 直连串口给到的是 0~1 相对值，后端客户端则保留后端的原始 JSON 与单位语义，
 标定曲线逐台设备不同，不在公开 SDK 范围内，能力边界在 SDK 文档中说明。
 
-AI 接入资料以 `sdk/docs/AI-CONTEXT.md` 与 `sdk/docs/怎么用AI开发.md` 为事实源，围绕五步函数、调用异常、运行期错误、采集状态与资源释放组织。网站另在 `skills/shroom-sdk/` 维护可安装的 Skill，通过 `/docs/skills` 说明并分发 ZIP；普通 AI 参考文档不再标为可安装 Skill。Skill 指引基线为 SDK 0.3.0，说明 npm 安装、实际版本核对及 Node/网页同版本要求；安装 Skill 本身不升级 SDK。网站未提供 MCP 服务。
+AI 接入资料以 `sdk/docs/AI-CONTEXT.md` 与 `sdk/docs/怎么用AI开发.md` 为事实源，围绕五步函数、调用异常、运行期错误、采集状态与资源释放组织。网站另在 `skills/shroom-sdk/` 维护可安装的 Skill，通过 `/docs/skills` 说明并分发 ZIP；普通 AI 参考文档不再标为可安装 Skill。Skill 指引基线为 SDK 0.4.0，说明 npm 安装、实际版本核对及 Node/网页同版本要求；安装 Skill 本身不升级 SDK。网站未提供 MCP 服务。
 
 ## 2. 技术栈
 
@@ -62,11 +64,13 @@ shroomSDKWEB/
 │  ├─ globals.css           # Tailwind 入口、全局基础样式与背景纹理
 │  ├─ layout.tsx            # 页面语言、字体、元数据与统一布局入口
 │  ├─ page.tsx / home.module.css # 描述首屏、SDK/上位机双流程与独立首页样式
-│  ├─ product-catalog.ts    # 首页与产品资料页共用的已支持产品、字段和接入链接
+│  ├─ HeroDataVisual.tsx / .module.css # 首屏传感器到应用的数据示意，无真实设备连接
+│  ├─ product-specifications.ts # 首页四份产品规格书的原始文件名和 PDF 直链
+│  ├─ product-catalog.ts    # SDK 产品接口参考与快速接入共用的协议、字段和配置
 │  ├─ SiteShell.tsx         # 首页与文档共用的顶栏/左侧栏/正文/页脚骨架
 │  ├─ SiteNavigation.tsx    # 路由与首页滚动高亮、跨页锚点、移动目录
 │  ├─ DownloadProvider.tsx  # 下载登记弹窗与 useDownload（具体语言由卡片决定）
-│  ├─ downloads.ts         # Python / Node.js / 上位机下载目标和发布元数据
+│  ├─ downloads.ts         # 官网 JavaScript SDK / 上位机下载目标和发布元数据
 │  ├─ api/knowledge/       # 智谱问答 POST 接口，只在服务端读取密钥
 │  ├─ knowledge/           # 共用 SiteShell 的完整问答页及元数据
 │  ├─ components/knowledge-* # 会话、悬浮面板、消息引用与文档定位
@@ -74,7 +78,7 @@ shroomSDKWEB/
 │  ├─ desktop-release.json  # 历史 Monitor 元数据；脚本生成，当前首页不使用
 │  └─ docs/                 # 文档概览/详情、侧栏、语言切换与元数据
 │     ├─ products/page.tsx / products.module.css # 全部产品的协议、字段与能力边界
-│     ├─ skills/page.tsx / skills.module.css # Skill 下载、项目安装与 MCP 区别说明
+│     ├─ skills/page.tsx / skills.module.css # Skill 下载、项目安装与接入接口说明
 │     ├─ DocOutline.tsx     # 左侧折叠章节/API：中文功能、语言同步与当前位置
 │     ├─ use-active-doc-heading.ts # 合并滚动更新、监听语言显隐变化
 │     ├─ ProductWorkspace.tsx / .module.css # 五步调用流程、接入准备与参考面板
@@ -91,7 +95,8 @@ shroomSDKWEB/
 │  ├─ pack-integration-skill.mjs # 三文件白名单生成可复现 Skill ZIP、原文与哈希清单
 │  ├─ verify-site.mjs       # 官网来源、文档、类型、生产页面和下载集成检查
 │  ├─ tests/               # 独立 SDK 来源、缺失子模块及提交错位回归
-│  ├─ build-docs.mjs        # SDK Markdown（含 Python README）→ 预渲染 HTML，供 /docs 使用
+│  ├─ build-docs.mjs        # 按官网展示范围预渲染 SDK Markdown，供 /docs 使用
+│  ├─ site-docs.mjs         # 暂时隐藏 Python 文档与混合说明，保留 JS 示例及原章节锚点
 │  └─ sync-desktop-release.mjs  # 历史 Monitor 同步；不修改当前三平台下载配置
 ├─ skills/shroom-sdk/        # 官网维护的 AI 接入 Skill 源文件，与 npm SDK 分开交付
 │  ├─ SKILL.md              # 可发现的 Skill 定义与接入约定
@@ -212,8 +217,8 @@ flowchart TD
 ### 4.2 主要数据流
 
 1. **产品资料定位**
-   - `app/product-catalog.ts` 统一维护当前已封装的手套和手垫资料，首页和 `/docs/products` 共用。
-   - 首页只显示产品名称、一句简介、一个核心参数和资料入口，以最低 SDK 版本标明新产品支持范围；提示完整参数查阅产品规格书。字段表、映射、波特率和接入限制集中在 `/docs/products` 与接入文档，产品资料页继续深链到对应产品的取数示例。当前没有规格书文件或 URL，首页沿用真实产品资料锚点，不生成规格书下载链接；别名和通用矩阵配置不作为额外产品。
+   - 首页产品资料由 `app/product-specifications.ts` 独立维护鞋垫、触觉手套、高密度手部压力监测垫与全身触觉皮肤四份 PDF，整张卡片直接在新标签打开资料站 `https://shroom.jq-industries.com/book/` 的原始文件；文件名编码一次，保留空格、括号及原始拼写。首页不再提供“全部产品资料”汇总入口。
+   - `app/product-catalog.ts` 继续维护 SDK 已封装产品的协议、字段、最低版本与接入配置，供快速接入和 `/docs/products` 使用。该页及各文档入口统一称为“产品接口参考”，保留原路由与取数深链。规格书用 `displayFileName` 单独维护展示文件名：手套显示为 `触觉手套规格书.pdf`，全身触觉皮肤显示文件名去掉 `(1)`；下载 URL 仍由原始 `fileName` 生成。
    - 产品列表完整性检查与 SDK `listDeviceProducts()` 的注册结果比较，新增协议时同步资料。
 2. **Shroom Skill 推荐接入**
    - 首页“用 Skill 快速接入”进入 `/docs/skills`，下载独立的接入说明包；包内明确已支持产品、五个快速函数、串口选择和错误处理边界。
@@ -232,21 +237,25 @@ flowchart TD
    - 上位机登记 POST 到 `/sdk-requests`，来源为 `desktop-win` / `desktop-macos` / `desktop-linux`，版本沿用 `sdkVersion` 字段；登记失败仍放行下载。SDK 密钥申请使用 `sdk-license`，须收到明确成功响应才提示已提交，不自动发钥。原生 dialog 管理焦点与关闭，保留草稿；跨域安装包的保存行为由下载站响应头决定。
 6. **全站导航与响应式布局**
    - 首页导航与正文一致，依次为概览、使用流程、能力、产品资料、SDK 下载、上位机与驱动、文档。文档新增产品资料与 Skill 入口，静态页不会混入整份基础 API 目录。首页顶部不再重复显示驱动入口。
-   - >=1024px 显示固定侧栏：首页与问答 240px，文档 288px，正文与页脚使用对应左外边距；顶栏保留品牌与当前位置。首页 Hero 以描述和两个使用入口呈现，代码集中到文档中。
+   - >=1024px 显示固定侧栏：首页与问答 240px，文档 288px，正文与页脚使用对应左外边距；顶栏保留品牌与当前位置。首页 Hero 左侧保留描述和两个使用入口，右侧由 `HeroDataVisual` 展示压力矩阵经 SDK 进入应用的静态 SVG 示意，明确标注“数据示意”，不展示虚构实时数值；小于 768px 时图文纵向排列。代码集中到文档中。
    - 原生锚点保留深链接和浏览器前进/后退；通过 requestAnimationFrame 合并滚动更新，按区域位置设置 `aria-current`，不在滚动时改写历史。点击锚点不提前选中目标项，平滑滚动途中的高亮也始终跟随实际位置；页尾不足一屏时仍激活最后的页内导航项。
    - 移动端目录支持展开/收起、Esc 关闭并返回按钮焦点、选中后聚焦目标内容、失焦与外部点击关闭；展开期间禁止背景滚动。保留跳过导航入口、键盘焦点样式和 reduced-motion 行为。
    - `layout.tsx` 只向客户端传入文档路径/标题与轻量 TOC 映射，不导入整篇文档到导航客户端模块；文档仍由服务端页面渲染。每页仅有一个顶栏、主内容区和页脚，旧的 `DocHeader` 已由共享组件替代。
    - 文档概览和详情采用统一 `docs-page` / 单列 `docs-grid`，正文最大阅读宽度 800px、正文基准字号 16px；分类和章节/API 保留左置，并以“本页章节”区分文章目录。手机复用“目录”菜单，表格/代码独立横向滚动。文档概览的五步入口在窄屏纵向排列，快速接入正文按任务切换面板，五步代码默认展开。
    - `DocOutline` 通过 `useActiveDocHeading` 跟随实际标题位置高亮，以 requestAnimationFrame 合并 scroll / resize / hashchange，隐藏语言不参与选择。h2 章节使用默认全部展开的原生 details，h3 函数以中文功能名和英文接口副标题显示；用户仍可用箭头或键盘手动收起。滚动不重新展开已收起的章节，定位时使用该章节的 summary 而不是隐藏链接，仅调整左侧 scrollTop；不移动正文或键盘焦点，不改写历史。此默认行为共用于后端双语言、前端与辅助参考文档；移动端外层“目录”菜单仍默认关闭。
 
+   - 当前参考文档行使用默认展开的原生 `details/summary`，点击整行或按 Enter / Space 可折叠整份章节目录；未选中文档仍通过链接进入。`DocOutline` 在外层目录隐藏时跳过侧栏自动滚动，避免正文滚动改变收起状态或将侧栏移到隐藏链接的位置。
+
 ### 4.3 Python SDK 数据流与交付
+
+自 2026-11-05 起，以下为保留的底层能力；官网暂不展示 Python SDK、安装指南或语言选择。旧文档地址导向 JavaScript 快速接入，历史下载制品与 SDK 源码不删除。
 
 - `sdk/python/src/shroom_sdk/device.py` 使用 pySerial 读取字节，经过 `framer.py` 拆帧和长度锁定，再由 `frame.py` 解析成 `Frame`。模拟设备走同一解码路径。
 - 采用同步 `read_frame(timeout)` / `frames()` / 迭代器读取和 `with` 管理生命周期，无后台采集线程。核心导入与 Mock 不要求 pySerial，依赖在真实串口调用时加载。
 - `errors.py` 提供 `ShroomError` 及兼容 ValueError / OSError / ImportError 等既有捕获方式的子类；包含 code、stage、suggestion、details 与 cause。配置在导入 pySerial / 打开设备前校验，超时仍返回 None。`state` 与 `get_diagnostics()` 提供状态及累计计数，诊断不包含原始异常对象。关闭失败不再被吞掉；`with` 内已有业务异常时保留原异常，并记录关闭故障。
 - `Frame` 使用 bytes 原始快照、array('f') 数值、点数/重心/统计和 Unix 毫秒时间戳，支持 raw/mat32/自定义排列。跨语言测试调用现有 JS 实现验证数值与拆帧一致。
 - `python -m shroom_sdk` 提供串口枚举、模拟/实机运行、有限帧数和 JSON 输出；`examples/heatmap.py` 是可选 Matplotlib 图形示例。
-- 通过 pip 本地安装或构建 wheel/sdist，尚未发布 PyPI。官网主入口 `/docs/backend?language=python` 展示统一后端指南的 Python 示例，`/docs/python` 保留完整 API 参考；Python ZIP 和兼容完整 ZIP 携带源码、配置、示例和测试，排除虚拟环境、字节码、egg-info 与构建产物。独立 Python 包不含 JS 事实源，其跨语言对照测试自动跳过；在完整仓库仍执行。
+- 通过 pip 本地安装或构建 wheel/sdist，尚未发布 PyPI。官网暂时隐藏对应指南；`/docs/python` 重定向至快速接入，旧 `/docs/backend?language=python` 使用 Node.js 内容。Python ZIP 和兼容完整 ZIP 继续携带源码、配置、示例和测试，排除虚拟环境、字节码、egg-info 与构建产物。独立 Python 包不含 JS 事实源，其跨语言对照测试自动跳过；在完整仓库仍执行。
 
 ### 4.4 智谱知识问答
 
@@ -254,6 +263,7 @@ flowchart TD
 - `server/zhipu-knowledge.ts` 先请求知识库 retrieve，再把有限的命中文段送给 GLM。无命中时不调用模型。服务端归一化来源并过滤非 HTTP(S) 链接，限制问题 1000 字符、历史 8 条、上下文 12000 字符。
 - API 拒绝跨 Origin 请求，限制实际请求体 64 KiB，智谱请求 60 秒超时；API Key 不进入浏览器或 SDK 下载包。缺少 Key / Knowledge ID 返回 `KNOWLEDGE_NOT_CONFIGURED`，不提供模拟答案。
 - `build-docs.mjs` 同时生成轻量 `app/docs/catalog.generated.ts`，只把章节元数据交给客户端。模型章节标识使用 `slug--sN` 避免跨文档重名，实际链接为 `/docs/:slug#sN`；服务端和客户端均校验目录，不沿用旧分支的 Backend 链接。
+- 问答推荐、输入提示和 Skill 只说明当前官网展示的 JavaScript / TypeScript 接入；检索片段复用 `site-docs.mjs` 保留混合资料的 JS 内容，过滤 Python 专属来源，避免重新推荐已隐藏的文档。
 - 本地文档构建不会自动同步到智谱知识库。管理员仍需上传当前 README、AI 上下文、快速指南和 Python README；系统提示区分Node/浏览器新快速服务及标签录制下载、旧BackendSdkClient与Python基础能力，不再错误否认现有产品协议；数据库、回放、标定和三维手模仍不由SDK提供。
 - 增加 `BACKEND.md` 后，目录自动包含 backend 页面和章节；问答提示区分 JS 的后端客户端、后端服务本身与 Python 能力。知识库需另行上传新文档，构建不会自动上传。
 - `npm run test:knowledge` 使用模拟上游测试检索、SSE、来源、安全错误及全部章节链接；未配置凭据时无法验证真实云端问答。公网部署前还需配置入口限流与用量保护，当前接口不是付费授权系统。
@@ -269,13 +279,13 @@ flowchart TD
 
 ### 4.6 文档分类与生成
 
-- `sdk/docs/catalog.json` 是文档 slug、源文件、摘要、分类、导航名称和可见性的事实源；`app/docs/structure.ts` 只读取轻量元数据，供概览、侧栏、面包屑和同类推荐共用。整篇 HTML/Markdown 不进入分类侧栏的客户端依赖。
-- 后端主入口只有 `/docs/backend`，来源为 `sdk/docs/BACKEND-GUIDE.md`。左侧后端下的串口、通讯、存储链接直接定位同一篇的稳定锚点；`/docs/python`、`/docs/node`、`/docs/serial`、`/docs/storage` 保留为详细参考，不重复出现在主目录。原 HTTP/WS 原文 `BACKEND.md` 改由 `/docs/backend-api` 提供，站内源文件引用自动改写至此。
-- `BackendGuide` 接收服务端渲染的正文和 Markdown，下拉框控制 `data-sdk-language` 代码块、说明和本页目录条目的显隐；公共标题保持共享。`?language=python|node` 支持下载区指南直达所选语言与刷新保留，切换时更新当前 URL 并保留 hash；复制按钮只复制当前语言和共享内容。Python 通讯章节明确未交付 HTTP/WS 客户端，不虚构 Python SDK 接口。
+- `sdk/docs/catalog.json` 是文档 slug、源文件、摘要、分类、导航名称和可见性的事实源；网站通过 `scripts/site-docs.mjs` 暂时排除 Python 文档，并将混合资料转换为 JavaScript 展示内容，不改 SDK 原文。`app/docs/structure.ts` 读取轻量展示元数据，供概览、侧栏、面包屑和同类推荐共用。整篇 HTML/Markdown 不进入分类侧栏的客户端依赖。
+- 后端主入口只有 `/docs/backend`，来源为 `sdk/docs/BACKEND-GUIDE.md`。左侧后端下的串口、通讯、存储链接直接定位同一篇的稳定锚点；`/docs/node`、`/docs/serial`、`/docs/storage` 保留为详细参考，不重复出现在主目录，旧 `/docs/python` 转至快速接入。原 HTTP/WS 原文 `BACKEND.md` 改由 `/docs/backend-api` 提供，站内源文件引用自动改写至此。
+- `BackendGuide` 接收服务端渲染的正文和 Markdown，仅展示 Node.js，不再提供语言下拉框。旧语言查询参数不切换到隐藏资料；正文、复制原文、目录与问答索引均使用同一展示范围。过滤专属章节前固定原有标题编号，避免改变其他章节的书签。
 - 前端保持通讯 / 渲染分类，辅助指南保持原入口。详情通过面包屑显示分类，底部最多展示三篇可见同类文档；没有推荐时不显示空区块。本页目录和问答浮窗继续复用。
 - 四篇核心文档（后端主指南、BackendSdkClient、前端通讯、渲染）改为逐接口参考，覆盖串口、Mock、拆帧、解码、点位/产品配置、HTTP/WS、Frame 转换及 Canvas/色图接口。存储区区分 Node SQLite 采集、CSV/JSONL 导出与应用侧有限帧保存示例，不宣称提供通用业务数据库或历史回放。文档版本标识读取 SDK package.json，不新增或改写 SDK 运行接口。
 - 清单的 `tocDescriptions` 按稳定锚点维护中文功能说明，构建校验目标标题和描述并生成 `DocToc.description`。左侧章节/API 目录以中文功能为主、英文 API 名为辅，正文标题、复制原文和跳转锚点保持不变；问答章节关键词包含功能说明，方便用中文查找接口。
-- 文档详情保持服务端渲染文章，根布局把轻量 TOC 交给 `DocsNavigation` / `DocOutline`；当前文档的章节嵌入对应分类，隐藏旧参考页仍在左侧提供自己的功能目录。`BackendGuide` 通过局部 Context 将当前语言和原文交给标题下方的工具栏，并在更新 URL 后发出 `shroom:backend-language-change` 事件。左侧目录用 useSyncExternalStore 订阅语言与 popstate，服务端首屏通过 useSearchParams 保持 Python 深链接一致，不把 Markdown 文章变为客户端渲染。布局复用 React / Tailwind，无需引入 Ant Design 组件库。
+- 文档详情保持服务端渲染文章，根布局把轻量 TOC 交给 `DocsNavigation` / `DocOutline`；当前文档的章节嵌入对应分类。`BackendGuide` 通过局部 Context 将原文交给工具栏，复制按钮输出 Node.js 展示内容，目录固定使用 Node.js 范围。不把 Markdown 文章变为客户端渲染，布局复用 React / Tailwind。
 - 构建从清单读取源文件，校验 slug 与分类，按源文件目录解析 Markdown 相对链接并保留 query/hash。h2 / h3 支持 `{#id}` 稳定锚点并校验唯一性，清单章节必须匹配正文 h2；目录条目记录语言，问答链接自动携带语言参数。回归测试覆盖导航单入口、标题层级、正文/目录语言隔离、有效锚点以及 BackendSdkClient 全部声明方法的文档覆盖。
 - 新指南随 Node 与兼容完整 ZIP 交付，Python 独立 ZIP 的内容保持原有范围。首页产品、Skill、模拟体验、下载登记与上位机流程沿用现有实现。
 - 快速文档的 `#device` 优先提供独立 `device.mjs` 产品取数例程，覆盖 onData、onError、取消订阅和关闭；原 `server.mjs` 保留为可选网页分发与录制分支，两者不同时占用同一设备。完整七步的原 section、步骤、录制起停分组和按记录 ID 下载语义保持不变，正文中的七步面板默认折叠；所有既有章节锚点保留。
@@ -295,14 +305,14 @@ flowchart TD
 
 ### 4.8 面向客户的产品 SDK
 
-- 已封装产品包括 `handGloveFullPacket` 整包手套、`hand` 手垫，以及 0.3.0 新增的 `humanBody` 人体全身、`jqInsole` 鞋垫 A 版。前两者沿用原接入来源；人体只读参考 `C:/code/shroom1.0` 的原始协议/物理源表，鞋垫参考用户提供的 `JQInsoleStudio_v2.3_dev_3.html`。不修改来源工程，也不搬入其模型展示、插值、滤波或标定算法。
+- 已封装协议包括 0.4.0 新增的 `handGloveSegmented` 分包手套、保留兼容的 `handGloveFullPacket` 整包手套、`hand` 手垫，以及 0.3.0 新增的 `humanBody` 人体全身、`jqInsole` 鞋垫 A 版。官网按四类物理产品展示，手套默认使用分包；旧整包显式指定协议 ID。人体只读参考 `C:/code/shroom1.0` 的原始协议/物理源表，鞋垫参考用户提供的 `JQInsoleStudio_v2.3_dev_3.html`。不修改来源工程，也不搬入其模型展示、插值、滤波或标定算法。
 - 快速入口为 `readProduct({ product, path, side, onData, onError })`；既有 `Shroom.connectGlove()`、`connectHandPad()`、`connectProduct()` 保留。浏览器直连串口在用户手势中选择授权端口，可传 port/filters，不使用 OS path；五步流程的浏览器则用 `readProduct({ url, onData, onError })` 订阅 WS。`listDeviceProducts()` 仅列出已适配直连协议的产品，与旧 `listProducts()` 通用线序/展示菜单不同。
 - `src/core/products/registry.js` 静态登记各产品适配器；连接接受 `glove / pad / body / insole` 别名和对应正式 ID，输出帧和 WS 校验只使用正式 ID。适配器提供 profile、专用参数校验、连接元数据、解析器和 WS 字段校验；可选 `resolveProfile(options)` 在参数校验后解析鞋垫允许的协议/速率。`src/core/product.js` 与 `src/core/stream-codec.js` 委托同一注册表，不添加产品条件分支。
 - `src/core/products/glove.js / pad.js` 分别实现产品协议，同尾分隔协议复用 `tail-parser.js`，新协议实现独立 `push/reset/droppedCount/frameLength` 解析器。公开类型集中登记在 `sdk/src/index.d.ts` 的 `DeviceProductTypes`（names/frame/node/web），Node/Web 产品连接与快速读取自动推导。新增产品须同步运行时与类型登记、WS 校验、回归和文档，详见 `sdk/src/core/products/README.md`。经典 bundle 构建从入口递归发现本地静态 import 并排序，注册的新模块自动进入依赖图；循环、重名或不支持的导入形式在写产物前报错。
 - 手部检测垫使用 1,000,000 波特率、1024 字节 uint8 数据、32×32，沿用现有 `mat32`，与主项目实际 `jqbed` 线序同构。整包手套使用 921,600 波特率，274 字节载荷依次为帧号1字节、包类型1字节、压力256字节、IMU16字节。两产品都按主项目的 `AA 55 03 99` 尾分隔符拆包，再校验长度，不把分隔符纳入 payload；支持跨 chunk 和粘包，超长片段丢弃后在下个尾分隔恢复，缓存有界。
 - 手套手侧必须明确传 left/right。主项目现行整包处理不依据 packetType 自动判断手侧，USB 串口信息也不足以证明型号；Node 产品入口未指定 path 时仅单一端口自动选，多端口返回 PORT_AMBIGUOUS。旧通用串口选第一个端口的行为保持不变。不新增扫描所有端口、猜产品或自动发送未知命令的行为。
 - 产品层固化分帧和线序；鞋垫专属参数可显式选择已支持的 protocol/baudRate，其他产品仍拒绝覆盖，配置错误在串口打开前拒绝。回调在打开/启动读取前注册，避免首帧丢失。产品设备增加 `onData()`（onFrame 别名），复用既有状态、诊断、订阅异常隔离与幂等关闭。底层串口生命周期只有一份，产品层只替换解析器和元数据。
-- 产品帧保留 Frame 的归一化 values、行列、统计、时间戳，并提供 product、pressure（原扫描 ADC）、pressureMatrix（按产品约定顺序的 ADC；人体/鞋垫仍是扫描顺序）。手套为 256 原始压力点与 13×15 的195个展开位置（含空位），额外提供 side、sequence、packetType 和 imu.raw；原左手索引38重复按来源保留。手套 IMU 仅提供16个原始字节，不承诺轴序、四元数或单位；没有手势识别、kPa/N换算和产品专用 Mock。
+- 产品帧保留原始扫描数据与产品分区；人体/鞋垫顶层矩阵仍是扫描顺序。手套标准字段为 256 个原始压力通道、`fingers / palm` 的 137 个映射位置、`side / packetType / imu.raw`；分包帧使用 `protocol: 'segmented'` 且不含 `sequence`，旧整包继续保留原帧序号。手套 IMU 仅提供 16 个原始字节，不承诺轴序、四元数或单位；没有手势识别或 kPa/N 换算。
 - SDK模块、TypeScript、经典浏览器脚本、Node示例与文档同步；Python与旧HTTP/WS客户端能力不变。产品范围明确，不把这些预设泛化为所有手套/垫子。当前主项目整包链路未要求额外启动命令，也没有checksum校验；合成数据验证不替代真机固件和设备验收。
 - 本轮验证：JS SDK 73项、Python44项、文档/问答/导航32项通过，类型检查、所改SDK ESLint和生产构建通过；解压后的Node ZIP新增产品测试20项通过。另与来源工程真实映射函数516组点位探针及2899组分块/分隔/错误恢复探针对照一致。未修改E盘来源、未进行真机测试、未提交/部署。产品 onData 预订阅可能在 await 返回前执行，回调应直接消费传入数据，不假定外层设备常量已初始化。
 - 用户随后提供明确的左右手区域点位表：按1-based扫描编号减1读取256点，新增 `fingers.thumb/index/middle/ring/little`，每指4×3共12点，独立 `.pulp` 为1×1指腹点；`palm` 为72点。区域对象提供中文name、rows/cols、rowLengths、0-based sourceIndices、ADC raw、同满量程normalized values和ADC matrix。手掌声明5×15但实际首行12点、其余15点，严格保留 `[12,15,15,15,15]`，不擅自补零或猜补位方向。
@@ -398,10 +408,10 @@ flowchart TD
 
 - `skills/shroom-sdk/` 是官网维护的 Skill 源目录，严格只打包 `SKILL.md`、`agents/openai.yaml` 与 `references/integration.md` 三个文件。`scripts/pack-integration-skill.mjs` 按白名单读取，拒绝路径中的符号链接和非普通文件，校验 UTF-8 与 Skill frontmatter，不扫描或收录客户配置、密钥、SDK 运行代码与采集数据。
 - 打包时去除 BOM、统一 LF，并对条目排序；使用固定 `2026-01-01 00:00:00` DOS 时间戳和 fflate 0.7.5 压缩，避免文件修改时间或平台换行造成制品变化。ZIP 内保留 `shroom-sdk/` 顶层目录，客户可整体安装到项目 `.agents/skills/`。
-- `npm run pack:skill` 生成 `public/skills/shroom-sdk-skill.zip`、`shroom-sdk-skill.json` 与三个原文副本。清单使用 `shroom.integration-skill.v1` schema，记录 SDK 基线 0.3.0、ZIP 文件名、字节数、SHA256 和条目列表；`/docs/skills` 提供 ZIP 下载与原文查看，说明 SDK 依赖须另外安装，普通 AI 上下文文章仍是参考文档。
+- `npm run pack:skill` 生成 `public/skills/shroom-sdk-skill.zip`、`shroom-sdk-skill.json` 与三个原文副本。清单使用 `shroom.integration-skill.v1` schema，记录 SDK 基线 0.4.0、ZIP 文件名、字节数、SHA256 和条目列表；`/docs/skills` 提供 ZIP 下载与原文查看，说明 SDK 依赖须另外安装，普通 AI 上下文文章仍是参考文档。
 - 官网 `build` 与 `verify` 都先生成 Skill 制品。生产 HTTP 检查读取清单和 ZIP，核对 SHA256、解压条目、Skill frontmatter 与集成参考文件，和现有 SSR、SDK 安装验证一起执行。Skill 交付与 `shroom-sdk` npm 包独立，修改 Skill 不重发或覆盖 npm 包。
-- Skill 只提供接入规则和参考，不代替运行 SDK、设备驱动、产品授权或用户串口选择。站点没有 Shroom MCP 服务；Skill 页将 MCP 的可调用工具能力与本次说明包明确区分。
-- 产品资料使用 `app/product-catalog.ts` 统一供首页和 `/docs/products` 消费。`server/product-catalog.test.ts` 将全部规范 `productId` 与 SDK `listDeviceProducts()` 的注册结果比较，并检查字段与接入深链；现有四种产品登记为手套、手垫、人体和鞋垫，后两者保留最低版本 0.3.0，所有产品的 development 为 false。下载包版本守卫仍拒绝将旧包提供给新产品，安装准备统一使用 npm，并为旧项目提供明确的 0.3.0 升级命令。产品别名与通用矩阵配置不计为新增产品。
+- Skill 只提供接入规则和参考，不代替运行 SDK、设备驱动、产品授权或用户串口选择。Skill 页面集中展示下载、项目安装与接入接口说明，不再展示 MCP 介绍、对比表或外链。
+- 产品资料使用 `app/product-catalog.ts` 供 `/docs/products` 和快速接入消费。`server/product-catalog.test.ts` 校验四类产品均有 SDK 注册适配器，同时保留额外的旧整包兼容协议，并检查字段与接入深链。分包手套最低版本 0.4.0，人体/鞋垫最低版本 0.3.0，所有产品的 development 为 false。版本提示不再硬编码仅针对 0.3.0，升级命令取官网当前 SDK 版本；产品别名与兼容协议不新增物理产品卡。
 
 ### 4.19 生产导航模块分块
 
@@ -414,7 +424,14 @@ flowchart TD
 - 人体保留 1024 个 uint8 扫描 ADC，`regions` 是十块物理源矩阵，共 400 个唯一通道，`sourceIndices` 为 0 基 Uint16。顶层 32×32 是追溯用扫描存储形状，不是身体平面；没有复制模型的 14 显示槽、重复行、UV 或翻转。
 - 鞋垫 raw 保留原始 ADC 字节：12bit 为 512 字节小端、pressure 为 256 个 Uint16 ADC（0–4095）；8bit 为 256 字节/Uint8 ADC。`sensors` 仅包含 A 版 112 个真实点及原始坐标；IMU 两种协议都有原始四元数，12bit 另有陀螺仪/加速度原始分量，单位和姿态不推断。16×16 扫描矩阵不是鞋形或物理足底重心，来源插值点不进入 SDK。
 - 公开 `DeviceProductTypes` 登记 `HumanBodyFrame` 与按协议区分的 `InsoleFrame`；适配器独立核对 WS 的原始字节、ADC 精度、固定通道表/坐标与 IMU，复制独立快照，五步与 SQLite/HTTP 导出复用现有链路。新产品不提供现成 `createProductView`，客户自行处理 `onData` 展示。
-- 完整 SDK 门禁已通过：261 JS、25 发布工具、69 Python 测试，以及 TypeScript、原生依赖、客户 ZIP/npm TGZ 安装和 NodeNext/Bundler 类型验证；新产品经典脚本三种协议、合成字节的实际 WS/SQLite/HTTP 五步闭环也已通过。2026-11-04 已发布 `shroom-sdk@0.3.0`，官方注册表 `latest` 为0.3.0，SHA-512与本地已验证TGZ一致。`test:npm:registry` 实际安装通过，覆盖四产品、400/112映射点、12位精度、Node/浏览器WS、SQLite录制、CSV/JSONL下载及NodeNext/Bundler类型。页面与Skill改为npm安装说明，要求Node与网页同版本并重建前端；没有连接人体/鞋垫实物。
+- 完整 SDK 门禁已通过：261 JS、25 发布工具、69 Python 测试，以及 TypeScript、原生依赖、客户 ZIP/npm TGZ 安装和 NodeNext/Bundler 类型验证；新产品经典脚本三种协议、合成字节的实际 WS/SQLite/HTTP 五步闭环也已通过。2026-11-04 已发布 `shroom-sdk@0.3.0`，该次发布时官方注册表 `latest` 为0.3.0（当前版本见4.21），SHA-512与本地已验证TGZ一致。`test:npm:registry` 实际安装通过，覆盖四产品、400/112映射点、12位精度、Node/浏览器WS、SQLite录制、CSV/JSONL下载及NodeNext/Bundler类型。页面与Skill改为npm安装说明，要求Node与网页同版本并重建前端；没有连接人体/鞋垫实物。
+
+### 4.21 官网对齐已发布的 SDK 0.4.0
+
+- `sdk/` 固定 `sdk-v0.4.0`，通过既有来源校验；版本显示仍由真实 SDK 元数据驱动，不单独修改徽标。官网重新生成经典脚本、三份兼容 ZIP、内容寻址 npm TGZ 和在线文档，旧安装包 URL 保留。
+- 0.4.0 TGZ 的 SHA256 为 `7adbe50638e965ab86b27263211f7aee752cecd82b44bcdb56bd88461ad8f024`，与 npm 正式包一致。完整官网门禁覆盖 57 项网站测试、8 项来源测试、类型、生产构建、HTTP 下载和实际 npm 安装；SDK 原五个函数不变。
+- 手套默认 921600 baud，130 + 146 字节分包，按同串口、同 packetType 配对后输出 256 ADC 与 16 字节 IMU；一只手一个串口，显式 side 决定线序，packetType 不决定手侧、不充当帧序号。旧整包通过 `handGloveFullPacket` 保留，Node 与网页均应使用 0.4.0。
+- 升级前的自动波特率开发保存在独立工作树 `codex/preserved-serial-baud-20261105`，25 个修改/新增文件通过字节校验，另保留 Git stash；这些未发布改动不混入官网正式下载包。Python 暂停展示的策略不变。
 
 ## 5. API 端点
 
@@ -577,6 +594,15 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-11-04 | 首页产品资料精简 | 产品卡片仅保留名称、简介、核心参数和资料入口，移除字段、映射及协议细节；提示完整参数查阅规格书 |
 | 2026-11-04 | 0.3.0 发布准备 | 官网与 Skill 改用 npm 安装/升级说明，保留新产品最低版本与服务端/网页同版本要求；移除开发版限制，发布及推送结果另行验证 |
 | 2026-11-04 | npm 0.3.0 发布与安装验收 | SDK源码e2a6d9e已推送main；npm latest确认0.3.0，制品完整性与本地一致，注册表实际安装/四产品/五步采集/类型通过；官网完成最终集成检查并同步正式文案和下载 |
+| 2026-11-04 | 文档侧栏列表层级调整 | 快速接入、产品资料和 Skill 入口改为同级列表，统一普通字重与跳转箭头，保留当前项高亮和原有链接 |
+| 2026-11-04 | 参考文档整组目录折叠 | 当前后端、前端及辅助参考文档可整行折叠目录，保留链接和选中态；外层收起时停止侧栏自动定位 |
+| 2026-11-04 | 首页首屏图文布局 | 右侧增加传感器到应用的数据示意，采用蓝白配色与双栏排版，窄屏纵向排列，保留原有使用入口 |
+| 2026-11-04 | Skill 页面内容精简 | 删除 MCP 介绍、Skill 对比表和官方外链，清理对应样式 |
+| 2026-11-05 | 产品规格书直链 | 首页产品资料替换为四份真实 PDF 规格书，移除汇总入口；原 SDK 字段资料统一命名为产品接口参考 |
+| 2026-11-05 | 规格书名称调整 | 产品资料中的机器人皮肤改为触觉手套，保留原 PDF 文件地址 |
+| 2026-11-05 | 规格书展示文件名调整 | 手套展示文件名改为触觉手套规格书.pdf，全身文件名去掉 (1)，两个下载地址保持不变 |
+| 2026-11-05 | 暂时隐藏 Python SDK 展示 | 首页、下载、侧栏、文档正文与索引、问答和 Skill 统一展示 JS/TS；旧 Python 文档入口跳转至现有接入页，底层实现与历史制品保留。57 项网站测试、2 项过滤测试、类型、生产构建和 HTTP 下载检查通过 |
+| 2026-11-05 | 官网同步 SDK 0.4.0 | 固定正式标签50d0956，更新分包手套资料、文档、下载包和Skill；制品与npm一致，完整官网集成门禁通过；原自动波特率开发单独保留，Python入口继续隐藏 |
 
 ## 9. 更新日志
 
@@ -657,6 +683,15 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-11-04 | 优化重构 | 精简首页产品资料为简短概览和真实资料入口，移除字段表、协议参数、重复映射入口及底部技术说明，完整参数引导查阅规格书 |
 | 2026-11-04 | 文档更新 | 为 0.3.0 发布准备统一官网、产品资料与 Skill 的 npm 安装路径，更新最低版本测试，保留历史发布状态记录；尚不将文案准备等同注册表发布完成 |
 | 2026-11-04 | 配置变更 | 固定SDK正式提交e2a6d9e，npm TGZ SHA256为195eb5958c7fe182186df75f33230e5b9e674d40875ce9c9782468e739a1307e；同步正式Skill与文档，保留历史安装包地址；官网65项测试及生产HTTP安装验证通过 |
+| 2026-11-04 | 优化重构 | 将快速接入侧栏入口改为同级导航列表，移除未选中项的标题式加粗，并统一跳转提示；保留链接、选中态及文档目录行为 |
+| 2026-11-04 | 优化重构 | 为当前参考文档增加整组目录折叠及键盘焦点样式，修正外层收起时隐藏章节触发侧栏自动滚动的问题 |
+| 2026-11-04 | 优化重构 | 首页首屏改为介绍与静态数据示意双栏，补齐传感器、SDK 和应用的视觉联系；新增独立 SVG 组件及响应式样式，无额外依赖或实时数据请求 |
+| 2026-11-04 | 优化重构 | 移除 Skill 页面整块 MCP 说明及其专用样式，保留安装指引、下载和五步调用入口 |
+| 2026-11-05 | 优化重构 | 接入用户提供的鞋垫、机器人皮肤、手部压力监测垫及全身触觉皮肤规格书链接，保留原文件名并编码 URL；区分规格书与 SDK 产品接口参考 |
+| 2026-11-05 | 文档更新 | 将规格书卡片名称改为触觉手套，同步架构说明，原始 PDF 链接保持可用 |
+| 2026-11-05 | 优化重构 | 分离规格书展示文件名与实际文件名，更新手套及全身触觉皮肤的显示文字并保留原始链接 |
+| 2026-11-05 | 优化重构 | 官网暂时收起 Python 相关展示，单卡 SDK 下载与两卡文档入口适配现有布局；统一生成与问答的展示过滤，81 段 JS/TS 示例保持原样。文档使用干净固定 SDK 提交的隔离快照生成，未改动正在编辑的 SDK 子模块或放宽来源检查 |
+| 2026-11-05 | 依赖升级 | 官网SDK引用从0.3.0更新到正式0.4.0，重新生成所有交付资源并验证HTTP实际安装；产品默认手套协议改分包，版本升级提示通用化，Skill同步0.4基线；保留旧版下载与未发布开发工作树 |
 
 ---
 

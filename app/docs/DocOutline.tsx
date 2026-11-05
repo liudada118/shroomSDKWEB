@@ -33,6 +33,8 @@ export default function DocOutline({ items, onNavigate, collapsible = true }: {
 
   useEffect(() => {
     const nav = outlineRef.current;
+    // 外层文档目录收起时，不用隐藏链接的零坐标调整侧栏位置。
+    if (!nav || nav.closest('details:not([open])') || !nav.getClientRects().length) return;
     const link = nav?.querySelector<HTMLElement>('[aria-current="location"]');
     if (!link) return;
     const section = link.closest('details');
