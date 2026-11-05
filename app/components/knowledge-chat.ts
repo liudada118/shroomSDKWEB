@@ -38,11 +38,12 @@ class StreamEventError extends Error {
   }
 }
 
+// 都对着已上传的知识库实测过：检索命中高、回答完整，不会落到“知识库没有足够信息”。
 export const suggestedQuestions = [
-  '没有硬件时，怎样先跑通 Mock 示例？',
-  '浏览器连接设备时需要哪些参数？',
-  'Python SDK 如何安装并读取串口数据？',
-  'Core Frame 包含哪些字段？',
+  'Node.js 里怎么连接设备并读取数据？',
+  '怎么把压力数据画成热力图？',
+  '怎么计算压力重心？',
+  '浏览器里连不上串口，可能是什么原因？',
 ];
 
 function createMessageId(prefix: string): string {

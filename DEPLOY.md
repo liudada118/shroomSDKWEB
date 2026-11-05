@@ -197,6 +197,8 @@ server {
 
 登记接口挂了**不会挡住下载** —— 那本来就不是审批流程，密钥系统出问题也不能让人拿不到 SDK。
 
+AI 知识问答另需几个服务端私密变量（运行时读取，改完重启即可，不用重新构建），见文末「智谱知识问答配置」。
+
 ---
 
 ## 4. 发一个新版上位机的完整流程
@@ -231,20 +233,29 @@ server {
 | 下载到一半断了 | 100MB + 网络 | `curl -I` 看响应里有没有 `Accept-Ranges: bytes`。没有多半是这个 location 上开了 gzip 或套了别的代理，关掉即可续传 |
 | 网页测试台连不上设备 | 浏览器限制，不是站点问题 | 必须 https 或 localhost，且必须 Chrome / Edge。见 sdk/README.md |
 
-## 智谱知识问答配置（2026-10-09）
+## 智谱知识问答配置（2026-10-09，2026-11-05 更新）
 
-问答页为 `/knowledge`，同站服务端接口为 `POST /api/knowledge`。从 `.env.example` 复制变量名，在本地被 Git 忽略的 `.env.local` 或生产进程环境 / 托管 Secrets 中填写：
+问答页为 `/knowledge`，同站服务端接口为 `POST /api/knowledge`。密钥只放在各自机器上、不进 Git，**别人拉代码部署时要在自己的服务器上再配一遍**，否则问答页只会显示「知识库问答正在配置中」（503），网站其他部分不受影响。
+
+从 `.env.example` 复制变量名：本地写在 `.env.local`；服务器写在项目根目录（`package.json` 所在目录）的 `.env.production.local`，并 `chmod 600`。两个文件都被 `.gitignore` 的 `.env*` 忽略。
 
 ```dotenv
 ZAI_API_KEY=你的智谱_API_Key
 ZHIPU_KNOWLEDGE_ID=你的知识库_ID
-ZHIPU_MODEL=glm-4.7-flash
+ZHIPU_MODEL=glm-4.5-air
+ZHIPU_FALLBACK_MODEL=glm-4-flash-250414
 ```
 
-不要添加 `NEXT_PUBLIC_` 前缀，不要把真实密钥提交到 Git、浏览器代码或 SDK 包。修改后重启服务；如果使用 PM2 注入进程变量，应以更新后的环境重新加载进程。无配置时接口返回 503，网站下载和文档不受影响。
+- 模型（2026-11-05 实测，每问约 1.1 万输入 token）：`glm-4.5-air` 首字约 2 秒，按量扣费约 1 分钱/问；glm-4.7 系列（含付费的 flashx）这么长的提示词首字要 20 秒左右，不适合。不想付费就把 `ZHIPU_MODEL` 换成免费的 `glm-4-flash-250414`。备用模型在主模型过载、限流或 8 秒内没开始响应时接手一次。
+- `vinext start` 启动时按 `.env.production.local` > `.env.local` > `.env.production` > `.env` 读取，真实进程环境变量优先于这些文件。改完 `pm2 restart shroom-sdk` 即可，不用重新构建（构建产物不含这些值）。
+- 不要写进 `ecosystem.config.cjs`（它在 Git 里），也别在跑 `deploy.sh` / `pm2` 的 shell 里 `export`：PM2 会把当时的环境存下来，一直盖过文件里的值，要 `pm2 delete shroom-sdk` 后重新部署才清得掉。
+- `deploy.sh` 的健康检查只请求首页，AI 没配好也会显示成功。部署后另测一次：`curl -sN -X POST http://127.0.0.1:3001/api/knowledge -H 'Content-Type: application/json' -d '{"question":"怎么计算压力重心？","history":[]}'`，应陆续输出 `event: delta`，而不是 503 的 JSON。
+- 付费模型和知识库存储都从同一个智谱账户余额扣费。余额归零后付费模型报 1113，知识库也会被暂停服务，欠费超过 7 天还可能删掉超出 1 GB 的数据，记得在控制台设余额提醒。
+
+不要添加 `NEXT_PUBLIC_` 前缀，不要把真实密钥提交到 Git、浏览器代码或 SDK 包。
 
 知识库需上传并处理当前 `sdk/README.md`、`sdk/AI-CONTEXT.md`、`sdk/python/README.md` 等资料。本地构建不会自动上传到智谱；旧分支的 Backend 文档与当前基础 SDK 能力不同，应更新知识库版本。
 
-接口为流式 SSE，反向代理应关闭该路由的响应缓冲并允许至少 60 秒读取。公网部署前配置网关限流、智谱用量预算和必要的访问控制，避免公开接口被滥用。本次恢复没有部署上线，也没有调用真实智谱凭据。
+接口为流式 SSE，响应头带 `X-Accel-Buffering: no`，按上面的 Nginx 配置不用另加设置就能逐字推送；前面如果还有 CDN 或别的代理，要对 `/api/knowledge` 关闭缓冲和压缩。公网部署前配置网关限流、智谱用量预算和必要的访问控制，避免公开接口被滥用。本次恢复没有部署上线，也没有调用真实智谱凭据。
 
 SDK 构建现生成 `public/shroom-sdk-python.zip`、`public/shroom-sdk-node.zip` 与兼容旧链接的 `public/shroom-sdk.zip`，发布时应包含三个文件。

@@ -1,17 +1,16 @@
 'use client';
 
-import { useEffect, useRef, type FormEvent, type KeyboardEvent } from 'react';
+import { useRef, type FormEvent, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { suggestedQuestions, useKnowledgeChat } from '../components/knowledge-chat';
 import KnowledgeMessage from '../components/knowledge-message';
+import { useFollowLatest } from '../components/knowledge-scroll';
 
 export default function KnowledgePage() {
   const { messages, input, setInput, busy, announcement, ask, stop, clear } = useKnowledgeChat();
   const conversationRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    conversationRef.current?.scrollTo({ top: conversationRef.current.scrollHeight, behavior: 'auto' });
-  }, [messages]);
+  useFollowLatest(conversationRef, messages);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,11 +28,11 @@ export default function KnowledgePage() {
     <div className="knowledge-ui mx-auto max-w-7xl px-5 py-10 sm:px-8 sm:py-12 lg:px-10">
       <p className="text-sm font-semibold text-[#2563eb]">AI 知识问答</p>
       <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">从 SDK 文档里，找到答案。</h1>
-      <p className="mt-4 max-w-3xl text-sm leading-7 text-[#667085]">智谱检索你配置的知识库后生成回答，并展示检索依据。可询问 Python、Node.js 或浏览器接入；回答范围取决于已上传的资料，请以当前版本文档为准。</p>
+      <p className="mt-4 max-w-3xl text-sm leading-7 text-[#667085]">智谱检索你配置的知识库后直接生成回答。可询问 Python、Node.js 或浏览器接入；回答范围取决于已上传的资料，请以当前版本文档为准。</p>
 
       <section aria-label="SDK 知识问答" className="mt-8 flex h-[min(760px,78dvh)] min-h-[480px] min-w-0 flex-col overflow-hidden rounded-2xl border border-[#e4e7ec] bg-white shadow-sm">
         <div className="flex min-h-16 items-center justify-between gap-3 border-b border-[#e4e7ec] px-4 sm:px-6">
-          <div><h2 className="font-semibold">问 Shroom Docs</h2><p className="mt-1 text-xs text-[#667085]">智谱 GLM · 文档检索与来源引用</p></div>
+          <div><h2 className="font-semibold">问 Shroom Docs</h2><p className="mt-1 text-xs text-[#667085]">智谱 GLM · 基于 SDK 文档回答</p></div>
           {messages.length > 0 && <button type="button" disabled={busy} onClick={clear} className="min-h-11 shrink-0 rounded-lg px-3 text-sm font-medium text-[#475467] hover:bg-[#f2f4f7] disabled:opacity-40">清空对话</button>}
         </div>
         <div ref={conversationRef} role="log" aria-label="知识问答记录" aria-busy={busy} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">

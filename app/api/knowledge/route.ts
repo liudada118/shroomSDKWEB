@@ -65,6 +65,7 @@ export async function POST(request: Request): Promise<Response> {
   const apiKey = process.env.ZAI_API_KEY?.trim();
   const knowledgeId = process.env.ZHIPU_KNOWLEDGE_ID?.trim();
   const model = process.env.ZHIPU_MODEL?.trim() || 'glm-4.7-flash';
+  const fallbackModel = process.env.ZHIPU_FALLBACK_MODEL?.trim() || undefined;
 
   if (!apiKey || !knowledgeId) {
     return jsonError(new KnowledgeServiceError(
@@ -82,7 +83,7 @@ export async function POST(request: Request): Promise<Response> {
     const input = parseKnowledgeRequest(body);
     return await createKnowledgeAnswerResponse(
       input,
-      { apiKey, knowledgeId, model },
+      { apiKey, knowledgeId, model, fallbackModel },
       signal,
     );
   } catch (error) {

@@ -71,6 +71,7 @@ test('createKnowledgeAnswerResponse does not call the model when retrieval has n
 
   assert.equal(calls, 1);
   assert.match(response.headers.get('content-type') || '', /text\/event-stream/);
+  assert.equal(response.headers.get('x-accel-buffering'), 'no');
   assert.match(body, /event: sources/);
   assert.match(body, /当前知识库没有找到/);
   assert.match(body, /event: done/);
@@ -279,4 +280,137 @@ test('provider rate limits map to a stable public error', async () => {
       && error.status === 429
       && !error.message.includes('provider details'),
   );
+});
+
+function primaryFailsThenAnswerFetcher(
+  models: string[],
+  primary: 'overloaded' | 'stalled' = 'overloaded',
+  requestIds: string[] = [],
+): typeof fetch {
+  let call = 0;
+  return (async (_input: string | URL | Request, init?: RequestInit) => {
+    call += 1;
+    if (call === 1) {
+      return Response.json({
+        code: 200,
+        data: [{ text: '串口会话可以调用 session.close() 主动断开。', score: 0.9, metadata: { doc_id: 'backend', doc_name: 'BACKEND' } }],
+      });
+    }
+    const body = JSON.parse(String(init?.body)) as { model: string; request_id: string };
+    models.push(body.model);
+    requestIds.push(body.request_id);
+    if (body.model === config.model) {
+      if (primary === 'stalled') {
+        // 模拟在智谱那边排队：迟迟不回响应头，直到被放弃
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(init.signal?.reason), { once: true });
+        });
+      }
+      return Response.json({ error: { code: '1305', message: '该模型当前访问量过大' } }, { status: 429 });
+    }
+    return new Response(streamFromDeltas(['调用 session.close() 即可。']), {
+      status: 200,
+      headers: { 'Content-Type': 'text/event-stream' },
+    });
+  }) as typeof fetch;
+}
+
+test('thinking is disabled so the answer starts streaming right away', async () => {
+  const calls: RequestInit[] = [];
+  const inner = answerFetcher(['好的。']);
+  const fetcher = (async (input: string | URL | Request, init?: RequestInit) => {
+    if (init) calls.push(init);
+    return inner(input as string, init);
+  }) as typeof fetch;
+
+  await createKnowledgeAnswerResponse({ question: '怎么断开', history: [] }, config, new AbortController().signal, fetcher);
+
+  const modelRequest = JSON.parse(String(calls[1]?.body)) as { thinking?: { type: string } };
+  assert.deepEqual(modelRequest.thinking, { type: 'disabled' });
+});
+
+test('platform-wide overload (1305) is reported as busy, not as too many askers', async () => {
+  await assert.rejects(
+    () => createKnowledgeAnswerResponse(
+      { question: '怎么断开', history: [] },
+      config,
+      new AbortController().signal,
+      primaryFailsThenAnswerFetcher([]),
+    ),
+    (error: unknown) => error instanceof KnowledgeServiceError
+      && error.code === 'PROVIDER_BUSY'
+      && error.retryable,
+  );
+});
+
+test('an overloaded primary model falls back to the configured model once', async () => {
+  const models: string[] = [];
+  const response = await createKnowledgeAnswerResponse(
+    { question: '怎么断开', history: [] },
+    { ...config, fallbackModel: 'glm-4-flash-250414' },
+    new AbortController().signal,
+    primaryFailsThenAnswerFetcher(models),
+  );
+
+  assert.deepEqual(models, [config.model, 'glm-4-flash-250414']);
+  assert.equal(readStream(await response.text()).text, '调用 session.close() 即可。');
+});
+
+test('a primary model that has not started answering in time falls back with its own request id', async () => {
+  const models: string[] = [];
+  const requestIds: string[] = [];
+  const response = await createKnowledgeAnswerResponse(
+    { question: '怎么断开', history: [] },
+    { ...config, fallbackModel: 'glm-4-flash-250414', fallbackAfterMs: 20 },
+    new AbortController().signal,
+    primaryFailsThenAnswerFetcher(models, 'stalled', requestIds),
+  );
+
+  assert.deepEqual(models, [config.model, 'glm-4-flash-250414']);
+  assert.equal(requestIds[1], `${requestIds[0]}-fallback`);
+  assert.equal(readStream(await response.text()).text, '调用 session.close() 即可。');
+});
+
+test('the fallback deadline only covers waiting for the response, not a long answer', async () => {
+  const models: string[] = [];
+  const encoder = new TextEncoder();
+  const delta = (content: string) => `data: ${JSON.stringify({ choices: [{ delta: { content }, finish_reason: null }] })}\n\n`;
+  let call = 0;
+  const fetcher = (async (_input: string | URL | Request, init?: RequestInit) => {
+    call += 1;
+    if (call === 1) {
+      return Response.json({
+        code: 200,
+        data: [{ text: '切换设备前先 close()。', score: 0.9, metadata: { doc_id: 'readme', doc_name: 'README' } }],
+      });
+    }
+    models.push((JSON.parse(String(init?.body)) as { model: string }).model);
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        // 和真实 fetch 一样：请求被中止时，正在读的响应体也会报错
+        init?.signal?.addEventListener('abort', () => controller.error(init.signal?.reason), { once: true });
+        controller.enqueue(encoder.encode(delta('先调用 close()，')));
+        setTimeout(() => {
+          if (init?.signal?.aborted) return;
+          controller.enqueue(encoder.encode([
+            delta('再重新连接。'),
+            `data: ${JSON.stringify({ choices: [{ delta: { content: '' }, finish_reason: 'stop' }] })}\n\n`,
+            'data: [DONE]\n\n',
+          ].join('')));
+          controller.close();
+        }, 60);
+      },
+    });
+    return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+  }) as typeof fetch;
+
+  const response = await createKnowledgeAnswerResponse(
+    { question: '怎么切换设备', history: [] },
+    { ...config, fallbackModel: 'glm-4-flash-250414', fallbackAfterMs: 20 },
+    new AbortController().signal,
+    fetcher,
+  );
+
+  assert.equal(readStream(await response.text()).text, '先调用 close()，再重新连接。');
+  assert.deepEqual(models, [config.model]);
 });
