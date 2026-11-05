@@ -286,7 +286,7 @@ ZHIPU_FALLBACK_MODEL=glm-4-flash-250414
 
 - 模型（2026-11-05 实测，每问约 1.1 万输入 token）：`glm-4.5-air` 首字约 2 秒，按量扣费约 1 分钱/问；glm-4.7 系列（含付费的 flashx）这么长的提示词首字要 20 秒左右，不适合。不想付费就把 `ZHIPU_MODEL` 换成免费的 `glm-4-flash-250414`。备用模型在主模型过载、限流或 8 秒内没开始响应时接手一次。
 - `vinext start` 启动时按 `.env.production.local` > `.env.local` > `.env.production` > `.env` 读取，真实进程环境变量优先于这些文件。改完 `pm2 restart shroom-sdk` 即可，不用重新构建（构建产物不含这些值）。
-- 不要写进 `ecosystem.config.cjs`（它在 Git 里），也别在跑 `deploy.sh` / `pm2` 的 shell 里 `export`：PM2 会把当时的环境存下来，一直盖过文件里的值，要 `pm2 delete shroom-sdk` 后重新部署才清得掉。
+- 不要写进 `ecosystem.config.cjs`（它在 Git 里），也别在跑 `deploy.sh` / `pm2` 的 shell 里 `export`：PM2 第一次创建进程时会把当时 shell 的环境存下来（`pm2 save` 还会写进 dump），之后每次重启都盖过文件里的值，要 `pm2 delete shroom-sdk` 后重新部署才清得掉。
 - `deploy.sh` 的健康检查只请求首页，AI 没配好也会显示成功。部署后另测一次：`curl -sN -X POST http://127.0.0.1:3001/api/knowledge -H 'Content-Type: application/json' -d '{"question":"怎么计算压力重心？","history":[]}'`，应陆续输出 `event: delta`，而不是 503 的 JSON。
 - 付费模型和知识库存储都从同一个智谱账户余额扣费。余额归零后付费模型报 1113，知识库也会被暂停服务，欠费超过 7 天还可能删掉超出 1 GB 的数据，记得在控制台设余额提醒。
 
