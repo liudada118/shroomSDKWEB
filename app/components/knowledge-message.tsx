@@ -1,29 +1,22 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import type { ChatMessage } from './knowledge-chat';
 import { jumpToSection, pageForPathname } from './knowledge-jump';
 
-function renderAnswerWithCitations(message: ChatMessage): ReactNode[] {
-  const sources = new Map((message.sources || []).map((source) => [source.id, source]));
-  return message.content.split(/(\[\d+\])/g).map((part, index) => {
-    const match = /^\[(\d+)\]$/.exec(part);
-    if (!match) return part;
-    const sourceId = Number(match[1]);
-    if (!sources.has(sourceId)) return part;
-
-    return (
-      <a
-        key={`${part}-${index}`}
-        href={`#source-${message.id}-${sourceId}`}
-        aria-label={`查看来源 ${sourceId}`}
-        className="mx-0.5 inline-flex rounded bg-[var(--accent-soft)] px-1 font-mono text-[0.78em] font-semibold text-[var(--accent-strong)] underline-offset-2 hover:underline"
-      >
-        {part}
-      </a>
-    );
-  });
+/**
+ * 回答下方不再展示检索依据，正文里残留的来源编号（模型偶尔仍会输出、会话里也存着旧回答）一并去掉。
+ * 只去掉对得上来源的编号，代码块和行内代码里的 arr[1] 原样保留；未闭合的代码块按代码处理。
+ */
+function stripCitations(message: ChatMessage): string {
+  const sourceIds = new Set((message.sources || []).map((source) => source.id));
+  if (!sourceIds.size) return message.content;
+  return message.content
+    .split(/(```[\s\S]*?(?:```|$)|`[^`\n]*`)/g)
+    .map((part, index) => index % 2 === 1
+      ? part
+      : part.replace(/ ?\[(\d+)\]/g, (marker, id: string) => sourceIds.has(Number(id)) ? '' : marker))
+    .join('');
 }
 
 function SectionJumps({
@@ -76,8 +69,6 @@ export default function KnowledgeMessage({
   compact?: boolean;
   onJump?: () => void;
 }) {
-  const sources = message.sources || [];
-
   return (
     <article className={`flex gap-3 sm:gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
       {message.role === 'assistant' && (
@@ -95,47 +86,12 @@ export default function KnowledgeMessage({
             </span>
           ) : (
             <p className="whitespace-pre-wrap [overflow-wrap:anywhere]">
-              {message.role === 'assistant' ? renderAnswerWithCitations(message) : message.content}
+              {message.role === 'assistant' ? stripCitations(message) : message.content}
             </p>
           )}
         </div>
 
         {message.role === 'assistant' && <SectionJumps message={message} onJump={onJump} />}
-
-        {message.role === 'assistant' && sources.length > 0 && (
-          <div className="mt-3">
-            <p className="mb-2 text-[11px] font-semibold text-[var(--text-subtle)]">检索依据</p>
-            <ol className={`grid gap-2 ${compact ? '' : 'sm:grid-cols-2'}`}>
-              {sources.map((source) => (
-                <li key={`${message.id}-${source.id}`} id={`source-${message.id}-${source.id}`} className="scroll-mt-24">
-                  {source.url ? (
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group block h-full rounded-xl border border-[var(--line)] bg-white p-3 transition hover:border-[var(--accent-border)] hover:shadow-sm"
-                    >
-                      <span className="flex items-center gap-2 text-xs font-semibold text-[var(--text-strong)]">
-                        <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-[var(--accent-soft)] font-mono text-[9px] text-[var(--accent-strong)]">{source.id}</span>
-                        <span className="truncate">{source.title}</span>
-                        <span className="ml-auto text-[var(--accent-strong)]" aria-hidden="true">↗</span>
-                      </span>
-                      <span className="mt-2 line-clamp-2 block text-[11px] leading-5 text-[var(--text-muted)]">{source.excerpt}</span>
-                    </a>
-                  ) : (
-                    <div className="h-full rounded-xl border border-[var(--line)] bg-white p-3">
-                      <span className="flex items-center gap-2 text-xs font-semibold text-[var(--text-strong)]">
-                        <span className="grid h-5 w-5 shrink-0 place-items-center rounded bg-[var(--accent-soft)] font-mono text-[9px] text-[var(--accent-strong)]">{source.id}</span>
-                        <span className="truncate">{source.title}</span>
-                      </span>
-                      <span className="mt-2 line-clamp-2 block text-[11px] leading-5 text-[var(--text-muted)]">{source.excerpt}</span>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
       </div>
     </article>
   );

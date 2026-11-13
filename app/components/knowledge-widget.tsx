@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { suggestedQuestions, useKnowledgeChat, type ChatMessage } from './knowledge-chat';
 import { pageForPathname } from './knowledge-jump';
 import KnowledgeMessage from './knowledge-message';
+import { useFollowLatest } from './knowledge-scroll';
 
 const STORAGE_KEY = 'shroom-knowledge-widget';
 const MAX_STORED_MESSAGES = 20;
@@ -84,14 +85,6 @@ function KnowledgeWidgetPanel({ initial, pathname }: { initial: StoredState; pat
 
   useEffect(() => {
     if (!open) return;
-    conversationRef.current?.scrollTo({
-      top: conversationRef.current.scrollHeight,
-      behavior: 'auto',
-    });
-  }, [messages, open]);
-
-  useEffect(() => {
-    if (!open) return;
     const panel = panelRef.current;
     const overflow = document.body.style.overflow;
     panel?.showModal();
@@ -111,6 +104,9 @@ function KnowledgeWidgetPanel({ initial, pathname }: { initial: StoredState; pat
       launcherRef.current?.focus();
     };
   }, [open]);
+
+  // 必须排在 showModal 之后：弹窗打开前是 display: none，重新打开时滚到最新消息会不生效
+  useFollowLatest(conversationRef, messages, open);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
