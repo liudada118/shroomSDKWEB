@@ -19,7 +19,7 @@ const workflows = [
     steps: [
       { title: '安装驱动与 SDK', detail: 'JavaScript / TypeScript 项目通过 npm 安装。' },
       { title: '搜索串口，激活 SDK 授权', detail: '选择实际端口，使用 Shroom SDK 产品密钥。' },
-      { title: '调用 readProduct()', detail: '传入产品与串口，按对应产品确认侧别和协议。' },
+      { title: '调用 readProduct()', detail: '传入产品接收数据；手套可自动识别串口和左右手。' },
       { title: '收到产品数据', detail: '在 onData 接收数据，再按需扩展采集与下载。' },
     ],
     href: '/docs/quick-start?tab=guide', action: '查看 SDK 接入说明',

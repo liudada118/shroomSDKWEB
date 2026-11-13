@@ -108,7 +108,7 @@ export const SDK_VARIANTS: (DownloadTarget & { label: string; description: strin
     description: 'Node.js / Electron 开发，也包含浏览器入口',
     contents: 'Node.js 18+ · JavaScript / TypeScript · 含浏览器入口',
     guideHref: '/docs/quick-start',
-    details: '一个函数读取手套、手垫、鞋垫或人体全身数据。分包手套从 SDK 0.4.0 起支持；鞋垫与人体全身从 0.3.0 起支持。之后可按需创建 WS、采集与下载。',
+    details: '一个函数读取手套、手垫、鞋垫或人体全身数据。分包手套从 SDK 0.4.0 起支持，0.5.0 可自动识别串口和左右手；鞋垫与人体全身从 0.3.0 起支持。之后可按需创建 WS、采集与下载。',
     title: '获取 Node.js SDK',
     subtitle: '可通过 npm 安装的精简包，包含 Node.js 与浏览器入口。连接真实设备前另行申请 SDK 产品密钥。',
   },

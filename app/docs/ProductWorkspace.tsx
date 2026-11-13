@@ -69,6 +69,10 @@ export default function ProductWorkspace() {
   const requestLicense = useLicenseRequest();
   const jsDownload = SDK_VARIANTS.find(target => target.source === 'sdk-node')!;
   const [notice, setNotice] = useState('');
+  const [connectionMode, setConnectionMode] = useState<'auto' | 'manual'>('auto');
+  const automatic = state.product === 'glove' && connectionMode === 'auto';
+  const canCopyFlow = automatic || ready;
+  const automaticReadCode = "import { readProduct } from 'shroom-sdk/quick-flow';\n\n// 先激活 SDK 授权；自动扫描唯一分包手套并识别左右手。\nlet device;\ntry {\n  device = await readProduct({\n    product: 'glove',\n    // 左右手同时连接时，加 side: 'left' 或 'right' 筛选。\n    onData: data => console.log(data.side, data.fingers, data.palm),\n    onError: error => console.error(error.code, error.message),\n    onStateChange: status => console.log(status.state),\n  });\n} catch (error) {\n  console.error(error.code, error.message); // 无匹配、多匹配或授权错误。\n  throw error; // 连接失败时，不继续创建 WS。\n}\n// 后面四步继续使用 device；结束使用时 await device.close()。";
   const [copyFallback, setCopyFallback] = useState<string | null>(null);
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const product = getCatalogProduct(state.product);
@@ -111,7 +115,7 @@ export default function ProductWorkspace() {
 
   function copyFlow(code: string) {
     // URL 参数不能替操作者确认实物；所有具体配置代码都使用同一守卫。
-    if (!ready) return;
+    if (!canCopyFlow) return;
     void copy(code, '调用代码');
   }
 
@@ -119,7 +123,7 @@ export default function ProductWorkspace() {
     return JSON.stringify({
       sdk: jsDownload.sdkVersion,
       product: productId,
-      side: product.requiresSide ? state.sideConfirmed ? state.side : '未按实物确认' : '不需要',
+      side: automatic ? '由分包自动识别' : product.requiresSide ? state.sideConfirmed ? state.side : '未按实物确认' : '不需要',
       ...(product.protocols.length ? { protocol: state.protocol } : {}),
       platform: state.platform,
       flow: 'Node 取数与 WS；浏览器连接、采集控制与下载',
@@ -130,7 +134,7 @@ export default function ProductWorkspace() {
 
   const fields: readonly ProductField[] = [
     ...productFields(product, state.protocol),
-    ...(product.requiresSide ? [['side', state.sideConfirmed ? sideName : '未确认', `来自按实物确认的${product.sideLabel}，SDK 不自动识别 left / right。`] as const] : []),
+    ...(product.requiresSide ? [['side', automatic ? 'left / right' : state.sideConfirmed ? sideName : '未确认', state.product === 'glove' ? 'Node 自动模式根据分包识别；手动模式按实物传入。' : `来自按实物确认的${product.sideLabel}，SDK 不自动识别。`] as const] : []),
   ];
   const sdkInstallContent = <>
     <p>复制命令，在自己的项目目录执行。SDK 会自动下载并安装，无需先保存压缩包。</p>
@@ -147,11 +151,12 @@ export default function ProductWorkspace() {
 
     <section id="product-start" hidden={state.tab !== 'start'} aria-label="五步 API 调用流程">
       <div className={styles.prerequisite}><span>首次使用？先安装 SDK 并激活密钥。</span><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-prepare')}>接入准备 →</button></div>
-      <section className={styles.preparation} aria-labelledby="port-search-title">
+      {state.product === 'glove' && <div className={styles.productChoices} role="group" aria-label="手套连接方式"><span className={styles.controlLabel}>连接方式</span><button type="button" aria-pressed={automatic} onClick={() => setConnectionMode('auto')}>自动识别串口与左右手</button><button type="button" aria-pressed={!automatic} onClick={() => setConnectionMode('manual')}>手动选择串口与左右手</button></div>}
+      {automatic ? <p>SDK 0.5.0：直接调用第 1 步即可，无需预先查询串口。只识别 921600 波特率的分包手套；多个匹配时，请指定手侧或串口。<Link className={styles.textLink} href="/docs/serial#node-scan">扫描规则与设备列表 →</Link></p> : <section className={styles.preparation} aria-labelledby="port-search-title">
         <div className={styles.sectionHeading}><h2 id="port-search-title">接入前：搜索并选择串口</h2><PlatformSelect id="workspace-port-platform" value={state.platform} onChange={setPlatform} /></div>
         <CodeBlock runtime="node" code={portSearchCode} onCopy={() => void copy(portSearchCode, '串口搜索代码')} />
         <p>用设备的 <code>path</code> 替换第 1 步中的 <code>{portExample}</code>。多个端口时，按实际设备选择。</p>
-      </section>
+      </section>}
       <div className={styles.flow}>
         {flowSteps.map((step, index) => <section id={step.id} key={step.id} className={styles.flowStep} aria-labelledby={`${step.id}-title`} tabIndex={-1}>
           <div className={styles.stepHeading}><span aria-hidden="true">{index + 1}</span><div><h2 id={`${step.id}-title`}>{step.title}</h2><p>{stepSlogans[step.id]}</p></div></div>
@@ -160,11 +165,11 @@ export default function ProductWorkspace() {
               <div className={styles.productChoices} role="group" aria-label="选择示例产品"><span className={styles.controlLabel}>产品</span>{workspaceProducts.map(product => <button type="button" key={product.id} aria-pressed={state.product === product.id} onClick={() => setProduct(product.id)}><span className={styles.choiceCheck} aria-hidden="true">{state.product === product.id ? '✓' : ''}</span>{product.label}</button>)}</div>
               <Link className={styles.textLink} href="/docs/products">产品接口参考 →</Link>
             </div>
-            {product.requiresSide && <div className={styles.sideRow}><div className={styles.sideChoices} role="group" aria-label={`按实物确认${product.sideLabel}`}><span className={styles.controlLabel}>{product.sideLabel}</span>{(['left', 'right'] as const).map(side => <button id={`workspace-side-${side}`} type="button" key={side} aria-pressed={state.sideConfirmed && state.side === side} onClick={() => confirmSide(side)}><span className={styles.choiceCheck} aria-hidden="true">{state.sideConfirmed && state.side === side ? '✓' : ''}</span>{product.sideNames?.[side]}</button>)}</div><p id="workspace-ready" className={!ready ? styles.selectionHint : styles.confirmedHint}>{ready ? `已按实物确认${sideName}` : `按实物确认${product.sideLabel}后，可复制调用代码。`}</p></div>}
+            {product.requiresSide && !automatic && <div className={styles.sideRow}><div className={styles.sideChoices} role="group" aria-label={`按实物确认${product.sideLabel}`}><span className={styles.controlLabel}>{product.sideLabel}</span>{(['left', 'right'] as const).map(side => <button id={`workspace-side-${side}`} type="button" key={side} aria-pressed={state.sideConfirmed && state.side === side} onClick={() => confirmSide(side)}><span className={styles.choiceCheck} aria-hidden="true">{state.sideConfirmed && state.side === side ? '✓' : ''}</span>{product.sideNames?.[side]}</button>)}</div><p id="workspace-ready" className={!ready ? styles.selectionHint : styles.confirmedHint}>{ready ? `已按实物确认${sideName}` : `按实物确认${product.sideLabel}后，可复制调用代码。`}</p></div>}
             {product.protocols.length > 0 && <div className={styles.protocolRow}><label className={styles.platformControl} htmlFor="workspace-protocol">鞋垫协议<select id="workspace-protocol" value={state.protocol} onChange={event => setProtocol(event.target.value as WorkspaceProtocol)}>{product.protocols.map(protocol => <option key={protocol.value} value={protocol.value}>{protocol.label}</option>)}</select></label><p className={styles.secondaryText}>按固件选择，不自动识别或扫描协议；默认 921600 baud。</p></div>}
             <p className={styles.versionNote}><strong>SDK {product.minSdkVersion} 起支持</strong>已有项目请同步升级 Node 与网页中的 SDK。<button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-run')}>查看安装说明 →</button></p>
           </div>}
-          {step.blocks.map((block, blockIndex) => <CodeBlock key={`${step.id}-${block.runtime}-${blockIndex}`} code={block.code} runtime={block.runtime} disabled={!ready} descriptionId={!ready ? 'workspace-ready' : undefined} onCopy={() => copyFlow(block.code)} />)}
+          {step.blocks.map((block, blockIndex) => <CodeBlock key={`${step.id}-${block.runtime}-${blockIndex}`} code={automatic && step.id === 'flow-read' ? automaticReadCode : block.code} runtime={block.runtime} disabled={!canCopyFlow} descriptionId={!canCopyFlow ? 'workspace-ready' : undefined} onCopy={() => copyFlow(automatic && step.id === 'flow-read' ? automaticReadCode : block.code)} />)}
           <p className={styles.stepNote}>{step.note}</p>
         </section>)}
       </div>
@@ -172,7 +177,7 @@ export default function ProductWorkspace() {
 
     <section id="product-guide" hidden={state.tab !== 'guide'} aria-label="接入准备">
       <Preparation id="guide-prepare" title="安装驱动与运行环境"><PlatformSelect id="workspace-guide-platform" value={state.platform} onChange={setPlatform} /><p>使用 Node.js 18+。CH34x 设备先安装对应驱动，再重新插拔；确认系统串口可见，并关闭占用端口的上位机。</p><div className={styles.driverDownloads}>{SERIAL_DRIVERS.map(driver => <a className={styles.secondaryButton} key={driver.id} href={driver.url}>{driver.label} 驱动 · {driver.format} ↗</a>)}</div><p>本机网页使用 <code>http://localhost</code>，连接示例中的本机 WS。</p></Preparation>
-      <Preparation id="guide-config" title="确认产品与串口"><p>当前产品：<strong>{productName}</strong>{product.requiresSide ? `，${state.sideConfirmed ? `已确认${sideName}` : `${product.sideLabel}待按实物确认`}` : '，无需侧别参数'}{product.protocols.length ? `，${state.protocol} 协议` : ''}。将第 1 步的 <code>path</code> 替换为真实串口，当前系统格式示意为 <code>{portExample}</code>。</p><p>{product.connection}</p><p>第 1–2 步的 Node 代码放在同一进程；第 2 步的浏览器连接只建立一次，后续三步复用同一个 <code>stream</code>。</p></Preparation>
+      <Preparation id="guide-config" title="确认产品与串口"><p>当前产品：<strong>{productName}</strong>{automatic ? '，由分包自动识别串口与左右手' : product.requiresSide ? `，${state.sideConfirmed ? `已确认${sideName}` : `${product.sideLabel}待按实物确认`}` : '，无需侧别参数'}{product.protocols.length ? `，${state.protocol} 协议` : ''}。{automatic ? '直接调用 readProduct()，后续流程不变。' : <>将第 1 步的 <code>path</code> 替换为真实串口，例如 <code>{portExample}</code>。</>}</p><p>{product.connection}</p><p>第 1–2 步的 Node 代码放在同一进程；第 2 步的浏览器连接只建立一次，后续三步复用同一个 <code>stream</code>。</p></Preparation>
       <Preparation id="guide-run" title="安装 SDK">{sdkInstallContent}</Preparation>
       <Preparation id="guide-connect" title="激活 SDK 授权"><p>使用 Shroom SDK 产品密钥。<button type="button" className={styles.textLink} onClick={requestLicense}>申请 SDK 密钥 →</button></p><p>在启动 Node 程序的终端中设置密钥：</p><CodeBlock runtime="terminal" code={keyCommand} onCopy={() => void copy(keyCommand, '密钥设置命令')} /><p>在同一 Node 程序中，先激活，再执行第 1 步取数：</p><CodeBlock runtime="node" code={activationCode} onCopy={() => void copy(activationCode, '授权调用')} /><p className={styles.secondaryText}>限定电脑名额的密钥需要设置 <code>SHROOM_DEVICE_ID</code>；同一安装保持不变，不要每次启动生成新值。<Link href="/docs/license">安装标识与离线授权说明 →</Link></p></Preparation>
       <Preparation id="guide-verify" title="验证取数与采集"><p><code>onData</code> 持续返回帧，触按位置与产品分区一致。开始采集返回会话 ID，停止采集返回本次 <code>recording.id</code>；下载使用此 ID。停止采集只停止保存记录，设备与 WS 仍保持连接。</p><p>SDK 0.2.0 起，Node 产品连接意外断开后默认每 3 秒重连原串口，最多尝试 3 次；<code>reconnect: false</code> 可关闭。断线中的采集记录以 <code>error</code> 收尾，恢复取数后需重新开始采集。</p></Preparation>

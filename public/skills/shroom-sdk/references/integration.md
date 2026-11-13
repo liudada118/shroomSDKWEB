@@ -1,12 +1,14 @@
-# 按需接入：Shroom SDK 0.4.0
+# 按需接入：Shroom SDK 0.5.0
 
 先用项目锁文件、`npm ls shroom-sdk` 和对应类型声明核对实际版本，再使用这些片段。只做用户需要的部分，变量应接入真实业务选择与配置。浏览器项目需支持包名导入的构建工具。
 
-在业务项目中运行 `npm install --save-exact shroom-sdk@0.4.0` 安装本指引对应的版本，并保存锁文件；再用 `npm ls shroom-sdk` 或运行时 `Shroom.version` 核对实际版本。分包手套从 **0.4.0** 起支持，人体与鞋垫从 **0.3.0** 起支持。安装 Skill 不会改变 SDK 依赖。若用户提供 TGZ 或本地源码，按其真实路径和 README 使用对应依赖与入口，不把内部文件复制进业务项目；离线 TGZ 安装需保留安装包与锁文件。
+在业务项目中运行 `npm install --save-exact shroom-sdk@0.5.0` 安装本指引对应的版本，并保存锁文件；再用 `npm ls shroom-sdk` 或运行时 `Shroom.version` 核对实际版本。分包手套从 **0.4.0** 起支持，人体与鞋垫从 **0.3.0** 起支持。安装 Skill 不会改变 SDK 依赖。若用户提供 TGZ 或本地源码，按其真实路径和 README 使用对应依赖与入口，不把内部文件复制进业务项目；离线 TGZ 安装需保留安装包与锁文件。
 
 Node 服务与网页项目都安装相同版本，并重新构建前端。分包手套要求两端至少为 0.4.0；旧 0.3.0 WS 客户端不认识 `handGloveSegmented`，旧 0.2.0 客户端也不认识 `humanBody / jqInsole`。
 
-## 1. Node：搜索串口
+## 1. Node：手动选口时查询串口
+
+0.5.0 分包手套也可直接在第 2 步省略 path 和 side，由 readProduct() 自动识别唯一手套；双手同时连接时可加 side 筛选。需要展示设备列表时，在激活 serial 授权后调用 `scanProductPorts({ product: 'glove' })`，返回 devices 与逐口 ports 报告。它只读探测 921600 波特率，不发送指令，默认每口 1200ms；至少 3 个同侧完整配对才确认，所有探测口关闭后再正式连接。未知或混合类型不匹配；首次调用需 try/catch。
 
 ```js
 import { listPorts } from 'shroom-sdk/node';
@@ -40,7 +42,7 @@ try {
   device = await readProduct({
     product: 'glove', // 0.4.0 默认分包手套；旧整包用 handGloveFullPacket。
     path: 'COM3', // 替换为用户选中的串口。
-    side: 'left', // 这条串口连接左手；一只手一个串口，不从包类型推断。
+    side: 'left', // 手动方式按实物指定左手；自动方式删除 path 和 side。
     onData(data) {
       console.log(data.fingers, data.palm, data.imu.raw);
     },
@@ -58,7 +60,7 @@ try {
 
 | 产品别名 / 规范 ID | 连接参数 | 读取字段 |
 | --- | --- | --- |
-| `glove` / `handGloveSegmented`（0.4.0） | 必须明确左右手 `side`；一只手一个串口，固定 921600 baud | `fingers`、`palm`、`imu.raw` |
+| `glove` / `handGloveSegmented`（0.4.0） | 0.5.0 自动识别或手动 path+side；一只手一个串口，固定 921600 baud | `fingers`、`palm`、`imu.raw` |
 | `handGloveFullPacket`（旧整包） | 必须显式使用规范 ID 并明确 `side`，固定 921600 baud | `fingers`、`palm`、`imu.raw`、`sequence` |
 | `pad` / `hand` | 不传 `side` | `pressureMatrix`、`values` |
 | `body` / `humanBody`（0.3.0） | 不传 `side`；固定 1000000 baud | `regions.back.raw` 等十个源矩阵 |
@@ -66,7 +68,7 @@ try {
 
 人体与鞋垫只改变取数配置，不增加第六个快速函数。规范 ID 用于返回帧和 WS；新增其他产品仍须扩展 SDK 适配器与注册表，不能仅在业务中虚构字符串。
 
-分包手套由 SDK 合并 130 字节首包与 146 字节尾包（长度均不含各自 4 字节帧尾），配对完成后才通过 `onData` 返回一帧 256 通道数据与 16 字节 `imu.raw`。输出 `protocol: 'segmented'`，`packetType` 只校验同连接首尾包类型一致，不决定左右手；分包帧没有 `sequence`。两只手用两个不同 `path` 分别连接并指定 left/right；不在一个串口自动路由双手。协议与限制见[0.4.0 手套文档](https://github.com/liudada118/shroomSDK/blob/sdk-v0.4.0/docs/GLOVE.md)。
+分包手套由 SDK 合并 130 字节首包与 146 字节尾包（长度均不含各自 4 字节帧尾），配对完成后才通过 `onData` 返回一帧 256 通道数据与 16 字节 `imu.raw`。输出 `protocol: 'segmented'`，自动模式按 `packetType=1/2` 识别左/右手并校验配对；手动模式按传入 side 映射；分包帧没有 `sequence`。两只手用两个不同 `path` 分别连接并指定 left/right；不在一个串口自动路由双手。协议与限制见[0.5.0 手套文档](https://github.com/liudada118/shroomSDK/blob/sdk-v0.5.0/docs/GLOVE.md)。
 
 ```js
 // 人体：沿用已完成的授权，path 替换为用户选中的串口。

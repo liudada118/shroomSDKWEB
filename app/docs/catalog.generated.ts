@@ -18,32 +18,40 @@ export const sectionCatalog = [
   },
   {
     "anchor": "glove--s3",
-    "label": "串口协议",
+    "label": "先扫描，再显示设备列表",
     "href": "/docs/glove#s3",
+    "page": "glove",
+    "description": "手套分包协议与数据",
+    "keywords": "glove 先扫描，再显示设备列表"
+  },
+  {
+    "anchor": "glove--s4",
+    "label": "串口协议",
+    "href": "/docs/glove#s4",
     "page": "glove",
     "description": "手套分包协议与数据",
     "keywords": "glove 串口协议"
   },
   {
-    "anchor": "glove--s4",
+    "anchor": "glove--s5",
     "label": "返回数据",
-    "href": "/docs/glove#s4",
+    "href": "/docs/glove#s5",
     "page": "glove",
     "description": "手套分包协议与数据",
     "keywords": "glove 返回数据"
   },
   {
-    "anchor": "glove--s5",
+    "anchor": "glove--s6",
     "label": "整包设备迁移",
-    "href": "/docs/glove#s5",
+    "href": "/docs/glove#s6",
     "page": "glove",
     "description": "手套分包协议与数据",
     "keywords": "glove 整包设备迁移"
   },
   {
-    "anchor": "glove--s6",
+    "anchor": "glove--s7",
     "label": "来源与验证范围",
-    "href": "/docs/glove#s6",
+    "href": "/docs/glove#s7",
     "page": "glove",
     "description": "手套分包协议与数据",
     "keywords": "glove 来源与验证范围"
@@ -521,17 +529,25 @@ export const sectionCatalog = [
     "keywords": "serial Node.js 连接"
   },
   {
-    "anchor": "serial--s4",
+    "anchor": "serial--node-scan",
+    "label": "Node 自动扫描分包手套",
+    "href": "/docs/serial#node-scan",
+    "page": "serial",
+    "description": "串口接入",
+    "keywords": "serial Node 自动扫描分包手套"
+  },
+  {
+    "anchor": "serial--s5",
     "label": "数据帧与点位",
-    "href": "/docs/serial#s4",
+    "href": "/docs/serial#s5",
     "page": "serial",
     "description": "串口接入",
     "keywords": "serial 数据帧与点位"
   },
   {
-    "anchor": "serial--s5",
+    "anchor": "serial--s6",
     "label": "排错顺序",
-    "href": "/docs/serial#s5",
+    "href": "/docs/serial#s6",
     "page": "serial",
     "description": "串口接入",
     "keywords": "serial 排错顺序"
@@ -566,7 +582,7 @@ export const sectionCatalog = [
     "href": "/docs/backend?language=node#node-connect-glove",
     "page": "backend",
     "description": "后端文档",
-    "keywords": "backend node Shroom.connectGlove(options) 连接分包手套并指定实物左右手"
+    "keywords": "backend node Shroom.connectGlove(options) 连接分包手套：手动或自动识别"
   },
   {
     "anchor": "backend--node-connect-hand-pad",
@@ -615,6 +631,14 @@ export const sectionCatalog = [
     "page": "backend",
     "description": "后端文档",
     "keywords": "backend node Shroom.listPorts() 列出可用串口"
+  },
+  {
+    "anchor": "backend--node-scan-product-ports",
+    "label": "Shroom.scanProductPorts(options?)",
+    "href": "/docs/backend?language=node#node-scan-product-ports",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node Shroom.scanProductPorts(options?) 扫描分包手套并识别左右手"
   },
   {
     "anchor": "backend--node-connect",
@@ -1658,64 +1682,72 @@ export const sectionCatalog = [
   },
   {
     "anchor": "changelog--s1",
-    "label": "[0.4.0] - 2026-11-04",
+    "label": "[0.5.0] - 2026-11-13",
     "href": "/docs/changelog#s1",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog [0.5.0] - 2026-11-13"
+  },
+  {
+    "anchor": "changelog--s2",
+    "label": "[0.4.0] - 2026-11-04",
+    "href": "/docs/changelog#s2",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.4.0] - 2026-11-04"
   },
   {
-    "anchor": "changelog--s2",
+    "anchor": "changelog--s3",
     "label": "[0.3.0] - 2026-11-04",
-    "href": "/docs/changelog#s2",
+    "href": "/docs/changelog#s3",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.3.0] - 2026-11-04"
   },
   {
-    "anchor": "changelog--s3",
+    "anchor": "changelog--s4",
     "label": "[0.2.0] - 2026-11-03",
-    "href": "/docs/changelog#s3",
+    "href": "/docs/changelog#s4",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.2.0] - 2026-11-03"
   },
   {
-    "anchor": "changelog--s4",
+    "anchor": "changelog--s5",
     "label": "Node.js 串口与快速流程",
-    "href": "/docs/changelog#s4",
+    "href": "/docs/changelog#s5",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 串口与快速流程"
   },
   {
-    "anchor": "changelog--s5",
+    "anchor": "changelog--s6",
     "label": "兼容范围",
-    "href": "/docs/changelog#s5",
+    "href": "/docs/changelog#s6",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 兼容范围"
   },
   {
-    "anchor": "changelog--s6",
+    "anchor": "changelog--s7",
     "label": "[0.1.0] - 2026-10-29",
-    "href": "/docs/changelog#s6",
+    "href": "/docs/changelog#s7",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.1.0] - 2026-10-29"
   },
   {
-    "anchor": "changelog--s7",
+    "anchor": "changelog--s8",
     "label": "Node.js 与浏览器",
-    "href": "/docs/changelog#s7",
+    "href": "/docs/changelog#s8",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 与浏览器"
   },
   {
-    "anchor": "changelog--s9",
+    "anchor": "changelog--s10",
     "label": "发布管理",
-    "href": "/docs/changelog#s9",
+    "href": "/docs/changelog#s10",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 发布管理"

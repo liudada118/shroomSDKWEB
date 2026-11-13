@@ -199,14 +199,9 @@ try {
         assert.ok(position > previous, `${id} follows the preceding step`);
         previous = position;
       }
-      const portSearch = flow.indexOf('id="port-search-title"');
-      assert.ok(portSearch >= 0 && portSearch < flow.indexOf('id="flow-read"'), '串口搜索必须在第一个取数调用之前直接展示');
-      assert.match(flow, /接入前：搜索并选择串口/);
-      assert.match(flow, /await listPorts\(\)/);
-      assert.match(flow, /console\.table\(ports\)/);
-      assert.match(flow, /shroom-sdk\/node/);
+      assert.match(flow, /无需预先查询串口/, '自动模式直接调用取数，手动模式再查询串口');
       assert.doesNotMatch(flow, /ports\[0\]/, '多个端口必须由客户选择，不默认选第一个');
-      assert.equal((flow.match(/复制代码/g) ?? []).length, 7, '串口准备加一个代码块，原五步仍使用六个代码块');
+      assert.equal((flow.match(/复制代码/g) ?? []).length, 6, '自动识别包含在取数内部，原五步使用六个代码块');
       for (const call of ['readProduct({', 'createWS(device,', 'startRecording(stream,', 'stopRecording(stream)', 'downloadRecording(stream,']) {
         assert.ok(flow.includes(call), `actual SDK API: ${call}`);
       }
@@ -235,7 +230,10 @@ try {
         assert.ok(html.includes(`id="${chapter}"`), chapter);
       }
       assert.ok(html.includes('CH341SER.EXE') && html.includes('CH34xVCPDriver.zip'));
-      assert.ok(html.includes('disabled=""'), '未确认手侧的首屏生成操作被禁用');
+      assert.match(flow, /自动识别串口与左右手/);
+      assert.match(flow, /手动选择串口与左右手/);
+      assert.match(flow, /PORT|无匹配/);
+      assert.doesNotMatch(flow, /按实物确认手侧后/); // 自动模式无需人为确认手侧。
       assert.doesNotMatch(html, /outputs\/layout-discussion|product-workspace-examples\.js/);
     }
     console.log(`SSR 200: ${path}`);

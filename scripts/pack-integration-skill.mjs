@@ -39,7 +39,7 @@ export async function createIntegrationSkillArchive({ projectRoot = ROOT } = {})
   return { bytes, files, manifest: {
     schema: 'shroom.integration-skill.v1',
     name: SKILL_NAME,
-    sdkBaseline: '0.4.0',
+    sdkBaseline: '0.5.0',
     file: SKILL_ARCHIVE,
     size: bytes.length,
     sha256: createHash('sha256').update(bytes).digest('hex'),
