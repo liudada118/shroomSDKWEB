@@ -115,7 +115,8 @@ import * as flow from 'shroom-sdk/quick-flow';
 import { Shroom } from 'shroom-sdk/node';
 assert.deepEqual(Object.keys(flow).sort(), ['createWS', 'downloadRecording', 'readProduct', 'startRecording', 'stopRecording']);
 assert.equal(Shroom.version, ${JSON.stringify(npmPackage.version)});
-assert.deepEqual(Shroom.listDeviceProducts().map(item => item.product), ['handGloveSegmented', 'handGloveFullPacket', 'hand', 'humanBody', 'jqInsole']);
+assert.deepEqual(Shroom.listDeviceProducts().map(item => item.product), ['handGloveSegmented', 'handGloveFullPacket', 'hand', 'humanBody', 'jqInsole', 'footVideo']);
+assert.equal(typeof Shroom.connectTactileFoot, 'function');
 console.log('官网 HTTP 安装及五函数包导入通过');\n`);
     const result = await execute(['smoke.mjs']);
     console.log(result.stdout.trim());
@@ -151,7 +152,7 @@ try {
     await delay(100);
   }
   assert.ok(online, `生产服务未就绪：${output}`);
-  for (const path of ['/docs/quick-start', '/docs', '/docs/products', '/docs/skills', '/docs/insole', '/docs/human-body', '/docs/backend?language=python', '/']) {
+  for (const path of ['/docs/quick-start', '/docs', '/docs/products', '/docs/skills', '/docs/insole', '/docs/tactile-foot', '/docs/human-body', '/docs/backend?language=python', '/']) {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200, path);
     const html = await response.text();
@@ -165,6 +166,16 @@ try {
       assert.match(html, /humanBody/);
       assert.match(html, /backPantsRight/);
       assert.match(html, /400/);
+    }
+    if (path === '/docs/tactile-foot') {
+      assert.match(html, /footVideo/);
+      assert.match(html, /rawPackets/);
+      assert.match(html, /256/);
+    }
+    if (path === '/docs/products') {
+      assert.match(html, /id="foot"/);
+      assert.match(html, /product=foot/);
+      assert.match(html, /rawPackets/);
     }
     if (path === '/' || path === '/docs/quick-start') {
       assert.match(html, /复制安装命令/);

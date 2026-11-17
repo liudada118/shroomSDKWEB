@@ -72,6 +72,23 @@ export const productCatalog = [
     ],
     note: 'SDK 0.3.0 起支持。必须确认脚侧和固件协议；当前提供取数和五步调用，不提供鞋垫绘图。Node 服务端与网页端需使用同一 SDK 版本。',
   },
+  {
+    id: 'foot', name: '触觉足底', productId: 'footVideo', alias: 'foot',
+    requiresSide: true, sideLabel: '脚侧', sideNames: { left: '左脚', right: '右脚' },
+    protocols: [], minSdkVersion: '0.7.0', development: false,
+    slogan: '直接读取原始压力、IMU 与完整分包。',
+    description: '触觉足底使用与触觉手套相同的首尾分包结构，按类型 3 / 4 区分左右脚，保留全部扫描 ADC、原始 IMU 和完整串口包。',
+    summary: ['256 个原始 ADC', '16 字节原始 IMU', '自动识别 / 手动筛选左右脚'],
+    connection: '921600 baud · 130 + 146 字节分包 · 一只脚一个串口 · Node 可自动识别，或手动传 path + side',
+    fields: [
+      ['pressure / raw / pressureMatrix', '256 个 uint8 ADC / 16 × 16', '保持原始扫描顺序，范围 0–255；16 × 16 仅为存储形状，不代表物理鞋形。'],
+      ['values', '256 个归一化值', '原始 ADC 除以 255，不代表标定后的物理压力。'],
+      ['imu.raw', '16 字节', '原样保留，不解释四元数分量、轴序或单位。'],
+      ['rawPackets', '134 + 150 字节', '两份完整原包，包含包头和各自的 AA 55 03 99 帧尾。'],
+      ['protocol / packetType', 'segmented / 3、4', '3=左脚、4=右脚；首尾类型一致才配对。类型不是唯一设备编号，段号 1 / 2 不是采样序号。'],
+    ],
+    note: 'SDK 0.7.0 起支持。显式 side 只筛选包内脚侧，不重新标记数据；保留全部 256 通道，不套用 jqInsole 的 112 点表，不抽点、插值、归零或标定。Node 与网页项目需使用同一 SDK 版本。',
+  },
 ] as const;
 
 export type CatalogProduct = typeof productCatalog[number];

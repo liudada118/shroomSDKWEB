@@ -5,7 +5,7 @@ import { listDeviceProducts } from '../sdk/src/node/index.js';
 
 test('all product references cover registered protocols without treating aliases as extra devices', () => {
   const supported = listDeviceProducts();
-  assert.deepEqual([...productCatalog.map(product => product.productId), 'handGloveFullPacket'].sort(), supported.map(product => product.product).sort(), '整包协议作为同类手套的兼容入口保留，不增加第五类产品');
+  assert.deepEqual([...productCatalog.map(product => product.productId), 'handGloveFullPacket'].sort(), supported.map(product => product.product).sort(), '整包协议作为同类手套的兼容入口保留，所有独立产品均有资料');
   for (const product of productCatalog) {
     const url = new URL(productGuideHref(product), 'https://sdk.example');
     assert.equal(url.pathname, '/docs/quick-start');
@@ -13,6 +13,25 @@ test('all product references cover registered protocols without treating aliases
     assert.equal(url.searchParams.get('tab'), 'start');
     assert.ok(product.fields.length > 0);
   }
+});
+
+test('tactile foot describes the original segmented data separately from jqInsole', () => {
+  const foot = getCatalogProduct('foot');
+  assert.equal(foot.productId, 'footVideo');
+  assert.equal(foot.alias, 'foot');
+  assert.equal(foot.minSdkVersion, '0.7.0');
+  assert.equal(productPackageReady(foot, '0.6.0'), false);
+  assert.equal(productPackageReady(foot, '0.7.0'), true);
+  assert.equal(foot.requiresSide, true);
+  assert.equal(foot.protocols.length, 0);
+  const fields = productFields(foot).map(row => row.join(' ')).join('\n');
+  assert.match(fields, /256 个 uint8 ADC/);
+  assert.match(fields, /16 字节/);
+  assert.match(fields, /134 \+ 150 字节/);
+  assert.match(fields, /3=左脚、4=右脚/);
+  assert.doesNotMatch(fields, /sensors|fingers|palm|imu\.quaternion/);
+  assert.match(foot.note, /显式 side 只筛选/);
+  assert.notEqual(foot.productId, getCatalogProduct('insole').productId);
 });
 
 test('released protocols retain their minimum version and reject older installation packages', () => {

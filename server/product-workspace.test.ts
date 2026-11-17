@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createWorkspaceStore, initialWorkspaceState, parseWorkspaceLocation, workspaceChapters,
-  workspaceReady, workspaceStateForLocation, workspaceUrl, workspaceLocationTarget,
+  workspaceReady, workspaceStateForLocation, workspaceUrl, workspaceLocationTarget, workspaceProducts,
 } from '../app/docs/product-workspace-model.ts';
-import { workspaceFlow } from '../app/docs/product-workspace-preview.ts';
+import { workspaceAutomaticReadCode, workspaceFlow } from '../app/docs/product-workspace-preview.ts';
 
 test('old prototype default opens the call flow and preparation deep links remain available', () => {
   assert.equal(workspaceLocationTarget('', '#product=glove&env=web&platform=windows&tab=start&section=guide-prepare&codeKind=complete'), null);
@@ -55,7 +55,7 @@ test('invalid and prototype URL values resolve to supported configurations', () 
 });
 
 test('every selected product exposes one connected five-step Node and browser flow', () => {
-  for (const product of ['glove', 'pad', 'body', 'insole'] as const) for (const side of ['left', 'right'] as const)
+  for (const { id: product } of workspaceProducts) for (const side of ['left', 'right'] as const)
     for (const platform of ['windows', 'macos', 'linux'] as const) {
       const steps = workspaceFlow({ ...initialWorkspaceState, product, side, sideConfirmed: true, platform });
       assert.deepEqual(steps.map(step => step.id), ['flow-read', 'flow-ws', 'flow-start', 'flow-stop', 'flow-download']);
@@ -74,6 +74,36 @@ test('every selected product exposes one connected five-step Node and browser fl
       assert.doesNotMatch(steps[1].blocks[1].code, /let recording/, '连接步骤无需维护跨按钮记录变量');
       assert.doesNotMatch(steps.flatMap(step => step.blocks.map(block => block.code)).join('\n'), /<!doctype|connectProduct|downloadUrl/);
     }
+});
+
+test('tactile foot links retain strict foot selection without inheriting the other insole protocol', () => {
+  const state = parseWorkspaceLocation('?product=foot&side=right&protocol=12bit');
+  assert.equal(state.product, 'foot');
+  assert.equal(workspaceReady(state), false);
+  const confirmed = { ...state, sideConfirmed: true };
+  const read = workspaceFlow(confirmed)[0].blocks[0].code;
+  assert.match(read, /product: 'foot'/);
+  assert.match(read, /side: 'right'/);
+  assert.match(read, /data\.pressure, data\.imu\.raw, data\.rawPackets/);
+  assert.doesNotMatch(read, /protocol:|data\.sensors|data\.fingers|data\.palm/);
+  const current = new URL('https://sdk.example/docs/quick-start?protocol=8bit');
+  const url = new URL(workspaceUrl(confirmed, current), current);
+  assert.equal(url.searchParams.get('product'), 'foot');
+  assert.equal(url.searchParams.get('side'), 'right');
+  assert.equal(url.searchParams.has('protocol'), false);
+});
+
+test('automatic snippets identify the selected segmented product and preserve the foot raw fields', () => {
+  const foot = workspaceAutomaticReadCode('foot')!;
+  assert.match(foot, /product: 'foot'/);
+  assert.match(foot, /3=左脚、4=右脚/);
+  assert.match(foot, /data\.side, data\.packetType, data\.pressure, data\.imu\.raw, data\.rawPackets/);
+  assert.doesNotMatch(foot, /^\s+(?:path|side|protocol):/m);
+  assert.doesNotMatch(foot, /data\.sensors|data\.fingers|data\.palm|四元数/);
+  const glove = workspaceAutomaticReadCode('glove')!;
+  assert.match(glove, /product: 'glove'/);
+  assert.match(glove, /data\.fingers, data\.palm/);
+  for (const product of ['pad', 'body', 'insole'] as const) assert.equal(workspaceAutomaticReadCode(product), null);
 });
 
 test('insole links preserve protocol while requiring foot confirmation before copying', () => {

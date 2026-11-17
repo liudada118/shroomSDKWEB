@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/docs/skills' },
 };
 
-const prompt = '使用 $shroom-sdk，在当前项目接入 Shroom 手部检测垫。先提供串口选择，用 readProduct 一步取数，再按需添加网页采集与下载。密钥由我在本机配置。';
+const prompt = '使用 $shroom-sdk，在当前项目接入 Shroom 触觉足底。用 readProduct 一步获取原始 ADC、IMU 和完整分包，按类型 3/4 识别左右脚，再按需添加网页采集与下载。密钥由我在本机配置。';
 const installPath = '.agents/skills/shroom-sdk/SKILL.md';
 
 /** Skill 安装说明独立成页；下载内容是接入指引包，运行 SDK 另行安装。 */
@@ -27,7 +27,7 @@ export default function SkillsPage() {
           <a className={styles.primary} href="/skills/shroom-sdk-skill.zip" download="shroom-sdk-skill.zip">下载 Skill ZIP <span aria-hidden="true">↓</span></a>
           <a className={styles.textLink} href="/skills/shroom-sdk/SKILL.md" target="_blank" rel="noreferrer">查看 SKILL.md <span aria-hidden="true">↗</span></a>
         </div>
-        <p className={styles.note}>指引基线 SDK 0.5.0 · SDK 依赖通过 npm 单独安装 · Node 与网页使用同一版本</p>
+        <p className={styles.note}>指引基线 SDK 0.7.0 · SDK 依赖通过 npm 单独安装 · Node 与网页使用同一版本</p>
       </header>
 
       <section id="install" className={styles.section} aria-labelledby="install-title">
@@ -47,7 +47,7 @@ export default function SkillsPage() {
             <h3>告诉 AI 产品与需要的功能</h3>
             <div className={styles.prompt}>{prompt}</div>
             <CopyRawButton raw={prompt} label="复制调用提示" />
-            <p className={styles.note}>手套注明左右手与分包/整包协议，鞋垫注明左右脚与协议；密钥在本机配置，无需发给 AI。</p>
+            <p className={styles.note}>手套注明分包/整包协议；触觉足底按类型 3/4 识别左右脚，A版鞋垫需注明左右脚与协议。密钥在本机配置，无需发给 AI。</p>
           </div></li>
         </ol>
         <p className={styles.footnote}>项目安装目录参考 <a href="https://learn.chatgpt.com/docs/build-skills#where-codex-loads-local-skills" target="_blank" rel="noreferrer">OpenAI 官方 Skills 说明</a>。其他支持 Skills 的工具，请按其导入方式安装整个文件夹；各工具的目录和调用语法可能不同。</p>
@@ -55,10 +55,11 @@ export default function SkillsPage() {
 
       <section id="scope" className={styles.section} aria-labelledby="scope-title">
         <h2 id="scope-title">AI 会按这套接口接入</h2>
-        <p>接入前用 <code>listPorts()</code> 查询并让用户选择串口。业务流程保留五个函数：</p>
+        <p>手动选口时用 <code>listPorts()</code> 查询；分包手套与触觉足底也可自动识别串口和左右侧。业务流程保留五个函数：</p>
         <p className={styles.flow}>取数 → 创建 WS → 开始采集 → 停止采集 → 下载</p>
         <div className={styles.scope}>
-          <p><strong>设备与授权</strong>Node 连接手套、手垫、人体或鞋垫；浏览器通过 WS 接收。分包手套从 SDK 0.4.0 起支持，0.5.0 可自动识别串口和左右手；人体与鞋垫从 0.3.0 起支持；驱动、SDK 密钥与真实串口在客户电脑准备。</p>
+          <p><strong>设备与授权</strong>Node 连接手套、触觉足底、手垫、人体或A版鞋垫；浏览器通过 WS 接收。分包手套从 SDK 0.4.0 起支持，0.5.0 可自动识别左右手；触觉足底从 0.7.0 起支持手动或自动识别，人体与A版鞋垫从 0.3.0 起支持。驱动、SDK 密钥与真实串口在客户电脑准备。</p>
+          <p><strong>足底原始数据</strong>按类型 3=左脚、4=右脚保留 256 个原始 ADC、16 字节 IMU 和两份含头尾的 rawPackets（134/150 字节），不抽点、插值或标定。Python 暂未提供此产品入口。</p>
           <p><strong>重连与采集</strong>采集保存为 SQLite。串口断线会结束当前记录，恢复后需重新采集；网页 WS 断线不会停止 Node 录制。</p>
         </div>
         <Link className={styles.textLink} href="/docs/quick-start">查看五步调用与接入准备 <span aria-hidden="true">→</span></Link>

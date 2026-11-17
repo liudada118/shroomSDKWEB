@@ -57,6 +57,38 @@ export const sectionCatalog = [
     "keywords": "glove 来源与验证范围"
   },
   {
+    "anchor": "tactile-foot--s1",
+    "label": "连接",
+    "href": "/docs/tactile-foot#s1",
+    "page": "tactile-foot",
+    "description": "触觉足底原始数据",
+    "keywords": "tactile-foot 连接"
+  },
+  {
+    "anchor": "tactile-foot--s2",
+    "label": "原始数据契约",
+    "href": "/docs/tactile-foot#s2",
+    "page": "tactile-foot",
+    "description": "触觉足底原始数据",
+    "keywords": "tactile-foot 原始数据契约"
+  },
+  {
+    "anchor": "tactile-foot--s3",
+    "label": "直接输出原始 JSONL",
+    "href": "/docs/tactile-foot#s3",
+    "page": "tactile-foot",
+    "description": "触觉足底原始数据",
+    "keywords": "tactile-foot 直接输出原始 JSONL"
+  },
+  {
+    "anchor": "tactile-foot--s4",
+    "label": "组帧边界与来源",
+    "href": "/docs/tactile-foot#s4",
+    "page": "tactile-foot",
+    "description": "触觉足底原始数据",
+    "keywords": "tactile-foot 组帧边界与来源"
+  },
+  {
     "anchor": "insole--s1",
     "label": "连接参数",
     "href": "/docs/insole#s1",
@@ -530,11 +562,11 @@ export const sectionCatalog = [
   },
   {
     "anchor": "serial--node-scan",
-    "label": "Node 自动扫描分包手套",
+    "label": "Node 自动扫描分包手套或触觉足底",
     "href": "/docs/serial#node-scan",
     "page": "serial",
     "description": "串口接入",
-    "keywords": "serial Node 自动扫描分包手套"
+    "keywords": "serial Node 自动扫描分包手套或触觉足底"
   },
   {
     "anchor": "serial--s5",
@@ -593,6 +625,14 @@ export const sectionCatalog = [
     "keywords": "backend node Shroom.connectHandPad(options) 连接手部检测垫"
   },
   {
+    "anchor": "backend--node-connect-tactile-foot",
+    "label": "Shroom.connectTactileFoot(options?)",
+    "href": "/docs/backend?language=node#node-connect-tactile-foot",
+    "page": "backend",
+    "description": "后端文档",
+    "keywords": "backend node Shroom.connectTactileFoot(options?) 连接触觉足底并保留完整原包"
+  },
+  {
     "anchor": "backend--node-connect-product",
     "label": "Shroom.connectProduct(options)",
     "href": "/docs/backend?language=node#node-connect-product",
@@ -638,7 +678,7 @@ export const sectionCatalog = [
     "href": "/docs/backend?language=node#node-scan-product-ports",
     "page": "backend",
     "description": "后端文档",
-    "keywords": "backend node Shroom.scanProductPorts(options?) 扫描分包手套并识别左右手"
+    "keywords": "backend node Shroom.scanProductPorts(options?) 扫描分包手套或触觉足底并识别左右侧"
   },
   {
     "anchor": "backend--node-connect",
@@ -1313,6 +1353,14 @@ export const sectionCatalog = [
     "keywords": "frontend-communication Shroom.connectHandPad(options) 连接手部检测垫"
   },
   {
+    "anchor": "frontend-communication--connect-tactile-foot",
+    "label": "Shroom.connectTactileFoot(options)",
+    "href": "/docs/frontend-communication#connect-tactile-foot",
+    "page": "frontend-communication",
+    "description": "前端通讯",
+    "keywords": "frontend-communication Shroom.connectTactileFoot(options) 连接触觉足底并指定左右脚"
+  },
+  {
     "anchor": "frontend-communication--connect-product",
     "label": "Shroom.connectProduct(options) / listDeviceProducts()",
     "href": "/docs/frontend-communication#connect-product",
@@ -1682,72 +1730,88 @@ export const sectionCatalog = [
   },
   {
     "anchor": "changelog--s1",
-    "label": "[0.5.0] - 2026-11-13",
+    "label": "[0.7.0] - 2026-11-17",
     "href": "/docs/changelog#s1",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog [0.7.0] - 2026-11-17"
+  },
+  {
+    "anchor": "changelog--s2",
+    "label": "[0.6.0] - 2026-11-16",
+    "href": "/docs/changelog#s2",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog [0.6.0] - 2026-11-16"
+  },
+  {
+    "anchor": "changelog--s5",
+    "label": "[0.5.0] - 2026-11-13",
+    "href": "/docs/changelog#s5",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.5.0] - 2026-11-13"
   },
   {
-    "anchor": "changelog--s2",
+    "anchor": "changelog--s6",
     "label": "[0.4.0] - 2026-11-04",
-    "href": "/docs/changelog#s2",
+    "href": "/docs/changelog#s6",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.4.0] - 2026-11-04"
   },
   {
-    "anchor": "changelog--s3",
+    "anchor": "changelog--s7",
     "label": "[0.3.0] - 2026-11-04",
-    "href": "/docs/changelog#s3",
+    "href": "/docs/changelog#s7",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.3.0] - 2026-11-04"
   },
   {
-    "anchor": "changelog--s4",
+    "anchor": "changelog--s8",
     "label": "[0.2.0] - 2026-11-03",
-    "href": "/docs/changelog#s4",
+    "href": "/docs/changelog#s8",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.2.0] - 2026-11-03"
   },
   {
-    "anchor": "changelog--s5",
+    "anchor": "changelog--s9",
     "label": "Node.js 串口与快速流程",
-    "href": "/docs/changelog#s5",
+    "href": "/docs/changelog#s9",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 串口与快速流程"
   },
   {
-    "anchor": "changelog--s6",
+    "anchor": "changelog--s10",
     "label": "兼容范围",
-    "href": "/docs/changelog#s6",
+    "href": "/docs/changelog#s10",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 兼容范围"
   },
   {
-    "anchor": "changelog--s7",
+    "anchor": "changelog--s11",
     "label": "[0.1.0] - 2026-10-29",
-    "href": "/docs/changelog#s7",
+    "href": "/docs/changelog#s11",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.1.0] - 2026-10-29"
   },
   {
-    "anchor": "changelog--s8",
+    "anchor": "changelog--s12",
     "label": "Node.js 与浏览器",
-    "href": "/docs/changelog#s8",
+    "href": "/docs/changelog#s12",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 与浏览器"
   },
   {
-    "anchor": "changelog--s10",
+    "anchor": "changelog--s14",
     "label": "发布管理",
-    "href": "/docs/changelog#s10",
+    "href": "/docs/changelog#s14",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 发布管理"

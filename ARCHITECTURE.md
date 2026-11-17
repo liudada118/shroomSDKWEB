@@ -1,12 +1,12 @@
 # 架构文档
 
-> 本文档由 Codex 自动生成和维护。最后更新于：2026-11-13
+> 本文档由 Codex 自动生成和维护。最后更新于：2026-11-17
 
 ## 1. 项目概述
 
 官网与 SDK 分属两个 Git 仓库：[shroomSDKWEB](https://github.com/liudada118/shroomSDKWEB) 维护页面、在线文档和下载入口，[shroomSDK](https://github.com/liudada118/shroomSDK) 维护 SDK 源码、测试、构建与版本发布。官网的 `sdk/` 是固定提交的 Git 子模块；以下 SDK 路径表示子模块内的文件，不再属于官网直接维护的源码。
 
-当前官网固定 SDK **0.4.0**（`sdk-v0.4.0` / `50d0956c192c892f7bd701cbdde8e22bb0ae0b4b`），页面版本、下载制品、生成文档与 Skill 基线一致。npm `latest` 为 0.4.0，官网 TGZ 与该正式发布包内容一致。人体和鞋垫的“0.3.0 起支持”仍是各自最低版本说明。
+当前官网源码固定 SDK **0.7.0**（`sdk-v0.7.0` / `dc1539a8157f32ced169b9a9f55eeb5b4a7b7ecf`），页面版本、下载制品、生成文档与 Skill 基线均已同步。npm `latest` 已为 0.7.0，官网 TGZ 的 SHA256 为 `3a3a36edbdb3b381dcfbb9a9ad2202e1d84f0e5bd2745fee2908afc3f10efb08`，与已提交的正式发布制品一致；注册表独立安装与官网线上切换结果另行记录。触觉足底从 0.7.0 起支持，人体和 A 版鞋垫的“0.3.0 起支持”仍是各自最低版本说明。
 
 Shroom Developer 面向开发自有应用与直接使用上位机的两类客户。首页采用描述与数据示意双栏首屏，按“用途概览 → SDK / 上位机双流程 → SDK 能力中心 → 产品概览与资料入口 → 获取 JavaScript SDK / 按平台下载上位机 → 文档中心”组织，每区以短标题说明结果。SDK 路径以 readProduct 一步取数为核心；上位机路径独立，不要求用户另装 SDK。驱动提示集中在接入准备与上位机下载，首屏不再展示代码或驱动横幅。首页使用独立 home.module.css，保留既有下载、工具与文档锚点。
 
@@ -16,11 +16,11 @@ Shroom Developer 面向开发自有应用与直接使用上位机的两类客户
 
 - **获取 SDK** —— 官网暂只展示 JavaScript / TypeScript，提供 `npm install shroom-sdk`、TGZ 下载和源码入口，覆盖 Node.js 与浏览器。Python 下载卡、指南入口、语言选择与相关展示说明暂时隐藏；独立 SDK 的 Python 实现和历史下载制品保留。SDK 下载免登记，真实设备另行申请并激活产品密钥；上位机仍使用原下载登记。官网展示版本读取固定 SDK 提交，发布时确认 npm latest 与其一致；备用 TGZ URL 含版本与 SHA256，历史包随官网源码保留。
 - **三平台上位机** —— 首页通过 `app/downloads.ts` 提供用户指定的 Shroom 安装包：Windows 1.1.36 EXE、macOS 1.1.37 ARM64 DMG（仅 Apple Silicon）、Linux 1.1.38 amd64 DEB（仅支持 DEB 的 x86_64 系统）。三个平台均可下载；版本来自文件名，体积来自 2026-10-13 的 HTTPS HEAD 响应。安装包由 `shroom.jq-industries.com/shroom1/` 独立提供，不进入本站 Git 或构建产物。页面不复用旧 Monitor ZIP 的日期、更新日志、签名或授权说明；当前包的功能/授权不由基础 SDK 边界推定。旧 `desktop-release.json` 与同步脚本仅保留用于历史 Monitor 流程，不再驱动首页。
-- **文档中心** —— `/docs` 主入口直达 `/docs/quick-start`：先直接展示 `listPorts()` 搜索和用户选择串口，再进入取数、创建 WS、开始采集、停止采集、下载五步。搜索使用 `shroom-sdk/node` 基础 API，不新增第六个快速函数。Node 负责设备与服务，网页通过同一个 `stream` 控制采集并按返回的记录 ID 下载；驱动、授权与依赖集中在“接入准备”。产品和手侧在取数示例旁选择，字段、排查、SDK 下载为独立面板，驱动不再全局置顶。`/docs/products` 提供完整产品资料，`/docs/skills` 分发 AI 接入 Skill；`/docs/custom` 承接基础自定义，后端参考统一在 `/docs/backend`。SDK 文档由 `sdk/docs/catalog.json` 维护来源和导航元数据，构建期预渲染成 HTML；官网产品与 Skill 页由独立路由渲染，旧链接保持兼容。
+- **文档中心** —— `/docs` 主入口直达 `/docs/quick-start`：分包手套与触觉足底可直接调用 `readProduct()` 自动识别，也可切换手动 `listPorts()` 选口，再按需创建 WS、开始采集、停止采集和下载。搜索使用 `shroom-sdk/node` 基础 API，不新增第六个快速函数。Node 负责设备与服务，网页通过同一个 `stream` 控制采集并按返回的记录 ID 下载；驱动、授权与依赖集中在“接入准备”。产品和侧别在取数示例旁选择，字段、排查、SDK 下载为独立面板，驱动不再全局置顶。`/docs/products` 提供完整产品资料，`/docs/skills` 分发 AI 接入 Skill；`/docs/custom` 承接基础自定义，后端参考统一在 `/docs/backend`。SDK 文档由 `sdk/docs/catalog.json` 维护来源和导航元数据，构建期预渲染成 HTML；官网产品与 Skill 页由独立路由渲染，旧链接保持兼容。
 - **完整快速方案** —— Node 数据服务广播标准产品帧，按标签录制到 SQLite 并下载 CSV/JSONL；页面刷新可按记录 ID 找回历史。已有手套/手垫提供分区展示，新的人体/鞋垫由应用消费 onData 自行绘制；没有将合成数据称为真机数据，细节见 4.9。
 - **网页测试台** —— `public/lab.html`，浏览器直连串口看数据。
-- **串口接入可靠性** —— SDK 按查询 → 配置/连接 → 自动分帧/解码组织接入，配置在打开端口前校验；Node.js / 浏览器和 Python 提供结构化错误、生命周期与诊断快照。JS 额外提供运行时 `onError()`，Python 保持同步异常，不新增后台线程、自动重连或传感器型号识别。
-- **按产品直接取数** —— JS 产品入口内置协议与点位映射，通过 `readProduct` / `connectProduct` 的 `onData` 收取已解析帧；人体与鞋垫从 SDK 0.3.0 起支持，页面保留最低版本提示，统一使用 npm 安装流程。`connectGlove()`、`connectHandPad()` 和通用 `connect()` 继续保留；Python 仍为通用矩阵 SDK，不宣称随版本号获得这些专用产品协议。
+- **串口接入可靠性** —— SDK 在打开端口前校验配置，提供结构化错误、生命周期与诊断；Node 产品支持同端口有限重连，分包手套与触觉足底通过有效完整帧发现左右侧，采样不进入业务回调。浏览器 WS 不自动重连；Python 的参数、线程和支持产品以独立 SDK 文档为准，官网入口保持隐藏。
+- **按产品直接取数** —— JS 产品入口通过 `readProduct` / `connectProduct` 的 `onData` 收取产品帧；触觉足底新增 `connectTactileFoot()`，以 3/4 识别左右脚并保留 256 ADC、16 字节 IMU 和完整 `rawPackets`，不做物理映射或插值。`connectGlove()`、`connectHandPad()` 和通用 `connect()` 继续保留。Python 保留其既有五种产品，本次不增加足底或发布 PyPI。
 - **后端连接 SDK** —— Node.js / 浏览器新增 `BackendSdkClient`，通过 HTTP/WS 查询和控制已运行的主项目后端，接收原始实时 JSON 帧；不是内置采集服务器，也不要求 Shroom Monitor 提供 HTTP 接口。下载包内包含源码、类型、只读示例与 `BACKEND.md`，API 参考入口为 `/docs/backend-api`，后端统一指南为 `/docs/backend`；Python 包本次不变。
 - **手套体验站** —— 外链到独立部署的 <https://glove.jq-industries.io/>。
 - **密钥申请与上位机登记** —— 首页和接入文档单独提供“申请 SDK 密钥”，提交姓名、电话、邮箱、机构到既有 `/sdk-requests`，来源为 `sdk-license`。只有 HTTP 成功且后台返回 `ok: true` 才显示已提交；失败保留输入并支持重试，不自动发钥或下载。
@@ -29,7 +29,7 @@ Shroom Developer 面向开发自有应用与直接使用上位机的两类客户
 
 「点位映射生成器」与「工程验证工具（含力学标定）」尚未开放，首页不再展示占位卡。
 
-页面 **不提供、也不会提供** kPa / 牛顿等物理单位换算 —— SDK 直连串口给到的是 0~1 相对值，后端客户端则保留后端的原始 JSON 与单位语义，
+页面 **不提供、也不会提供** kPa / 牛顿等物理单位换算 —— SDK 直连串口保留原始 ADC，另提供相对 `values`；触觉足底还保留 IMU 字节与完整两包。后端客户端保留后端的原始 JSON 与单位语义，
 标定曲线逐台设备不同，不在公开 SDK 范围内，能力边界在 SDK 文档中说明。
 
 AI 接入资料以 `sdk/docs/AI-CONTEXT.md` 与 `sdk/docs/怎么用AI开发.md` 为事实源，围绕五步函数、调用异常、运行期错误、采集状态与资源释放组织。网站另在 `skills/shroom-sdk/` 维护可安装的 Skill，通过 `/docs/skills` 说明并分发 ZIP；普通 AI 参考文档不再标为可安装 Skill。Skill 指引基线为 SDK 0.4.0，说明 npm 安装、实际版本核对及 Node/网页同版本要求；安装 Skill 本身不升级 SDK。网站未提供 MCP 服务。
@@ -437,6 +437,12 @@ flowchart TD
 
 官网已上线 SDK 0.5.0，固定 SDK 子模块 `9f8427fd09cbe4650683cabc4f7a49efde5008e1`，安装包与 npm 官方版本 SHA-256 一致；文档与 Skill 同步 0.5.0。快速接入默认展示 Node 手套自动识别，保留明确的手动选择切换；自动模式只替换第 1 步参数与说明，后四步继续复用原调用。其他产品保持显式配置，Web Serial 不自动识别。packetType 按自动模式 1=左/2=右说明，手动模式保留 side 映射。Python 入口继续隐藏；历史安装包地址保留。生产仍采用本地构建、独立版本目录上传与候选验证后切换，不在服务器安装或构建。
 
+### 4.23 SDK 0.7.0 触觉足底接入
+
+`app/product-catalog.ts` 新增 `foot` / `footVideo` 产品，与既有 `insole` / `jqInsole` 分开描述；产品资料页、快速接入按钮和 URL 状态共用该目录。最低 SDK 版本为 0.7.0，字段保留 256 个 uint8 扫描 ADC、16 字节 IMU 和含帧尾的 134 / 150 字节原包，不引入 112 点映射、插值或物理单位。类型 3=左脚、4=右脚，显式 side 只筛选身份；16×16 为扫描存储形状。
+
+`ProductWorkspace` 为触觉足底提供自动识别与手动选口两种方式，保留原按钮样式、键盘操作和 `aria-pressed` 状态。自动取数片段由 `product-workspace-preview.ts` 按所选产品生成，不要求用户先确认脚侧；手动模式仍须按实物确认，后四步复用既有 WS、录制与下载。`/docs/tactile-foot` 协议页来自锁定 SDK 的文档目录；生产检查覆盖该页和产品入口。Python 展示策略保持不变，发布与公网验证结果另行记录。
+
 ## 5. API 端点
 
 首页与交互组件为客户端组件，文档内容在服务端渲染，共享根布局。下载登记由浏览器直接跨域提交；知识问答通过站内 API 在服务端调用智谱：
@@ -613,6 +619,8 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 
 | 2026-11-13 | SDK 0.5.0 官网正式上线 | 部署源码 `6f0d2f572559d498d7c1cefe3c7bc8c1c4f87b76`；公网 9 页、26 个静态资源、2 个旧入口跳转和 SDK/Skill 下载哈希通过。保留已有知识问答改动，Python 入口隐藏，其他生产服务 PID 未变。 |
 
+| 2026-11-17 | SDK 0.7.0 触觉足底官网接入 | 新增独立产品、自动/手动取数和原始字节字段，保留既有鞋垫协议及五步流程；构建、发布和公网结果另行记录。 |
+
 ## 9. 更新日志
 
 | 日期 | 变更类型 | 描述 |
@@ -709,3 +717,5 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 | 2026-11-13 | 功能更新 | 官网同步 Node 手套自动识别与手动选口两种方式、0.5.0 安装说明和 AI Skill；保留五步接口与 Python 隐藏策略。 |
 
 | 2026-11-13 | 版本发布 | npm latest 更新至 0.5.0；官网本地构建后上传到独立发布目录，候选验证后切换并保存 PM2。完整本地门禁及公网验收通过；保留上版目录、共享 Linux 依赖和私有回退配置。 |
+
+| 2026-11-17 | 新增功能 | 官网产品目录与快速工作台新增触觉足底，按 3/4 类型识别左右脚，展示原始 ADC、IMU 和完整原包；增加产品覆盖、侧别/协议隔离与生产协议页检查。 |

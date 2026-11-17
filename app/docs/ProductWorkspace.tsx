@@ -8,6 +8,7 @@ import { SERIAL_DRIVERS, SDK_VARIANTS } from '../downloads';
 import { getCatalogProduct, productFields, productPackageReady, type ProductField } from '../product-catalog';
 import { useProductWorkspace } from './product-workspace-state';
 import { workspaceProducts, type WorkspacePlatform, type WorkspaceProtocol, type WorkspaceSection, type WorkspaceTab } from './product-workspace-model';
+import { workspaceAutomaticReadCode } from './product-workspace-preview';
 import styles from './ProductWorkspace.module.css';
 
 type Runtime = 'node' | 'web' | 'terminal';
@@ -70,9 +71,12 @@ export default function ProductWorkspace() {
   const jsDownload = SDK_VARIANTS.find(target => target.source === 'sdk-node')!;
   const [notice, setNotice] = useState('');
   const [connectionMode, setConnectionMode] = useState<'auto' | 'manual'>('auto');
-  const automatic = state.product === 'glove' && connectionMode === 'auto';
+  const automaticReadCode = workspaceAutomaticReadCode(state.product);
+  const supportsAutomatic = automaticReadCode !== null;
+  const automatic = supportsAutomatic && connectionMode === 'auto';
+  const sidePair = state.product === 'foot' ? '左右脚' : '左右手';
+  const automaticVersion = state.product === 'foot' ? '0.7.0' : '0.5.0';
   const canCopyFlow = automatic || ready;
-  const automaticReadCode = "import { readProduct } from 'shroom-sdk/quick-flow';\n\n// 先激活 SDK 授权；自动扫描唯一分包手套并识别左右手。\nlet device;\ntry {\n  device = await readProduct({\n    product: 'glove',\n    // 左右手同时连接时，加 side: 'left' 或 'right' 筛选。\n    onData: data => console.log(data.side, data.fingers, data.palm),\n    onError: error => console.error(error.code, error.message),\n    onStateChange: status => console.log(status.state),\n  });\n} catch (error) {\n  console.error(error.code, error.message); // 无匹配、多匹配或授权错误。\n  throw error; // 连接失败时，不继续创建 WS。\n}\n// 后面四步继续使用 device；结束使用时 await device.close()。";
   const [copyFallback, setCopyFallback] = useState<string | null>(null);
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
   const product = getCatalogProduct(state.product);
@@ -134,7 +138,7 @@ export default function ProductWorkspace() {
 
   const fields: readonly ProductField[] = [
     ...productFields(product, state.protocol),
-    ...(product.requiresSide ? [['side', automatic ? 'left / right' : state.sideConfirmed ? sideName : '未确认', state.product === 'glove' ? 'Node 自动模式根据分包识别；手动模式按实物传入。' : `来自按实物确认的${product.sideLabel}，SDK 不自动识别。`] as const] : []),
+    ...(product.requiresSide ? [['side', automatic ? 'left / right' : state.sideConfirmed ? sideName : '未确认', state.product === 'foot' ? '包类型 3=左脚、4=右脚；显式 side 只筛选，不能改变原包身份。' : state.product === 'glove' ? 'Node 自动模式根据分包识别；手动模式按实物传入。' : `来自按实物确认的${product.sideLabel}，SDK 不自动识别。`] as const] : []),
   ];
   const sdkInstallContent = <>
     <p>复制命令，在自己的项目目录执行。SDK 会自动下载并安装，无需先保存压缩包。</p>
@@ -151,8 +155,8 @@ export default function ProductWorkspace() {
 
     <section id="product-start" hidden={state.tab !== 'start'} aria-label="五步 API 调用流程">
       <div className={styles.prerequisite}><span>首次使用？先安装 SDK 并激活密钥。</span><button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-prepare')}>接入准备 →</button></div>
-      {state.product === 'glove' && <div className={styles.productChoices} role="group" aria-label="手套连接方式"><span className={styles.controlLabel}>连接方式</span><button type="button" aria-pressed={automatic} onClick={() => setConnectionMode('auto')}>自动识别串口与左右手</button><button type="button" aria-pressed={!automatic} onClick={() => setConnectionMode('manual')}>手动选择串口与左右手</button></div>}
-      {automatic ? <p>SDK 0.5.0：直接调用第 1 步即可，无需预先查询串口。只识别 921600 波特率的分包手套；多个匹配时，请指定手侧或串口。<Link className={styles.textLink} href="/docs/serial#node-scan">扫描规则与设备列表 →</Link></p> : <section className={styles.preparation} aria-labelledby="port-search-title">
+      {supportsAutomatic && <div className={styles.productChoices} role="group" aria-label={`${productName}连接方式`}><span className={styles.controlLabel}>连接方式</span><button type="button" aria-pressed={automatic} onClick={() => setConnectionMode('auto')}>{`自动识别串口与${sidePair}`}</button><button type="button" aria-pressed={!automatic} onClick={() => setConnectionMode('manual')}>{`手动选择串口与${sidePair}`}</button></div>}
+      {automatic ? <p>SDK {automaticVersion}：直接调用第 1 步即可，无需预先查询串口。只识别 921600 波特率的{productName}分包；多个匹配时，请指定{product.sideLabel}或串口。<Link className={styles.textLink} href={state.product === 'foot' ? '/docs/tactile-foot' : '/docs/serial#node-scan'}>{state.product === 'foot' ? '触觉足底协议与原始数据 →' : '扫描规则与设备列表 →'}</Link></p> : <section className={styles.preparation} aria-labelledby="port-search-title">
         <div className={styles.sectionHeading}><h2 id="port-search-title">接入前：搜索并选择串口</h2><PlatformSelect id="workspace-port-platform" value={state.platform} onChange={setPlatform} /></div>
         <CodeBlock runtime="node" code={portSearchCode} onCopy={() => void copy(portSearchCode, '串口搜索代码')} />
         <p>用设备的 <code>path</code> 替换第 1 步中的 <code>{portExample}</code>。多个端口时，按实际设备选择。</p>
@@ -169,7 +173,7 @@ export default function ProductWorkspace() {
             {product.protocols.length > 0 && <div className={styles.protocolRow}><label className={styles.platformControl} htmlFor="workspace-protocol">鞋垫协议<select id="workspace-protocol" value={state.protocol} onChange={event => setProtocol(event.target.value as WorkspaceProtocol)}>{product.protocols.map(protocol => <option key={protocol.value} value={protocol.value}>{protocol.label}</option>)}</select></label><p className={styles.secondaryText}>按固件选择，不自动识别或扫描协议；默认 921600 baud。</p></div>}
             <p className={styles.versionNote}><strong>SDK {product.minSdkVersion} 起支持</strong>已有项目请同步升级 Node 与网页中的 SDK。<button type="button" className={styles.textLink} onClick={() => navigateChapter('guide-run')}>查看安装说明 →</button></p>
           </div>}
-          {step.blocks.map((block, blockIndex) => <CodeBlock key={`${step.id}-${block.runtime}-${blockIndex}`} code={automatic && step.id === 'flow-read' ? automaticReadCode : block.code} runtime={block.runtime} disabled={!canCopyFlow} descriptionId={!canCopyFlow ? 'workspace-ready' : undefined} onCopy={() => copyFlow(automatic && step.id === 'flow-read' ? automaticReadCode : block.code)} />)}
+          {step.blocks.map((block, blockIndex) => <CodeBlock key={`${step.id}-${block.runtime}-${blockIndex}`} code={automatic && step.id === 'flow-read' ? automaticReadCode! : block.code} runtime={block.runtime} disabled={!canCopyFlow} descriptionId={!canCopyFlow ? 'workspace-ready' : undefined} onCopy={() => copyFlow(automatic && step.id === 'flow-read' ? automaticReadCode! : block.code)} />)}
           <p className={styles.stepNote}>{step.note}</p>
         </section>)}
       </div>
@@ -177,10 +181,10 @@ export default function ProductWorkspace() {
 
     <section id="product-guide" hidden={state.tab !== 'guide'} aria-label="接入准备">
       <Preparation id="guide-prepare" title="安装驱动与运行环境"><PlatformSelect id="workspace-guide-platform" value={state.platform} onChange={setPlatform} /><p>使用 Node.js 18+。CH34x 设备先安装对应驱动，再重新插拔；确认系统串口可见，并关闭占用端口的上位机。</p><div className={styles.driverDownloads}>{SERIAL_DRIVERS.map(driver => <a className={styles.secondaryButton} key={driver.id} href={driver.url}>{driver.label} 驱动 · {driver.format} ↗</a>)}</div><p>本机网页使用 <code>http://localhost</code>，连接示例中的本机 WS。</p></Preparation>
-      <Preparation id="guide-config" title="确认产品与串口"><p>当前产品：<strong>{productName}</strong>{automatic ? '，由分包自动识别串口与左右手' : product.requiresSide ? `，${state.sideConfirmed ? `已确认${sideName}` : `${product.sideLabel}待按实物确认`}` : '，无需侧别参数'}{product.protocols.length ? `，${state.protocol} 协议` : ''}。{automatic ? '直接调用 readProduct()，后续流程不变。' : <>将第 1 步的 <code>path</code> 替换为真实串口，例如 <code>{portExample}</code>。</>}</p><p>{product.connection}</p><p>第 1–2 步的 Node 代码放在同一进程；第 2 步的浏览器连接只建立一次，后续三步复用同一个 <code>stream</code>。</p></Preparation>
+      <Preparation id="guide-config" title="确认产品与串口"><p>当前产品：<strong>{productName}</strong>{automatic ? `，由分包自动识别串口与${sidePair}` : product.requiresSide ? `，${state.sideConfirmed ? `已确认${sideName}` : `${product.sideLabel}待按实物确认`}` : '，无需侧别参数'}{product.protocols.length ? `，${state.protocol} 协议` : ''}。{automatic ? '直接调用 readProduct()，后续流程不变。' : <>将第 1 步的 <code>path</code> 替换为真实串口，例如 <code>{portExample}</code>。</>}</p><p>{product.connection}</p><p>第 1–2 步的 Node 代码放在同一进程；第 2 步的浏览器连接只建立一次，后续三步复用同一个 <code>stream</code>。</p></Preparation>
       <Preparation id="guide-run" title="安装 SDK">{sdkInstallContent}</Preparation>
       <Preparation id="guide-connect" title="激活 SDK 授权"><p>使用 Shroom SDK 产品密钥。<button type="button" className={styles.textLink} onClick={requestLicense}>申请 SDK 密钥 →</button></p><p>在启动 Node 程序的终端中设置密钥：</p><CodeBlock runtime="terminal" code={keyCommand} onCopy={() => void copy(keyCommand, '密钥设置命令')} /><p>在同一 Node 程序中，先激活，再执行第 1 步取数：</p><CodeBlock runtime="node" code={activationCode} onCopy={() => void copy(activationCode, '授权调用')} /><p className={styles.secondaryText}>限定电脑名额的密钥需要设置 <code>SHROOM_DEVICE_ID</code>；同一安装保持不变，不要每次启动生成新值。<Link href="/docs/license">安装标识与离线授权说明 →</Link></p></Preparation>
-      <Preparation id="guide-verify" title="验证取数与采集"><p><code>onData</code> 持续返回帧，触按位置与产品分区一致。开始采集返回会话 ID，停止采集返回本次 <code>recording.id</code>；下载使用此 ID。停止采集只停止保存记录，设备与 WS 仍保持连接。</p><p>SDK 0.2.0 起，Node 产品连接意外断开后默认每 3 秒重连原串口，最多尝试 3 次；<code>reconnect: false</code> 可关闭。断线中的采集记录以 <code>error</code> 收尾，恢复取数后需重新开始采集。</p></Preparation>
+      <Preparation id="guide-verify" title="验证取数与采集"><p><code>onData</code> 持续返回帧，{state.product === 'foot' ? '核对原始 ADC、IMU 与完整分包；16×16 不代表物理足底位置。' : '触按位置与产品分区一致。'}开始采集返回会话 ID，停止采集返回本次 <code>recording.id</code>；下载使用此 ID。停止采集只停止保存记录，设备与 WS 仍保持连接。</p><p>SDK 0.2.0 起，Node 产品连接意外断开后默认每 3 秒重连原串口，最多尝试 3 次；<code>reconnect: false</code> 可关闭。断线中的采集记录以 <code>error</code> 收尾，恢复取数后需重新开始采集。</p></Preparation>
       <Preparation id="guide-code" title="接入自己的页面"><p>五步函数从 <code>shroom-sdk/quick-flow</code> 导入，串口搜索从 <code>shroom-sdk/node</code> 导入。Node 代码使用 ES 模块（如 <code>.mjs</code>）；网页工程通过 Vite 等构建工具解析包名。普通 HTML 无构建工具时，请使用源码 ZIP 的相对路径示例。</p><p>将第 3–5 步放进各自按钮的点击处理，捕获调用失败；同一网页复用 <code>stream</code>，不要在初始化时连续执行开始和停止。</p><p>退出时关闭浏览器的 <code>stream</code>，并在 Node 端关闭 <code>server</code> 释放设备。</p><button type="button" className={styles.textLink} onClick={() => setTab('start')}>返回五步调用流程 →</button></Preparation>
     </section>
 
