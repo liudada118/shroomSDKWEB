@@ -30,7 +30,7 @@ export const docAreas: { id: DocArea; label: string; description: string }[] = [
 ];
 
 export const docRoutes: { id: DocRoute; label: string; description: string }[] = [
-  { id: 'quick', label: '快速接入文档', description: '按产品直接取数并接入自有程序；触觉足底从 SDK 0.7.0 起支持，再按需接入 WS、录制与下载。' },
+  { id: 'quick', label: '快速接入文档', description: '按产品直接取数并接入自有程序；触觉足底使用 SDK 0.7.1 的 60 点原始数据，再按需接入 WS、录制与下载。' },
   { id: 'custom', label: '基础文档', description: '进入独立页面，按需查阅串口、解析、通讯、存储和渲染 API，用于新设备和自定义开发。' },
   { id: 'guides', label: '辅助指南', description: '使用 SDK Skill、AI 开发指南和 API 排错参考。' },
 ];

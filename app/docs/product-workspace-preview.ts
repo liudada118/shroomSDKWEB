@@ -23,7 +23,7 @@ export function workspaceAutomaticReadCode(product: WorkspaceProduct): string | 
   return [
     "import { readProduct } from 'shroom-sdk/quick-flow';", '',
     `// 先激活 SDK 授权；自动扫描唯一${foot ? '触觉足底' : '分包手套'}并识别${sideNames}。`,
-    ...(foot ? ['// 包类型 3=左脚、4=右脚；完整原始压力、IMU 和串口包均保留。'] : []),
+    ...(foot ? ['// 包类型 3=左脚、4=右脚；原始压力 60 点，6 列 × 10 行（rows=10、cols=6）。', '// rawPackets 保留完整串口包，imu.raw 保留原始 16 字节。'] : []),
     'let device;', 'try {', '  device = await readProduct({',
     `    product: '${product}',`,
     `    // ${sideNames}同时连接时，加 side: 'left' 或 'right' 筛选。`,

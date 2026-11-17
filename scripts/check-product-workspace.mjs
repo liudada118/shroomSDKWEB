@@ -172,7 +172,7 @@ try {
     if (path === '/docs/tactile-foot') {
       assert.match(html, /footVideo/);
       assert.match(html, /rawPackets/);
-      assert.match(html, /256/);
+      assert.match(html, /60/);
     }
     if (path === '/docs/products') {
       assert.match(html, /id="foot"/);

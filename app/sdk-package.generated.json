@@ -1,7 +1,7 @@
 {
-  "version": "0.7.0",
-  "url": "/sdk-packages/0.7.0/3a3a36edbdb3b381dcfbb9a9ad2202e1d84f0e5bd2745fee2908afc3f10efb08/shroom-sdk-0.7.0.tgz",
-  "fileName": "shroom-sdk-0.7.0.tgz",
-  "sha256": "3a3a36edbdb3b381dcfbb9a9ad2202e1d84f0e5bd2745fee2908afc3f10efb08",
-  "sourceCommit": "dc1539a8157f32ced169b9a9f55eeb5b4a7b7ecf"
+  "version": "0.7.1",
+  "url": "/sdk-packages/0.7.1/cde860e71b48436e8887706c405d718dac5fddde4684ce83c558bd2c48e27894/shroom-sdk-0.7.1.tgz",
+  "fileName": "shroom-sdk-0.7.1.tgz",
+  "sha256": "cde860e71b48436e8887706c405d718dac5fddde4684ce83c558bd2c48e27894",
+  "sourceCommit": "788f28b2763d64607b79a887f56cc6cc67c8648e"
 }

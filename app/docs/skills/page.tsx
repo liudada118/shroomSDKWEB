@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/docs/skills' },
 };
 
-const prompt = '使用 $shroom-sdk，在当前项目接入 Shroom 触觉足底。用 readProduct 一步获取原始 ADC、IMU 和完整分包，按类型 3/4 识别左右脚，再按需添加网页采集与下载。密钥由我在本机配置。';
+const prompt = '使用 $shroom-sdk，在当前项目接入 Shroom 触觉足底。用 readProduct 一步获取 60 点原始 ADC（6列×10行）、IMU 和完整分包，按类型 3/4 识别左右脚，再按需添加网页采集与下载。密钥由我在本机配置。';
 const installPath = '.agents/skills/shroom-sdk/SKILL.md';
 
 /** Skill 安装说明独立成页；下载内容是接入指引包，运行 SDK 另行安装。 */
@@ -27,7 +27,7 @@ export default function SkillsPage() {
           <a className={styles.primary} href="/skills/shroom-sdk-skill.zip" download="shroom-sdk-skill.zip">下载 Skill ZIP <span aria-hidden="true">↓</span></a>
           <a className={styles.textLink} href="/skills/shroom-sdk/SKILL.md" target="_blank" rel="noreferrer">查看 SKILL.md <span aria-hidden="true">↗</span></a>
         </div>
-        <p className={styles.note}>指引基线 SDK 0.7.0 · SDK 依赖通过 npm 单独安装 · Node 与网页使用同一版本</p>
+        <p className={styles.note}>指引基线 SDK 0.7.1 · SDK 依赖通过 npm 单独安装 · Node 与网页使用同一版本</p>
       </header>
 
       <section id="install" className={styles.section} aria-labelledby="install-title">
@@ -58,8 +58,8 @@ export default function SkillsPage() {
         <p>手动选口时用 <code>listPorts()</code> 查询；分包手套与触觉足底也可自动识别串口和左右侧。业务流程保留五个函数：</p>
         <p className={styles.flow}>取数 → 创建 WS → 开始采集 → 停止采集 → 下载</p>
         <div className={styles.scope}>
-          <p><strong>设备与授权</strong>Node 连接手套、触觉足底、手垫、人体或A版鞋垫；浏览器通过 WS 接收。分包手套从 SDK 0.4.0 起支持，0.5.0 可自动识别左右手；触觉足底从 0.7.0 起支持手动或自动识别，人体与A版鞋垫从 0.3.0 起支持。驱动、SDK 密钥与真实串口在客户电脑准备。</p>
-          <p><strong>足底原始数据</strong>在 Node 取数，按类型 3=左脚、4=右脚保留 256 个原始 ADC、16 字节 IMU 和两份含头尾的 rawPackets（134/150 字节），不抽点、插值或标定。</p>
+          <p><strong>设备与授权</strong>Node 连接手套、触觉足底、手垫、人体或A版鞋垫；浏览器通过 WS 接收。分包手套从 SDK 0.4.0 起支持，0.5.0 可自动识别左右手；触觉足底从 0.7.1 起支持手动或自动识别，人体与A版鞋垫从 0.3.0 起支持。驱动、SDK 密钥与真实串口在客户电脑准备。</p>
+          <p><strong>足底原始数据</strong>在 Node 取数，按类型 3=左脚、4=右脚返回 60 点原始 ADC，6 列 × 10 行（rows=10、cols=6）。raw、pressure、pressureMatrix 均为这 60 点；16 字节 IMU 和两份含头尾的 rawPackets（134/150 字节）原样保留，不插值或标定。</p>
           <p><strong>重连与采集</strong>采集保存为 SQLite。串口断线会结束当前记录，恢复后需重新采集；网页 WS 断线不会停止 Node 录制。</p>
         </div>
         <Link className={styles.textLink} href="/docs/quick-start">查看五步调用与接入准备 <span aria-hidden="true">→</span></Link>

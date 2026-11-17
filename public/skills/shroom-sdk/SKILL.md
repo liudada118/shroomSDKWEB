@@ -5,11 +5,11 @@ description: 在现有 JavaScript 或 TypeScript 项目中接入 Shroom SDK 设�
 
 # Shroom SDK 接入
 
-把用户选定的 Shroom 产品接入现有应用，优先用一次 `readProduct()` 得到产品数据。只在用户需要网页传输或保存记录时继续五步流程。本文以 `shroom-sdk@0.7.0` 为基线；触觉足底要求0.7.0，分包手套要求0.4.0，人体和A版鞋垫从0.3.0起支持。先核对项目已安装版本、类型声明和现有调用，再根据用户的接入任务安装或升级依赖；安装 Skill 本身不会升级 SDK。npm 安装和版本核对见调用参考。
+把用户选定的 Shroom 产品接入现有应用，优先用一次 `readProduct()` 得到产品数据。只在用户需要网页传输或保存记录时继续五步流程。本文以 `shroom-sdk@0.7.1` 为基线；触觉足底要求0.7.1，分包手套要求0.4.0，人体和A版鞋垫从0.3.0起支持。先核对项目已安装版本、类型声明和现有调用，再根据用户的接入任务安装或升级依赖；安装 Skill 本身不会升级 SDK。npm 安装和版本核对见调用参考。
 
 ## 工作方式
 
-1. 先检查项目框架、运行位置和已有 SDK 集成。确认产品与串口由谁选择；手套先确认分包/整包协议；Node分包手套从0.5.0起可自动识别左右手或手动选择。触觉足底 `foot` 从0.7.0起按包类型3/4识别左右脚，不与需要明确左右脚和 `12bit / 8bit` 协议的A版鞋垫 `insole` 混用。Node 服务与网页端使用相同版本；足底两端需0.7.0，分包手套两端需至少0.4.0，不能只更新串口服务而保留旧 WS 解码器。缺少必要信息时询问，先完成不依赖这些信息的代码。不要从串口名称、压力或帧长猜型号、侧别或协议。
+1. 先检查项目框架、运行位置和已有 SDK 集成。确认产品与串口由谁选择；手套先确认分包/整包协议；Node分包手套从0.5.0起可自动识别左右手或手动选择。触觉足底 `foot` 从0.7.1起按包类型3/4识别左右脚，不与需要明确左右脚和 `12bit / 8bit` 协议的A版鞋垫 `insole` 混用。Node 服务与网页端使用相同版本；足底两端需0.7.1，分包手套两端需至少0.4.0，不能只更新串口服务而保留旧 WS 解码器。缺少必要信息时询问，先完成不依赖这些信息的代码。不要从串口名称、压力或帧长猜型号、侧别或协议。
 2. 实现接入代码时读 [references/integration.md](references/integration.md)，按需要取用 Node、浏览器和采集片段。普通项目使用公开包入口，不把 SDK 源码复制到业务目录，也不导入安装包内部文件。
 3. 将串口查询、取数和采集动作接到现有界面或调用点；显示错误与连接状态。保留用户已有业务流程，不为只取数的需求添加完整示例站或数据库管理界面。
 4. 运行项目已有的类型、构建或相关验证。真机测试只在用户已授权连接所选设备、启动服务或采集的范围内执行；写接入代码和安装本 Skill 本身不授予这些权限。没有真机时明确哪些行为尚未验证，不将模拟帧当成实测结果。
@@ -17,9 +17,9 @@ description: 在现有 JavaScript 或 TypeScript 项目中接入 Shroom SDK 设�
 ## 必须保持的 API 边界
 
 - 五个快速函数均来自 `shroom-sdk/quick-flow`：`readProduct`、`createWS`、`startRecording`、`stopRecording`、`downloadRecording`。`listPorts` 与 `scanProductPorts` 来自 `shroom-sdk/node`；自动取数内部复用扫描，不发明第六个快速函数。
-- Node 使用 `readProduct({ product, path, side?, onData, onError, onStateChange? })` 直连串口。分包手套从0.5.0起、触觉足底 `foot` 从0.7.0起可省略path/side自动发现，也可传path+side手动连接；A版鞋垫 `insole` 必须传 `side: 'left' | 'right'`；手垫 `pad`、人体 `body` 不传 side。A版鞋垫另支持 `protocol: '12bit' | '8bit'`（默认12bit）及限定的 `baudRate`，其余产品不接受这两个覆盖参数。规范ID、配置与字段见调用参考；不在业务代码中重复实现线序。
+- Node 使用 `readProduct({ product, path, side?, onData, onError, onStateChange? })` 直连串口。分包手套从0.5.0起、触觉足底 `foot` 从0.7.1起可省略path/side自动发现，也可传path+side手动连接；A版鞋垫 `insole` 必须传 `side: 'left' | 'right'`；手垫 `pad`、人体 `body` 不传 side。A版鞋垫另支持 `protocol: '12bit' | '8bit'`（默认12bit）及限定的 `baudRate`，其余产品不接受这两个覆盖参数。规范ID、配置与字段见调用参考；不在业务代码中重复实现线序。
 - 从 0.4.0 起，`glove` 与 `connectGlove()` 默认使用 `handGloveSegmented` 分包手套。一只手一个串口，手动模式按实物传 side；自动模式根据 packetType 的 1=左/2=右识别，同侧至少 3 个完整配对才匹配。类型不是唯一设备编号或 sequence。旧整包设备必须显式用 `handGloveFullPacket`，不能沿用 `glove` 别名。
-- 触觉足底使用 `foot` / `footVideo`，Node便捷入口为 `connectTactileFoot()`；`packetType` 的3=左脚、4=右脚始终决定身份，显式side只筛选，不得把右脚包标成左脚。一只脚一个串口，保留256个原扫描uint8 ADC、16字节 `imu.raw` 和两份含帧尾的 `rawPackets`（134/150字节）；不套用手套分区或A版鞋垫112点表，不抽点、插值、镜像、归零或标定，不编造sequence。此产品的Python入口尚未提供。
+- 触觉足底使用 `foot` / `footVideo`，Node便捷入口为 `connectTactileFoot()`；`packetType` 的3=左脚、4=右脚始终决定身份，显式side只筛选，不得把右脚包标成左脚。`raw / pressure / pressureMatrix` 均为对应脚点表的60个原始uint8 ADC，6列×10行（rows=10、cols=6），范围0–255；16字节 `imu.raw` 与两份含帧尾的 `rawPackets`（134/150字节）原样保留。完整串口数据放在rawPackets，不将包内字节数当测点数，不套用手套分区或A版鞋垫112点表，不插值、滤波、归零或标定，不编造sequence。此产品的Python入口尚未提供。
 - 浏览器通过 `readProduct({ url, onData, onError })` 接收 Node WS；不传串口参数，不在浏览器调用 `createWS`。直接 Web Serial 是另一条基础 API 路线，需要用户手势，不能套用 Node 重连配置。
 - `listPorts()` 仅枚举串口，不打开设备、不需要激活。提供明确选择与刷新入口，不默认取 `ports[0]`。设备不可见时先检查驱动、USB 连接与权限：[Windows 驱动](https://shroom.jq-industries.com/drive/CH341SER.EXE)、[macOS 驱动](https://shroom.jq-industries.com/drive/CH34xVCPDriver.zip)。
 - 真实设备需独立 Shroom SDK 密钥，不能使用上位机密钥。由客户在本机配置密钥与稳定安装标识，调用 `Shroom.activateLicense`；不要要求客户把密钥、认证配置或完整授权响应贴到聊天，也不把密钥写入代码、日志、Skill 或前端构建产物。有效期、电脑名额及功能权限仍受校验；SDK 授权不限制传感器型号。
@@ -38,6 +38,6 @@ description: 在现有 JavaScript 或 TypeScript 项目中接入 Shroom SDK 设�
 
 ## 交付
 
-说明改动位置、调用方式、实际使用的 SDK 版本、已验证结果及仍需客户本机完成的驱动/授权/真机步骤。手套读取 `fingers / palm / imu.raw`，手垫读取 `pressureMatrix / values`；人体读取 `regions`（十区、400个唯一通道），A版鞋垫读取 `sensors`（112个真实点）和 `imu`，触觉足底读取原始 `pressure / imu.raw / rawPackets`。A版鞋垫12-bit ADC用 `Uint16Array` 保留0–4095，不能压成字节；人体、A版鞋垫及触觉足底顶层矩阵都是扫描存储形状，不是身体或鞋形图。ADC和归一化值不是物理压力单位，IMU不由SDK推断为欧拉角。这些产品没有内置 `createProductView`，应用自行消费 `onData` 展示；不要编造渲染支持。
+说明改动位置、调用方式、实际使用的 SDK 版本、已验证结果及仍需客户本机完成的驱动/授权/真机步骤。手套读取 `fingers / palm / imu.raw`，手垫读取 `pressureMatrix / values`；人体读取 `regions`（十区、400个唯一通道），A版鞋垫读取 `sensors`（112个真实点）和 `imu`，触觉足底读取60点原始 `raw / pressure / pressureMatrix`、`imu.raw / rawPackets`。A版鞋垫12-bit ADC用 `Uint16Array` 保留0–4095，不能压成字节；人体和A版鞋垫顶层矩阵是扫描存储形状，足底则按对应脚点表排成6列×10行，不在业务中重新排列。ADC和归一化值不是物理压力单位，IMU不由SDK推断为欧拉角。这些产品没有内置 `createProductView`，应用自行消费 `onData` 展示；不要编造渲染支持。
 
 本 Skill 是可复用的开发指引，不包含 SDK 运行包、密钥、实时设备数据或 MCP 工具。当前 Shroom 未提供 MCP 服务，不生成虚构的 MCP URL 或配置。

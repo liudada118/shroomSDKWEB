@@ -20,7 +20,7 @@ Shroom Developer 面向开发自有应用与直接使用上位机的两类客户
 - **完整快速方案** —— Node 数据服务广播标准产品帧，按标签录制到 SQLite 并下载 CSV/JSONL；页面刷新可按记录 ID 找回历史。已有手套/手垫提供分区展示，新的人体/鞋垫由应用消费 onData 自行绘制；没有将合成数据称为真机数据，细节见 4.9。
 - **网页测试台** —— `public/lab.html`，浏览器直连串口看数据。
 - **串口接入可靠性** —— SDK 在打开端口前校验配置，提供结构化错误、生命周期与诊断；Node 产品支持同端口有限重连，分包手套与触觉足底通过有效完整帧发现左右侧，采样不进入业务回调。浏览器 WS 不自动重连；Python 的参数、线程和支持产品以独立 SDK 文档为准，官网入口保持隐藏。
-- **按产品直接取数** —— JS 产品入口通过 `readProduct` / `connectProduct` 的 `onData` 收取产品帧；触觉足底新增 `connectTactileFoot()`，以 3/4 识别左右脚并保留 256 ADC、16 字节 IMU 和完整 `rawPackets`，不做物理映射或插值。`connectGlove()`、`connectHandPad()` 和通用 `connect()` 继续保留。Python 保留其既有五种产品，本次不增加足底或发布 PyPI。
+- **按产品直接取数** —— JS 产品入口通过 `readProduct` / `connectProduct` 的 `onData` 收取产品帧；触觉足底新增 `connectTactileFoot()`，以 3/4 识别左右脚；从0.7.1起按对应脚点位表交付60点原始ADC，6列×10行，16字节IMU和完整扫描数据保存在 `rawPackets`，不插值、滤波或标定。`connectGlove()`、`connectHandPad()` 和通用 `connect()` 继续保留。Python 保留其既有五种产品，本次不增加足底或发布 PyPI。
 - **后端连接 SDK** —— Node.js / 浏览器新增 `BackendSdkClient`，通过 HTTP/WS 查询和控制已运行的主项目后端，接收原始实时 JSON 帧；不是内置采集服务器，也不要求 Shroom Monitor 提供 HTTP 接口。下载包内包含源码、类型、只读示例与 `BACKEND.md`，API 参考入口为 `/docs/backend-api`，后端统一指南为 `/docs/backend`；Python 包本次不变。
 - **手套体验站** —— 外链到独立部署的 <https://glove.jq-industries.io/>。
 - **密钥申请与上位机登记** —— 首页和接入文档单独提供“申请 SDK 密钥”，提交姓名、电话、邮箱、机构到既有 `/sdk-requests`，来源为 `sdk-license`。只有 HTTP 成功且后台返回 `ok: true` 才显示已提交；失败保留输入并支持重试，不自动发钥或下载。
@@ -439,7 +439,7 @@ flowchart TD
 
 ### 4.23 SDK 0.7.0 触觉足底接入
 
-`app/product-catalog.ts` 新增 `foot` / `footVideo` 产品，与既有 `insole` / `jqInsole` 分开描述；产品资料页、快速接入按钮和 URL 状态共用该目录。最低 SDK 版本为 0.7.0，字段保留 256 个 uint8 扫描 ADC、16 字节 IMU 和含帧尾的 134 / 150 字节原包，不引入 112 点映射、插值或物理单位。类型 3=左脚、4=右脚，显式 side 只筛选身份；16×16 为扫描存储形状。
+`app/product-catalog.ts` 新增 `foot` / `footVideo` 产品，与既有 `insole` / `jqInsole` 分开描述；产品资料页、快速接入按钮和 URL 状态共用该目录。正确60点原始测点要求 SDK 0.7.1：raw / pressure / pressureMatrix为对应脚线序的60点uint8 ADC，6列×10行（rows=10、cols=6）；16字节IMU和含帧尾的134/150字节原包完整保留。不套用112点映射，不插值、滤波或换算物理单位。类型3=左脚、4=右脚，显式side只筛选身份。
 
 `ProductWorkspace` 为触觉足底提供自动识别与手动选口两种方式，保留原按钮样式、键盘操作和 `aria-pressed` 状态。自动取数片段由 `product-workspace-preview.ts` 按所选产品生成，不要求用户先确认脚侧；手动模式仍须按实物确认，后四步复用既有 WS、录制与下载。`/docs/tactile-foot` 协议页来自锁定 SDK 的文档目录；生产检查覆盖该页和产品入口。Python 展示策略保持不变，发布与公网验证结果另行记录。
 
@@ -723,3 +723,17 @@ Node CLI示例可读取 `SHROOM_LICENSE_KEY` / `SHROOM_LICENSE_FILE`、`SHROOM_L
 
 | 2026-11-17 | 新增功能 | 官网产品目录与快速工作台新增触觉足底，按 3/4 类型识别左右脚，展示原始 ADC、IMU 和完整原包；增加产品覆盖、侧别/协议隔离与生产协议页检查。 |
 | 2026-11-17 | 版本发布 | 发布 npm shroom-sdk@0.7.0，并切换官网至经候选验证的本地构建；SDK、Skill 与历史安装包公网哈希通过，保存 PM2，保留回退与其他服务运行状态；真机验证仍独立 |
+
+### SDK 0.7.1 触觉足底60点修正
+
+当前准备从已上线0.7.0升级至0.7.1。官网产品目录、快速取数提示、协议页和接入Skill统一为60点原始ADC，6列×10行（rows=10、cols=6）；左右脚各自线序只取原值，完整扫描字节保留在rawPackets，不插值或标定。发布验证和实际生产切换结果另行追加。
+
+| 完成日期 | 完成的功能/工作 | 简要说明 |
+| --- | --- | --- |
+| 2026-11-17 | 足底60点原始数据文案修正 | 官网与Skill同步0.7.1契约，安装/字段/自动手动说明一致，待正式部署验证 |
+
+| 日期 | 变更类型 | 说明 |
+| --- | --- | --- |
+| 2026-11-17 | 修复缺陷 | 纠正足底扫描通道与有效测点的区分，展示左右脚各自60点原始ADC，保留完整分包与IMU |
+
+| 2026-11-17 | 0.7.1 官网本地门禁 | 65项网站、8项来源、类型、生产构建、9路由SSR、SDK/Skill下载哈希及官网HTTP安装通过；SDK来源788f28b，正式生产切换另行记录 |

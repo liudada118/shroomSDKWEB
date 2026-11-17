@@ -75,7 +75,7 @@ export default function ProductWorkspace() {
   const supportsAutomatic = automaticReadCode !== null;
   const automatic = supportsAutomatic && connectionMode === 'auto';
   const sidePair = state.product === 'foot' ? '左右脚' : '左右手';
-  const automaticVersion = state.product === 'foot' ? '0.7.0' : '0.5.0';
+  const automaticVersion = state.product === 'foot' ? '0.7.1' : '0.5.0';
   const canCopyFlow = automatic || ready;
   const [copyFallback, setCopyFallback] = useState<string | null>(null);
   const fallbackRef = useRef<HTMLTextAreaElement>(null);
@@ -184,7 +184,7 @@ export default function ProductWorkspace() {
       <Preparation id="guide-config" title="确认产品与串口"><p>当前产品：<strong>{productName}</strong>{automatic ? `，由分包自动识别串口与${sidePair}` : product.requiresSide ? `，${state.sideConfirmed ? `已确认${sideName}` : `${product.sideLabel}待按实物确认`}` : '，无需侧别参数'}{product.protocols.length ? `，${state.protocol} 协议` : ''}。{automatic ? '直接调用 readProduct()，后续流程不变。' : <>将第 1 步的 <code>path</code> 替换为真实串口，例如 <code>{portExample}</code>。</>}</p><p>{product.connection}</p><p>第 1–2 步的 Node 代码放在同一进程；第 2 步的浏览器连接只建立一次，后续三步复用同一个 <code>stream</code>。</p></Preparation>
       <Preparation id="guide-run" title="安装 SDK">{sdkInstallContent}</Preparation>
       <Preparation id="guide-connect" title="激活 SDK 授权"><p>使用 Shroom SDK 产品密钥。<button type="button" className={styles.textLink} onClick={requestLicense}>申请 SDK 密钥 →</button></p><p>在启动 Node 程序的终端中设置密钥：</p><CodeBlock runtime="terminal" code={keyCommand} onCopy={() => void copy(keyCommand, '密钥设置命令')} /><p>在同一 Node 程序中，先激活，再执行第 1 步取数：</p><CodeBlock runtime="node" code={activationCode} onCopy={() => void copy(activationCode, '授权调用')} /><p className={styles.secondaryText}>限定电脑名额的密钥需要设置 <code>SHROOM_DEVICE_ID</code>；同一安装保持不变，不要每次启动生成新值。<Link href="/docs/license">安装标识与离线授权说明 →</Link></p></Preparation>
-      <Preparation id="guide-verify" title="验证取数与采集"><p><code>onData</code> 持续返回帧，{state.product === 'foot' ? '核对原始 ADC、IMU 与完整分包；16×16 不代表物理足底位置。' : '触按位置与产品分区一致。'}开始采集返回会话 ID，停止采集返回本次 <code>recording.id</code>；下载使用此 ID。停止采集只停止保存记录，设备与 WS 仍保持连接。</p><p>SDK 0.2.0 起，Node 产品连接意外断开后默认每 3 秒重连原串口，最多尝试 3 次；<code>reconnect: false</code> 可关闭。断线中的采集记录以 <code>error</code> 收尾，恢复取数后需重新开始采集。</p></Preparation>
+      <Preparation id="guide-verify" title="验证取数与采集"><p><code>onData</code> 持续返回帧，{state.product === 'foot' ? '核对 60 点原始 ADC 的 6 列 × 10 行排列（rows=10、cols=6），以及 IMU 与完整分包。' : '触按位置与产品分区一致。'}开始采集返回会话 ID，停止采集返回本次 <code>recording.id</code>；下载使用此 ID。停止采集只停止保存记录，设备与 WS 仍保持连接。</p><p>SDK 0.2.0 起，Node 产品连接意外断开后默认每 3 秒重连原串口，最多尝试 3 次；<code>reconnect: false</code> 可关闭。断线中的采集记录以 <code>error</code> 收尾，恢复取数后需重新开始采集。</p></Preparation>
       <Preparation id="guide-code" title="接入自己的页面"><p>五步函数从 <code>shroom-sdk/quick-flow</code> 导入，串口搜索从 <code>shroom-sdk/node</code> 导入。Node 代码使用 ES 模块（如 <code>.mjs</code>）；网页工程通过 Vite 等构建工具解析包名。普通 HTML 无构建工具时，请使用源码 ZIP 的相对路径示例。</p><p>将第 3–5 步放进各自按钮的点击处理，捕获调用失败；同一网页复用 <code>stream</code>，不要在初始化时连续执行开始和停止。</p><p>退出时关闭浏览器的 <code>stream</code>，并在 Node 端关闭 <code>server</code> 释放设备。</p><button type="button" className={styles.textLink} onClick={() => setTab('start')}>返回五步调用流程 →</button></Preparation>
     </section>
 

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function ProductCatalogPage() {
   return <div className={`docs-page ${styles.page}`}>
     <nav aria-label="文档面包屑" className="docs-breadcrumb"><Link href="/docs">文档中心</Link><span aria-hidden="true">/</span><span aria-current="page">产品接口参考</span></nav>
-    <header className={styles.heading}><p>PRODUCT REFERENCE</p><h1>先了解产品，再接入数据。</h1><div>查看 {productCatalog.length} 类产品的协议和字段。触觉足底从 SDK 0.7.0 起支持；每类产品分别标明所需版本。</div></header>
+    <header className={styles.heading}><p>PRODUCT REFERENCE</p><h1>先了解产品，再接入数据。</h1><div>查看 {productCatalog.length} 类产品的协议和字段。触觉足底使用 SDK 0.7.1 的 60 点原始数据；每类产品分别标明所需版本。</div></header>
     <nav className={styles.index} aria-label="全部产品列表">{productCatalog.map(product => <a key={product.id} href={`#${product.id}`}>{product.name}<span aria-hidden="true">↓</span></a>)}</nav>
     {productCatalog.map(product => <article key={product.id} id={product.id} className={styles.product} aria-labelledby={`${product.id}-title`}>
       <div className={styles.titleRow}><div><p className={styles.alias}>product: &apos;{product.alias}&apos;</p><h2 id={`${product.id}-title`}>{product.name}</h2></div><Link className={styles.action} href={productGuideHref(product)}>查看取数示例 <span aria-hidden="true">→</span></Link></div>

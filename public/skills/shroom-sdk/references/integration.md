@@ -1,14 +1,14 @@
-# 按需接入：Shroom SDK 0.7.0
+# 按需接入：Shroom SDK 0.7.1
 
 先用项目锁文件、`npm ls shroom-sdk` 和对应类型声明核对实际版本，再使用这些片段。只做用户需要的部分，变量应接入真实业务选择与配置。浏览器项目需支持包名导入的构建工具。
 
-在业务项目中运行 `npm install --save-exact shroom-sdk@0.7.0` 安装本指引对应的版本，并保存锁文件；再用 `npm ls shroom-sdk` 或运行时 `Shroom.version` 核对实际版本。触觉足底从 **0.7.0** 起支持，分包手套从 **0.4.0** 起支持，人体与A版鞋垫从 **0.3.0** 起支持。安装 Skill 不会改变 SDK 依赖。若用户提供 TGZ 或本地源码，按其真实路径和 README 使用对应依赖与入口，不把内部文件复制进业务项目；离线 TGZ 安装需保留安装包与锁文件。
+在业务项目中运行 `npm install --save-exact shroom-sdk@0.7.1` 安装本指引对应的版本，并保存锁文件；再用 `npm ls shroom-sdk` 或运行时 `Shroom.version` 核对实际版本。触觉足底从 **0.7.1** 起支持，分包手套从 **0.4.0** 起支持，人体与A版鞋垫从 **0.3.0** 起支持。安装 Skill 不会改变 SDK 依赖。若用户提供 TGZ 或本地源码，按其真实路径和 README 使用对应依赖与入口，不把内部文件复制进业务项目；离线 TGZ 安装需保留安装包与锁文件。
 
-Node服务与网页项目都安装相同版本，并重新构建前端。触觉足底两端使用0.7.0；旧版客户端不认识 `footVideo`。分包手套要求两端至少为0.4.0；旧0.3.0 WS客户端不认识 `handGloveSegmented`，旧0.2.0客户端也不认识 `humanBody / jqInsole`。Python暂不提供触觉足底产品入口。
+Node服务与网页项目都安装相同版本，并重新构建前端。触觉足底两端使用0.7.1；旧版客户端不认识 `footVideo`。分包手套要求两端至少为0.4.0；旧0.3.0 WS客户端不认识 `handGloveSegmented`，旧0.2.0客户端也不认识 `humanBody / jqInsole`。Python暂不提供触觉足底产品入口。
 
 ## 1. Node：手动选口时查询串口
 
-分包手套从0.5.0起、触觉足底从0.7.0起，也可直接在第2步省略path和side，由 `readProduct()` 自动识别唯一匹配设备；左右都连接时可加side筛选。需要展示设备列表时，在激活serial授权后调用 `scanProductPorts({ product: 'glove' })`，足底改为 `product: 'foot'`，返回devices与逐口ports报告。它只读探测所选产品的921600波特率，不发送指令，默认每口1200ms；至少3个同侧完整配对才确认，所有探测口关闭后再正式连接。未知或混合类型不匹配；首次调用需try/catch。
+分包手套从0.5.0起、触觉足底从0.7.1起，也可直接在第2步省略path和side，由 `readProduct()` 自动识别唯一匹配设备；左右都连接时可加side筛选。需要展示设备列表时，在激活serial授权后调用 `scanProductPorts({ product: 'glove' })`，足底改为 `product: 'foot'`，返回devices与逐口ports报告。它只读探测所选产品的921600波特率，不发送指令，默认每口1200ms；至少3个同侧完整配对才确认，所有探测口关闭后再正式连接。未知或混合类型不匹配；首次调用需try/catch。
 
 ```js
 import { listPorts } from 'shroom-sdk/node';
@@ -62,7 +62,7 @@ try {
 | --- | --- | --- |
 | `glove` / `handGloveSegmented`（0.4.0） | 0.5.0 自动识别或手动 path+side；一只手一个串口，固定 921600 baud | `fingers`、`palm`、`imu.raw` |
 | `handGloveFullPacket`（旧整包） | 必须显式使用规范 ID 并明确 `side`，固定 921600 baud | `fingers`、`palm`、`imu.raw`、`sequence` |
-| `foot` / `footVideo`（0.7.0） | Node自动发现，或手动path+side；3=左脚、4=右脚，参数只筛选；固定921600 baud | `pressure` 原扫描256ADC、`imu.raw` 16字节、`rawPackets` 含头尾134/150字节两包 |
+| `foot` / `footVideo`（0.7.1） | Node自动发现，或手动path+side；3=左脚、4=右脚，参数只筛选；固定921600 baud | `raw / pressure / pressureMatrix` 均为60点原始ADC，6列×10行；`imu.raw` 16字节、`rawPackets` 含头尾134/150字节两包 |
 | `pad` / `hand` | 不传 `side` | `pressureMatrix`、`values` |
 | `body` / `humanBody`（0.3.0） | 不传 `side`；固定 1000000 baud | `regions.back.raw` 等十个源矩阵 |
 | `insole` / `jqInsole`（0.3.0） | 必须明确左右脚 `side`；`protocol` 默认 `'12bit'` 或显式 `'8bit'`；默认 921600 baud | `sensors.raw / values / positions`、`imu` |
@@ -92,7 +92,7 @@ device = await readProduct({
 ```
 
 ```js
-// 触觉足底：沿用上面的授权；与手套或A版鞋垫二选一，不重复占用同一串口。
+// 触觉足底：60点原始ADC，6列×10行（rows=10、cols=6）；沿用上面的授权。
 device = await readProduct({
   product: 'foot', path: 'COM3', side: 'left',
   onData: data => console.log(data.side, data.pressure, data.imu.raw, data.rawPackets),
@@ -105,7 +105,7 @@ device = await readProduct({
 
 ### 新产品数据不能混用的地方
 
-- **触觉足底**：`raw / pressure / pressureMatrix` 是相同扫描顺序的256个uint8 ADC，`values` 仅为ADC/255的兼容值；16×16不是物理鞋形。`rawPackets` 是两份独立 `Uint8Array`，分别含段号、包类型、ADC、尾包16字节IMU及各自 `AA550399` 帧尾，长度为134/150；可拼接还原这次有效配对的完整线上字节。`packetType` 为3/4，始终决定左右脚；不得用side重标记不匹配的包。没有设备sequence，首字节1/2是首尾段号；IMU16字节全部原样保留，不生成四元数、欧拉角或单位。不使用A版鞋垫112点表或手套分区，不抽点、插值、镜像、归零、滤波或标定。WS、SQLite、CSV完整帧列和JSONL保留原包；优先JSONL交付完整帧。Python暂不包含此产品。
+- **触觉足底**：`raw / pressure / pressureMatrix` 均为对应左脚或右脚点表的60个原始uint8 ADC，范围0–255，6列×10行（rows=10、cols=6）；`values` 为这60点ADC/255，不是标定压力。不把串口载荷字节数当作测点数，也不在应用中重复实现脚侧线序。`rawPackets` 是两份独立 `Uint8Array`，分别含段号、包类型、ADC、尾包16字节IMU及各自 `AA550399` 帧尾，长度为134/150；完整传输数据保留于此，可拼接还原这次有效配对的完整线上字节。`packetType` 为3/4，始终决定左右脚；不得用side重标记不匹配的包。没有设备sequence，首字节1/2是首尾段号；IMU16字节全部原样保留，不生成四元数、欧拉角或单位。不使用A版鞋垫112点表或手套分区，不插值、镜像、归零、滤波或标定。WS、SQLite、CSV完整帧列和JSONL保留原包；优先JSONL交付完整帧。Python暂不包含此产品。
 - **人体**：`raw / pressure` 是 1024 个 `Uint8` 扫描 ADC，`pressureMatrix / values` 按原序排成 32×32 存储形状，不能直接当人体平面；空间重心也不能从顶层 `center` 推断。`regions` 为 `back / chest / rightArm / rightShoulder / leftArm / leftShoulder / backPantsRight / backPantsLeft / frontPantsLeft / frontPantsRight`。每区的 `sourceIndices` 是 0 基 `Uint16Array`，可到 1023；`raw / values / matrix` 对应同一批原始通道，十区合计 400 个唯一点。名称保持源表 key，不自行翻转成模型左右；没有显示插值或重复行。
 - **鞋垫 ADC**：`raw` 是原始 **ADC 字节**，12-bit 为 512 字节（每点两个字节，小端），8-bit 为 256 字节，均不含头和 IMU。`pressure / pressureMatrix` 是 256 个扫描 ADC，12-bit 用 `Uint16Array`、范围 0–4095；8-bit 用 `Uint8Array`、范围 0–255。`values` 对应 ADC / `fullScale`（4095/255）；不要对产品帧再次 `decodeFrame`、套 8-bit 满量程或改写原始值。
 - **鞋垫真实点**：`sensors` 是 A 版 112 点（14×8），含 `raw / values / sourceIndices / positions`；坐标为 `{ row, col, xMm, yMm }`。112 个点不是源页面插值后的 224 点，顶层 16×16 扫描矩阵也不是鞋形图。左右脚使用各自线序，不能自动镜像、猜脚跟方向或计算未经标定的物理足底重心。
@@ -199,7 +199,7 @@ downloadRecording(stream, { format: 'csv' }); // 完整帧用 'jsonl'。
 - [五步接入](https://sdk.jq-industries.com/docs/quick-start)：环境准备、调用流程。
 - [基础 API](https://sdk.jq-industries.com/docs/backend)：产品参数、重连和诊断字段。
 - [SDK 授权](https://sdk.jq-industries.com/docs/license)：稳定安装标识和授权边界。
-- [触觉足底](https://sdk.jq-industries.com/docs/tactile-foot)：0.7.0分包、左右脚识别与完整原始字段。
+- [触觉足底](https://sdk.jq-industries.com/docs/tactile-foot)：0.7.1分包、左右脚识别与完整原始字段。
 - [采集存储](https://github.com/liudada118/shroomSDK/blob/main/docs/STORAGE.md)：数据库与导出语义。
 - [产品适配器](https://github.com/liudada118/shroomSDK/tree/main/src/core/products)：扩展新的产品协议。
 

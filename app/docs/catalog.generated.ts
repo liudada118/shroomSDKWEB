@@ -1730,88 +1730,96 @@ export const sectionCatalog = [
   },
   {
     "anchor": "changelog--s1",
-    "label": "[0.7.0] - 2026-11-17",
+    "label": "[0.7.1] - 2026-11-17",
     "href": "/docs/changelog#s1",
+    "page": "changelog",
+    "description": "SDK 更新日志",
+    "keywords": "changelog [0.7.1] - 2026-11-17"
+  },
+  {
+    "anchor": "changelog--s2",
+    "label": "[0.7.0] - 2026-11-17",
+    "href": "/docs/changelog#s2",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.7.0] - 2026-11-17"
   },
   {
-    "anchor": "changelog--s2",
+    "anchor": "changelog--s3",
     "label": "[0.6.0] - 2026-11-16",
-    "href": "/docs/changelog#s2",
+    "href": "/docs/changelog#s3",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.6.0] - 2026-11-16"
   },
   {
-    "anchor": "changelog--s5",
+    "anchor": "changelog--s6",
     "label": "[0.5.0] - 2026-11-13",
-    "href": "/docs/changelog#s5",
+    "href": "/docs/changelog#s6",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.5.0] - 2026-11-13"
   },
   {
-    "anchor": "changelog--s6",
+    "anchor": "changelog--s7",
     "label": "[0.4.0] - 2026-11-04",
-    "href": "/docs/changelog#s6",
+    "href": "/docs/changelog#s7",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.4.0] - 2026-11-04"
   },
   {
-    "anchor": "changelog--s7",
+    "anchor": "changelog--s8",
     "label": "[0.3.0] - 2026-11-04",
-    "href": "/docs/changelog#s7",
+    "href": "/docs/changelog#s8",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.3.0] - 2026-11-04"
   },
   {
-    "anchor": "changelog--s8",
+    "anchor": "changelog--s9",
     "label": "[0.2.0] - 2026-11-03",
-    "href": "/docs/changelog#s8",
+    "href": "/docs/changelog#s9",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.2.0] - 2026-11-03"
   },
   {
-    "anchor": "changelog--s9",
+    "anchor": "changelog--s10",
     "label": "Node.js 串口与快速流程",
-    "href": "/docs/changelog#s9",
+    "href": "/docs/changelog#s10",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 串口与快速流程"
   },
   {
-    "anchor": "changelog--s10",
+    "anchor": "changelog--s11",
     "label": "兼容范围",
-    "href": "/docs/changelog#s10",
+    "href": "/docs/changelog#s11",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 兼容范围"
   },
   {
-    "anchor": "changelog--s11",
+    "anchor": "changelog--s12",
     "label": "[0.1.0] - 2026-10-29",
-    "href": "/docs/changelog#s11",
+    "href": "/docs/changelog#s12",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog [0.1.0] - 2026-10-29"
   },
   {
-    "anchor": "changelog--s12",
+    "anchor": "changelog--s13",
     "label": "Node.js 与浏览器",
-    "href": "/docs/changelog#s12",
+    "href": "/docs/changelog#s13",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog Node.js 与浏览器"
   },
   {
-    "anchor": "changelog--s14",
+    "anchor": "changelog--s15",
     "label": "发布管理",
-    "href": "/docs/changelog#s14",
+    "href": "/docs/changelog#s15",
     "page": "changelog",
     "description": "SDK 更新日志",
     "keywords": "changelog 发布管理"

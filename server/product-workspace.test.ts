@@ -97,6 +97,7 @@ test('automatic snippets identify the selected segmented product and preserve th
   const foot = workspaceAutomaticReadCode('foot')!;
   assert.match(foot, /product: 'foot'/);
   assert.match(foot, /3=左脚、4=右脚/);
+  assert.match(foot, /60 点，6 列 × 10 行（rows=10、cols=6）/);
   assert.match(foot, /data\.side, data\.packetType, data\.pressure, data\.imu\.raw, data\.rawPackets/);
   assert.doesNotMatch(foot, /^\s+(?:path|side|protocol):/m);
   assert.doesNotMatch(foot, /data\.sensors|data\.fingers|data\.palm|四元数/);

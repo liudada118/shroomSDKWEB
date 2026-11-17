@@ -38,7 +38,7 @@ const workflows = [
 ];
 
 const capabilities = [
-  { icon: 'device', title: '产品数据读取', description: '通过 readProduct() 获取产品数据。SDK 0.7.0 新增触觉足底，保留原始 ADC、IMU 与完整串口包。', detail: 'Node.js 取数 · 浏览器通过 WS 接收' },
+  { icon: 'device', title: '产品数据读取', description: '通过 readProduct() 获取产品数据。SDK 0.7.1 触觉足底返回 60 点原始 ADC，保留 IMU 与完整串口包。', detail: 'Node.js 取数 · 浏览器通过 WS 接收' },
   { icon: 'parse', title: '连接与协议解析', description: '处理串口连接、拆帧与产品点位映射。Node 产品连接支持有限自动重连。', detail: '协议内置 · 结构化错误 · 连接状态' },
   { icon: 'record', title: '数据采集', description: '按标签开始、停止采集，数据存入 SQLite，按记录导出 CSV 或 JSONL。', detail: 'Node.js 保存 · 浏览器控制采集' },
   { icon: 'view', title: '浏览器可视化', description: '展示手套五指、指腹和手掌分区，以及手垫压力热图，按收到的数据更新。', detail: '产品视图 · 通用点阵、热斑与网格' },

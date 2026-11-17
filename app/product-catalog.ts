@@ -75,19 +75,19 @@ export const productCatalog = [
   {
     id: 'foot', name: '触觉足底', productId: 'footVideo', alias: 'foot',
     requiresSide: true, sideLabel: '脚侧', sideNames: { left: '左脚', right: '右脚' },
-    protocols: [], minSdkVersion: '0.7.0', development: false,
+    protocols: [], minSdkVersion: '0.7.1', development: false,
     slogan: '直接读取原始压力、IMU 与完整分包。',
-    description: '触觉足底使用与触觉手套相同的首尾分包结构，按类型 3 / 4 区分左右脚，保留全部扫描 ADC、原始 IMU 和完整串口包。',
-    summary: ['256 个原始 ADC', '16 字节原始 IMU', '自动识别 / 手动筛选左右脚'],
+    description: '触觉足底按类型 3 / 4 区分左右脚，按对应脚点表返回 6 列 × 10 行的 60 点原始 ADC，同时保留原始 IMU 和完整串口包。',
+    summary: ['60 点原始 ADC · 6 列 × 10 行', '16 字节原始 IMU', '自动识别 / 手动筛选左右脚'],
     connection: '921600 baud · 130 + 146 字节分包 · 一只脚一个串口 · Node 可自动识别，或手动传 path + side',
     fields: [
-      ['pressure / raw / pressureMatrix', '256 个 uint8 ADC / 16 × 16', '保持原始扫描顺序，范围 0–255；16 × 16 仅为存储形状，不代表物理鞋形。'],
-      ['values', '256 个归一化值', '原始 ADC 除以 255，不代表标定后的物理压力。'],
+      ['raw / pressure / pressureMatrix', '60 个 uint8 ADC / 6 列 × 10 行', '按左脚或右脚点表返回原始 ADC，rows=10、cols=6，范围 0–255；不做插值、滤波或标定。'],
+      ['values', '60 个归一化值', '对应 60 点 ADC 除以 255，不代表标定后的物理压力。'],
       ['imu.raw', '16 字节', '原样保留，不解释四元数分量、轴序或单位。'],
       ['rawPackets', '134 + 150 字节', '两份完整原包，包含包头和各自的 AA 55 03 99 帧尾。'],
       ['protocol / packetType', 'segmented / 3、4', '3=左脚、4=右脚；首尾类型一致才配对。类型不是唯一设备编号，段号 1 / 2 不是采样序号。'],
     ],
-    note: 'SDK 0.7.0 起支持。显式 side 只筛选包内脚侧，不重新标记数据；保留全部 256 通道，不套用 jqInsole 的 112 点表，不抽点、插值、归零或标定。Node 与网页项目需使用同一 SDK 版本。',
+    note: 'SDK 0.7.1 修正为 60 点原始数据，6 列 × 10 行（rows=10、cols=6）。显式 side 只筛选包内脚侧，不重新标记数据；完整串口传输保留在 rawPackets，不将包内字节数当作测点数，也不套用 jqInsole 的 112 点表。Node 与网页项目需使用同一 SDK 版本。',
   },
 ] as const;
 
