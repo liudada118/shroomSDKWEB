@@ -59,7 +59,7 @@ export default function SkillsPage() {
         <p className={styles.flow}>取数 → 创建 WS → 开始采集 → 停止采集 → 下载</p>
         <div className={styles.scope}>
           <p><strong>设备与授权</strong>Node 连接手套、触觉足底、手垫、人体或A版鞋垫；浏览器通过 WS 接收。分包手套从 SDK 0.4.0 起支持，0.5.0 可自动识别左右手；触觉足底从 0.7.0 起支持手动或自动识别，人体与A版鞋垫从 0.3.0 起支持。驱动、SDK 密钥与真实串口在客户电脑准备。</p>
-          <p><strong>足底原始数据</strong>按类型 3=左脚、4=右脚保留 256 个原始 ADC、16 字节 IMU 和两份含头尾的 rawPackets（134/150 字节），不抽点、插值或标定。Python 暂未提供此产品入口。</p>
+          <p><strong>足底原始数据</strong>在 Node 取数，按类型 3=左脚、4=右脚保留 256 个原始 ADC、16 字节 IMU 和两份含头尾的 rawPackets（134/150 字节），不抽点、插值或标定。</p>
           <p><strong>重连与采集</strong>采集保存为 SQLite。串口断线会结束当前记录，恢复后需重新采集；网页 WS 断线不会停止 Node 录制。</p>
         </div>
         <Link className={styles.textLink} href="/docs/quick-start">查看五步调用与接入准备 <span aria-hidden="true">→</span></Link>

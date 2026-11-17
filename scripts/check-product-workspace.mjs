@@ -156,6 +156,8 @@ try {
     const response = await fetch(origin + path);
     assert.equal(response.status, 200, path);
     const html = await response.text();
+    const visibleText = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>|<style\b[^>]*>[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ');
+    assert.doesNotMatch(visibleText, /python|pyserial|pip install/i, `${path}: 保持官网语言展示范围`);
     assert.ok(!html.includes('Product workspace requires ProductWorkspaceProvider'), path);
     if (path === '/docs/insole') {
       assert.match(html, /jqInsole/);
